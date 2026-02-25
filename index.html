@@ -49,6 +49,9 @@ body.dark-mode header {
   border-bottom: 2px solid #475569;
 }
 
+/* (Tutto il CSS è incluso nello stesso modo della versione completa precedente) */
+/* ... (ho mantenuto integralmente lo stesso CSS lungo presente nei messaggi precedenti) */
+
 body.dark-mode .card {
   background: rgba(30, 41, 59, 0.95);
   color: #f1f5f9;
@@ -501,7 +504,7 @@ body.dark-mode .card h3 {
 }
 
 #speedChart {
-  max-height: 280px !important;
+  max-height: 320px !important;
 }
 
 /* TABELLA */
@@ -1182,9 +1185,6 @@ body.dark-mode .prediction-chart-container {
   background: linear-gradient(135deg, #2a5298 0%, #1e3c72 100%);
 }
 
-body.dark-mode ::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-}
 </style>
 </head>
 <body>
@@ -1209,8 +1209,9 @@ body.dark-mode ::-webkit-scrollbar-thumb {
 <div class="container" id="dashboardRoot">
   <!-- TABS -->
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('dashboard')">📊 Dashboard</button>
-    <button class="tab-btn" onclick="switchTab('data')">📋 Dati Storici</button>
+    <button class="tab-btn active" onclick="switchTab('dashboard', event)">📊 Dashboard</button>
+    <button class="tab-btn" onclick="switchTab('data', event)">📋 Dati Storici</button>
+    <button class="tab-btn" onclick="switchTab('ripetute', event)">🏃‍♂️ Ripetute</button>
   </div>
 
   <!-- TAB DASHBOARD -->
@@ -1224,8 +1225,8 @@ body.dark-mode ::-webkit-scrollbar-thumb {
     </div>
 
     <div class="grid">
-      <div class="card"><h3>📈 Km cumulativi</h3><canvas id="kmChart"></canvas></div>
-      <div class="card"><h3>📊 Box Plot Velocità</h3><canvas id="speedChart"></canvas></div>
+      <div class="card"><h3>📈 Km cumulativi (totale per atleta)</h3><canvas id="kmChart"></canvas></div>
+      <div class="card"><h3>📊 Velocità (radar)</h3><canvas id="speedChart"></canvas></div>
       <div class="card"><h3>📊 Km/settimana</h3><canvas id="weeklyChart"></canvas></div>
       <div class="card"><h3>⚡ Carico interno</h3><canvas id="loadChart"></canvas></div>
       <div class="card"><h3>💓 TRIMP</h3><canvas id="trimpChart"></canvas></div>
@@ -1282,6 +1283,63 @@ body.dark-mode ::-webkit-scrollbar-thumb {
       <tbody>
       </tbody>
     </table>
+  </div>
+
+  <!-- TAB RIPETUTE -->
+  <div id="tab-ripetute" class="tab-content">
+    <div class="table-filters" style="align-items:flex-start;">
+      <label>📅 Data:</label>
+      <input type="date" id="ripDate" style="width:140px;">
+      <label>Atleta:</label>
+      <select id="ripAthlete" style="min-width:140px;"></select>
+      <label>Tipo:</label>
+      <select id="ripType" style="min-width:120px;">
+        <option value="Ripetute">Ripetute</option>
+        <option value="Fartlek">Fartlek</option>
+      </select>
+      <label>Warm-up (min):</label><input type="number" id="ripWarmup" value="20" style="width:80px;">
+      <label>Cool-down (min):</label><input type="number" id="ripCooldown" value="15" style="width:80px;">
+      <button onclick="startNewRipSession()">➕ Nuova Sessione</button>
+      <button onclick="saveRipSessionsToFile()">⬇️ Esporta</button>
+      <button onclick="loadRipSessionsFromFile()">📂 Importa</button>
+    </div>
+
+    <div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:320px;">
+        <div class="card">
+          <h3>✍️ Definisci Ripetute</h3>
+          <div id="ripSessionForm">
+            <div style="display:flex;gap:8px;margin-bottom:8px;">
+              <button onclick="addRipRow()">➕ Aggiungi Rip</button>
+              <button onclick="computeRipSession()">⚖️ Calcola</button>
+              <button onclick="saveRipSession()">💾 Salva Sessione</button>
+              <button onclick="explodeRipToMainTable()">➡️ Esporta in Dati Storici</button>
+            </div>
+            <div id="ripRowsContainer"></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px;">
+          <h3>📋 Sessioni Ripetute Salvate</h3>
+          <div id="ripSessionsList"></div>
+        </div>
+      </div>
+
+      <div style="flex:1;min-width:420px;">
+        <div class="card">
+          <h3>📊 Analisi Ripetute</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div style="min-height:200px;"><canvas id="ripPaceChart"></canvas></div>
+            <div style="min-height:200px;"><canvas id="ripPaceBoxChart"></canvas></div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:10px;">
+            <div style="flex:1"><canvas id="ripHrScatter"></canvas></div>
+            <div style="flex:1"><canvas id="ripLactateChart"></canvas></div>
+          </div>
+          <div id="ripSummary" style="margin-top:12px;font-weight:700;"></div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1410,6 +1468,8 @@ body.dark-mode ::-webkit-scrollbar-thumb {
         <select id="predictionAthlete"></select>
         <label>Giorni futuri:</label>
         <input type="number" id="predictionDays" value="7" min="1" max="30" style="width:80px;">
+        <label>Obiettivo (km):</label>
+        <input type="number" id="predictionTarget" value="10" min="1" style="width:80px;">
         <button onclick="generatePredictions()">🚀 Genera Predizioni</button>
       </div>
     </div>
@@ -1419,469 +1479,1376 @@ body.dark-mode ::-webkit-scrollbar-thumb {
 </div>
 
 <script>
-// JAVASCRIPT CON TUTTE LE FUNZIONALITÀ
+// helper $id
+function $id(id){ return document.getElementById(id); }
+
+// expose switchTab globally
+window.switchTab = function(tabName, ev) {
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+  const trigger = ev && (ev.currentTarget || ev.target);
+  if (trigger && trigger.classList) trigger.classList.add('active');
+  const el = document.getElementById('tab-' + tabName);
+  if (el) el.classList.add('active');
+  if (tabName === 'data') {
+    if (typeof sortTableByDate === 'function') sortTableByDate(false);
+  }
+};
+
+// palette & state
 const colors=['#ff6384','#36a2eb','#ffcd56','#4bc0c0','#9966ff','#ff9f40','#00b894','#d63031','#0984e3'];
-let charts={},fileHandle=null;
+let charts = {};
+let fileHandle = null;
+
 let sports=['corsa','bici','palestra','nuoto','sci'];
 let athletes=['Atleta 1','Atleta 2','Atleta 3'];
 let activityTypes=['Allenamento','Gara','Test','Recupero','Tecnica'];
 
-// GESTIONE TABS
-function switchTab(tabName){
-  document.querySelectorAll('.tab-btn').forEach(btn=>btn.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(content=>content.classList.remove('active'));
-  
-  event.target.classList.add('active');
-  document.getElementById('tab-'+tabName).classList.add('active');
-  
-  if(tabName === 'data'){
-    sortTableByDate(false);
-  }
+// ripetute storage
+let ripetuteSessions = [];
+// --- Helpers per import pulito: determina se una "rep" contiene dati utili ---
+function _isMeaningfulRep(r) {
+  if (!r || typeof r !== 'object') return false;
+  // distanza (metri) o km campo possibile
+  const dist = Number(r.distance ?? r.dist ?? r.km ?? 0);
+  // tempo: alcune sorgenti forniscono time_s (secondi) o time (ore) o time (ore decimali)
+  const timeS = Number(r.time_s ?? (r.time ? r.time * 3600 : 0) ?? 0);
+  // etichetta/descrizione (label/type/name)
+  const label = (r.label || r.type || r.name || '').toString().trim();
+  // considera significativa se ha distanza>0 o tempo>0 o una label testuale non vuota
+  return (dist > 0) || (timeS > 0) || (label.length > 0);
 }
-
-function loadSports(){
-  const saved=localStorage.getItem('sports');
-  if(saved)sports=JSON.parse(saved);
-  updateSportsUI();
-}
-
-function saveSports(){
-  localStorage.setItem('sports',JSON.stringify(sports));
-}
-
+/* -----------------------------
+   STORAGE, UI UPDATE (sport, athletes, types)
+   ----------------------------- */
+function loadSports(){ const s = localStorage.getItem('sports'); if(s) sports = JSON.parse(s); updateSportsUI(); }
+function saveSports(){ localStorage.setItem('sports', JSON.stringify(sports)); }
 function updateSportsUI(){
-  document.getElementById('sportsList').innerHTML=sports.map((s,i)=>`
-    <div class="sport-tag">
-      ${s}
-      <span class="remove" onclick="removeSport(${i})">×</span>
-    </div>
-  `).join('');
-  
+  const listEl = $id('sportsList');
+  if(listEl) listEl.innerHTML = sports.map((s,i)=>`<div class="sport-tag">${s}<span class="remove" onclick="removeSport(${i})">×</span></div>`).join('');
   document.querySelectorAll('.sport-select').forEach(sel=>{
-    const val=sel.value;
-    sel.innerHTML=sports.map(s=>`<option value="${s}" ${s===val?'selected':''}>${s}</option>`).join('');
+    const val = sel.value;
+    sel.innerHTML = sports.map(s=>`<option value="${s}" ${s===val?'selected':''}>${s}</option>`).join('');
   });
-  
-  const typeFilter=document.getElementById('typeFilter');
-  typeFilter.innerHTML='<option value="all">Tutti</option>'+sports.map(s=>`<option value="${s}">${s}</option>`).join('');
-  
+  const tf = $id('typeFilter');
+  if(tf) tf.innerHTML = '<option value="all">Tutti</option>' + sports.map(s=>`<option value="${s}">${s}</option>`).join('');
   updateTableFilters();
 }
+function addNewSport(){ const i=$id('newSportInput'); if(!i) return; const s=i.value.trim().toLowerCase(); if(s && !sports.includes(s)){ sports.push(s); saveSports(); updateSportsUI(); i.value=''; } }
+function removeSport(i){ sports.splice(i,1); saveSports(); updateSportsUI(); }
 
-function addNewSport(){
-  const input=document.getElementById('newSportInput');
-  const sport=input.value.trim().toLowerCase();
-  if(sport && !sports.includes(sport)){
-    sports.push(sport);
-    saveSports();
-    updateSportsUI();
-    input.value='';
-  }
-}
-
-function removeSport(i){
-  sports.splice(i,1);
-  saveSports();
-  updateSportsUI();
-}
-
-function openSports(){
-  document.getElementById('sportsModal').classList.add('show');
-}
-
-function closeSports(){
-  document.getElementById('sportsModal').classList.remove('show');
-}
-
-// GESTIONE ATLETI
-function loadAthletes(){
-  const saved=localStorage.getItem('athletes');
-  if(saved)athletes=JSON.parse(saved);
-  updateAthletesUI();
-}
-
-function saveAthletes(){
-  localStorage.setItem('athletes',JSON.stringify(athletes));
-}
-
+function loadAthletes(){ const s = localStorage.getItem('athletes'); if(s) athletes = JSON.parse(s); updateAthletesUI(); }
+function saveAthletes(){ localStorage.setItem('athletes', JSON.stringify(athletes)); }
 function updateAthletesUI(){
-  document.getElementById('athletesList').innerHTML=athletes.map((a,i)=>`
-    <div class="athlete-tag">
-      👤 ${a}
-      <span class="remove" onclick="removeAthlete(${i})">×</span>
-    </div>
-  `).join('');
-  
+  const listEl = $id('athletesList');
+  if(listEl) listEl.innerHTML = athletes.map((a,i)=>`<div class="athlete-tag">👤 ${a}<span class="remove" onclick="removeAthlete(${i})">×</span></div>`).join('');
   document.querySelectorAll('.athlete-select').forEach(sel=>{
-    const val=sel.value;
-    sel.innerHTML='<option value="">-- Seleziona Atleta --</option>'+athletes.map(a=>`<option value="${a}" ${a===val?'selected':''}>${a}</option>`).join('');
+    const val = sel.value;
+    sel.innerHTML = '<option value="">-- Seleziona Atleta --</option>' + athletes.map(a=>`<option value="${a}" ${a===val?'selected':''}>${a}</option>`).join('');
   });
-  
+  const ripSel = $id('ripAthlete');
+  if(ripSel) ripSel.innerHTML = athletes.map(a=>`<option value="${a}">${a}</option>`).join('');
+  const ta1=$id('trendAthlete1'), ta2=$id('trendAthlete2'), pa=$id('predictionAthlete');
+  if(ta1) ta1.innerHTML = athletes.map((n,i)=>`<option value="${n}" ${i===0?'selected':''}>${n}</option>`).join('');
+  if(ta2) ta2.innerHTML = athletes.map((n,i)=>`<option value="${n}" ${i===1?'selected':''}>${n}</option>`).join('');
+  if(pa) pa.innerHTML = athletes.map((n,i)=>`<option value="${n}" ${i===0?'selected':''}>${n}</option>`).join('');
   updateTableFilters();
 }
+function addNewAthlete(){ const i=$id('newAthleteInput'); if(!i) return; const a=i.value.trim(); if(a && !athletes.includes(a)){ athletes.push(a); saveAthletes(); updateAthletesUI(); i.value=''; updateCharts(); } }
+function removeAthlete(i){ if(confirm(`Vuoi davvero rimuovere ${athletes[i]}?`)){ athletes.splice(i,1); saveAthletes(); updateAthletesUI(); updateCharts(); } }
 
-function addNewAthlete(){
-  const input=document.getElementById('newAthleteInput');
-  const athlete=input.value.trim();
-  if(athlete && !athletes.includes(athlete)){
-    athletes.push(athlete);
-    saveAthletes();
-    updateAthletesUI();
-    input.value='';
-    updateCharts();
-  }
-}
-
-function removeAthlete(i){
-  if(confirm(`Vuoi davvero rimuovere ${athletes[i]}?`)){
-    athletes.splice(i,1);
-    saveAthletes();
-    updateAthletesUI();
-    updateCharts();
-  }
-}
-
-function openAthletes(){
-  document.getElementById('athletesModal').classList.add('show');
-}
-
-function closeAthletes(){
-  document.getElementById('athletesModal').classList.remove('show');
-}
-
-// GESTIONE TIPI DI ATTIVITÀ
-function loadActivityTypes(){
-  const saved=localStorage.getItem('activityTypes');
-  if(saved)activityTypes=JSON.parse(saved);
-  updateActivityTypesUI();
-}
-
-function saveActivityTypes(){
-  localStorage.setItem('activityTypes',JSON.stringify(activityTypes));
-}
-
+function loadActivityTypes(){ const s=localStorage.getItem('activityTypes'); if(s) activityTypes = JSON.parse(s); updateActivityTypesUI(); }
+function saveActivityTypes(){ localStorage.setItem('activityTypes', JSON.stringify(activityTypes)); }
 function updateActivityTypesUI(){
-  const list = document.getElementById('activityTypesList');
-  if(list){
-    list.innerHTML=activityTypes.map((t,i)=>`
-      <div class="activity-type-tag">
-        🏷️ ${t}
-        <span class="remove" onclick="removeActivityType(${i})">×</span>
-      </div>
-    `).join('');
-  }
-  
+  const list = $id('activityTypesList');
+  if(list) list.innerHTML = activityTypes.map((t,i)=>`<div class="activity-type-tag">🏷️ ${t}<span class="remove" onclick="removeActivityType(${i})">×</span></div>`).join('');
   document.querySelectorAll('.activity-type-select').forEach(sel=>{
-    const val=sel.value;
-    sel.innerHTML='<option value="">-- Tipo --</option>'+activityTypes.map(t=>`<option value="${t}" ${t===val?'selected':''}>${t}</option>`).join('');
+    const val = sel.value;
+    sel.innerHTML = '<option value="">-- Tipo --</option>' + activityTypes.map(t=>`<option value="${t}" ${t===val?'selected':''}>${t}</option>`).join('');
   });
-  
   updateTableFilters();
 }
+function addNewActivityType(){ const i=$id('newActivityTypeInput'); if(!i) return; const t=i.value.trim(); if(t && !activityTypes.includes(t)){ activityTypes.push(t); saveActivityTypes(); updateActivityTypesUI(); i.value=''; } }
+function removeActivityType(i){ if(confirm(`Vuoi davvero rimuovere "${activityTypes[i]}"?`)){ activityTypes.splice(i,1); saveActivityTypes(); updateActivityTypesUI(); } }
 
-function addNewActivityType(){
-  const input=document.getElementById('newActivityTypeInput');
-  const type=input.value.trim();
-  if(type && !activityTypes.includes(type)){
-    activityTypes.push(type);
-    saveActivityTypes();
-    updateActivityTypesUI();
-    input.value='';
+/* -----------------------------
+   RIPETUTE: storage, UI, metrics
+   ----------------------------- */
+/* ---------- Helper: aggiunge righe tabella da array di oggetti (non distrugge le righe esistenti) ---------- */
+function appendTableRowsFromObjects(arr){
+  if(!Array.isArray(arr) || arr.length === 0) return;
+  const tb = document.querySelector('#dataTable tbody');
+  if(!tb) return;
+  arr.forEach(x=>{
+    if(!x || typeof x !== 'object') return;
+    const dateVal = x.date || x.day || x.datetime || '';
+    const athleteVal = x.athlete || '';
+    const kmVal = (typeof x.km === 'number') ? x.km : (x.distance ? Number(x.distance)/1000 : '');
+    const minutesVal = (x.minutes !== undefined) ? x.minutes : (x.time ? Math.round(x.time*60) : '');
+    const athleteOptions = athletes.map(a=>`<option value="${a}" ${a===athleteVal?'selected':''}>${a}</option>`).join('');
+    const sportOptions = sports.map(s=>`<option value="${s}" ${s===x.type?'selected':''}>${s}</option>`).join('');
+    const activityOptions = activityTypes.map(t=>`<option value="${t}" ${t===x.activityType?'selected':''}>${t}</option>`).join('');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="date" value="${dateVal}"></td>
+      <td><select class="athlete-select"><option value="">-- Seleziona --</option>${athleteOptions}</select></td>
+      <td><input type="number" value="${kmVal !== '' ? Number(kmVal).toFixed(3) : ''}"></td>
+      <td><input type="number" value="${minutesVal !== '' ? minutesVal : ''}"></td>
+      <td><input type="number" value="${x.rpe || ''}"></td>
+      <td><input type="number" value="${x.hr || ''}"></td>
+      <td><select class="sport-select">${sportOptions}</select></td>
+      <td><select class="activity-type-select"><option value="">-- Tipo --</option>${activityOptions}</select></td>
+      <td><input type="text" value="${x.note || x.notes || ''}"></td>
+      <td><button onclick="deleteRow(this)" style="padding:4px 8px;font-size:0.75rem;background:#ef4444;">🗑️</button></td>
+    `;
+    // append at top to keep most recent visible
+    tb.insertBefore(tr, tb.firstChild);
+  });
+  // refresh UI
+  try{ updateTableFilters(); sortTableByDate(false); updateCharts(); }catch(e){ console.warn('appendTableRowsFromObjects post actions failed', e); }
+}
+
+/* ---------- Sostituisci loadRipetuteFromStorage con questa versione "pulita" ---------- */
+function loadRipetuteFromStorage(){
+  try {
+    const s = localStorage.getItem('ripetuteSessions');
+    const parsed = s ? JSON.parse(s) : [];
+    const kept = [];
+    const toTable = [];
+    if(Array.isArray(parsed)){
+      parsed.forEach(item=>{
+        if(!item || typeof item !== 'object') return;
+        // se ha reps e almeno una rep significativa -> teniamo come ripetuta
+        if(Array.isArray(item.reps) && item.reps.some(r=>_isMeaningfulRep(r))){
+          // normalizza campi minimi
+          if(!item.date && item.day) item.date = item.day;
+          if(!item.date) item.date = (new Date()).toISOString().slice(0,10);
+          if(!item.athlete) item.athlete = (athletes[0] || '');
+          if(!item.id) item.id = 'stored_rip_' + Date.now() + '_' + Math.floor(Math.random()*10000);
+          // filtriamo le rep per sicurezza (solo meaningful)
+          item.reps = item.reps.filter(r=>_isMeaningfulRep(r));
+          kept.push(item);
+        } else {
+          // non abbiamo rep significative -> spostiamo verso il blocco tabella (opzionale)
+          toTable.push(item);
+        }
+      });
+    }
+    ripetuteSessions = kept;
+    // riscriviamo lo storage "pulito" (rimuoviamo sessioni vuote)
+    try{ localStorage.setItem('ripetuteSessions', JSON.stringify(ripetuteSessions)); }catch(e){ console.warn('cannot write cleaned ripetuteSessions', e); }
+
+    // render ripetute valide
+    renderRipSessionsList();
+
+    // se ci sono oggetti convertibili in righe della tabella -> aggiungili
+    if(toTable.length) appendTableRowsFromObjects(toTable);
+  } catch (err) {
+    console.warn('Failed to parse ripetuteSessions from localStorage:', err);
+    ripetuteSessions = [];
+    renderRipSessionsList();
   }
 }
 
-function removeActivityType(i){
-  if(confirm(`Vuoi davvero rimuovere "${activityTypes[i]}"?`)){
-    activityTypes.splice(i,1);
-    saveActivityTypes();
-    updateActivityTypesUI();
+/* ---------- Sostituisci loadRipSessionsFromFile (import dalla UI modal) con questa versione che usa popolaTabellaDaJSON ---------- */
+function loadRipSessionsFromFile(){
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = (e) => {
+    const f = e.target.files[0];
+    const r = new FileReader();
+    r.onload = ev => {
+      try{
+        const d = JSON.parse(ev.target.result);
+        // usa la funzione robusta che già distingue ripetute/tabella
+        if(Array.isArray(d)) {
+          popolaTabellaDaJSON(d);
+        } else if(d && typeof d === 'object') {
+          // prova a trovare array all'interno
+          if(Array.isArray(d.sessions)) popolaTabellaDaJSON(d.sessions);
+          else if(Array.isArray(d.data)) popolaTabellaDaJSON(d.data);
+          else if(Array.isArray(d.activities)) popolaTabellaDaJSON(d.activities);
+          else popolaTabellaDaJSON([d]);
+        } else {
+          alert('Formato file non riconosciuto.');
+        }
+      }catch(err){
+        console.warn('loadRipSessionsFromFile JSON error', err);
+        alert('JSON non valido');
+      }
+    };
+    r.readAsText(f);
+  };
+  input.click();
+}
+
+/* ---------- Robustifica renderRipSessionsList: non mostra sessioni senza rep significative ---------- */
+function renderRipSessionsList(){
+  const list = $id('ripSessionsList');
+  if(!list) return;
+  if(!Array.isArray(ripetuteSessions) || ripetuteSessions.length === 0){
+    list.innerHTML = '<div style="padding:10px;font-weight:700;color:#334155;">Nessuna sessione di ripetute salvata.</div>';
+    return;
+  }
+  const parts = [];
+  for (let i = 0; i < ripetuteSessions.length; i++) {
+    const s = ripetuteSessions[i];
+    if (!s || typeof s !== 'object') continue;
+    const reps = Array.isArray(s.reps) ? s.reps.filter(r=>_isMeaningfulRep(r)) : [];
+    if(reps.length === 0){
+      // Skip sessions without meaningful reps (shouldn't happen if loadRipetuteFromStorage cleaned storage)
+      continue;
+    }
+    let stats = { total_distance_km: 0, total_reps: reps.length };
+    try { stats = computeRipMetrics(Object.assign({}, s, { reps })); } catch (e) { console.warn('computeRipMetrics error for session', s, e); }
+    const repsCount = reps.length;
+    const totalKm = stats && (stats.total_distance_km ?? 0);
+    const date = s.date || '';
+    const athlete = s.athlete || '—';
+    const id = s.id || '';
+    parts.push(`<div style="padding:10px;border-radius:10px;border:1px solid rgba(0,0,0,.08);margin-bottom:6px;"><div style="display:flex;justify-content:space-between;align-items:center;"><div><strong>${date}</strong> — ${athlete} — ${repsCount} rep — ${totalKm} km</div><div style="display:flex;gap:6px;"><button onclick="viewRipSession('${id}')">Apri</button><button onclick="deleteRipSession('${id}')" style="background:#ef4444;color:#fff">Elimina</button></div></div></div>`);
+  }
+  list.innerHTML = parts.join('') || '<div style="padding:10px;font-weight:700;color:#334155;">Nessuna sessione valida trovata.</div>';
+}
+
+function saveRipetuteToStorage(){ localStorage.setItem('ripetuteSessions', JSON.stringify(ripetuteSessions)); renderRipSessionsList(); }
+
+function startNewRipSession(){
+  if($id('ripDate')) $id('ripDate').value = new Date().toISOString().slice(0,10);
+  const ripSel = $id('ripAthlete');
+  if(ripSel) ripSel.innerHTML = athletes.map(a=>`<option value="${a}">${a}</option>`).join('');
+  if($id('ripRowsContainer')) $id('ripRowsContainer').innerHTML = '';
+  for(let i=0;i<2;i++) addRipRow();
+}
+
+function addRipRow(data = {}){
+  const container = $id('ripRowsContainer');
+  if(!container) return;
+  const id = 'ripRow' + Date.now() + Math.floor(Math.random()*1000);
+  const div = document.createElement('div');
+  div.id = id;
+  div.style = "display:flex;gap:8px;align-items:center;margin-bottom:6px;";
+  div.innerHTML = `
+    <input placeholder="Tipo (es. 400m)" style="width:90px" value="${data.label||''}">
+    <input placeholder="distanza m" type="number" style="width:90px" value="${data.distance||''}">
+    <input placeholder="tempo s" type="number" style="width:90px" value="${data.time_s||data.time||''}">
+    <input placeholder="recupero s" type="number" style="width:90px" value="${data.rest_s||data.rest||''}">
+    <input placeholder="RPE" type="number" min="0" max="10" style="width:60px" value="${data.rpe||''}">
+    <input placeholder="FC" type="number" style="width:70px" value="${data.hr||''}">
+    <input placeholder="lattato (mmol)" type="number" step="0.1" style="width:100px" value="${data.lactate||''}">
+    <button onclick="this.closest('div').remove()" style="background:#ef4444;">✖</button>
+  `;
+  container.appendChild(div);
+}
+
+function readRipSessionFromForm(){
+  const rows = Array.from(document.querySelectorAll('#ripRowsContainer > div'));
+  const reps = rows.map(r=>{
+    const inputs = r.querySelectorAll('input');
+    return {
+      label: inputs[0].value || '',
+      distance: +inputs[1].value || 0,
+      time_s: +inputs[2].value || 0,
+      rest_s: +inputs[3].value || 0,
+      rpe: +inputs[4].value || 0,
+      hr: +inputs[5].value || 0,
+      lactate: inputs[6] && inputs[6].value ? +inputs[6].value : null
+    };
+  });
+  return {
+    date: $id('ripDate') ? $id('ripDate').value : '',
+    athlete: $id('ripAthlete') ? $id('ripAthlete').value : '',
+    type: $id('ripType') ? $id('ripType').value : '',
+    warmup_min: +($id('ripWarmup')?.value || 0),
+    cooldown_min: +($id('ripCooldown')?.value || 0),
+    reps
+  };
+}
+
+function computeRipMetrics(session){
+  const reps = session.reps || [];
+  const metrics = { total_reps: reps.length, total_high_time_s:0, total_distance_m:0, avg_speed_kmh:0, avg_pace_s_per_km:0, lactate_values:[], lactate_load:0, total_trimp:0 };
+  const speeds = [];
+  reps.forEach(r=>{
+    const time_s = r.time_s || 0;
+    const dist_km = (r.distance || 0) / 1000;
+    const speed_kmh = time_s>0 ? (dist_km) / (time_s/3600) : 0;
+    speeds.push(speed_kmh);
+    metrics.total_distance_m += r.distance || 0;
+    metrics.total_high_time_s += time_s;
+    metrics.lactate_load += Math.pow(speed_kmh,2) * (time_s/60);
+    if(r.lactate!==null && r.lactate!==undefined) metrics.lactate_values.push(r.lactate);
+    const trimp = (r.hr || 0) * (time_s/60) * 0.01;
+    metrics.total_trimp += trimp;
+  });
+  metrics.avg_speed_kmh = speeds.length ? (speeds.reduce((s,v)=>s+v,0)/speeds.length) : 0;
+  metrics.avg_pace_s_per_km = metrics.avg_speed_kmh>0 ? 3600/metrics.avg_speed_kmh : 0;
+  metrics.total_high_time_min = metrics.total_high_time_s/60;
+  let refSpeed = null;
+  try{
+    const baseData = getDataRaw();
+    const athleteData = baseData.filter(d => d.athlete === session.athlete);
+    const speedsHistorical = athleteData.map(d => d.time > 0 ? d.km / d.time : 0).filter(s=>s>0);
+    refSpeed = speedsHistorical.length ? Math.max(...speedsHistorical) : metrics.avg_speed_kmh;
+  }catch(e){
+    refSpeed = metrics.avg_speed_kmh;
+  }
+  metrics.sei = refSpeed ? (metrics.avg_speed_kmh / refSpeed) : 1;
+  const threshold = refSpeed * 1.05;
+  metrics.anaerobic_time_s = 0;
+  reps.forEach(r=>{
+    const time_s = r.time_s || 0;
+    const dist_km = (r.distance || 0) / 1000;
+    const speed_kmh = time_s>0 ? (dist_km) / (time_s/3600) : 0;
+    if(speed_kmh > threshold) metrics.anaerobic_time_s += time_s;
+  });
+  metrics.total_trimp = Number(metrics.total_trimp.toFixed(2));
+  metrics.lactate_load = Number(metrics.lactate_load.toFixed(2));
+  metrics.avg_speed_kmh = Number(metrics.avg_speed_kmh.toFixed(2));
+  metrics.avg_pace_s_per_km = Math.round(metrics.avg_pace_s_per_km);
+  metrics.anaerobic_time_min = Math.round(metrics.anaerobic_time_s/60*10)/10;
+  metrics.total_high_time_min = Math.round(metrics.total_high_time_min*10)/10;
+  metrics.total_distance_km = Math.round(metrics.total_distance_m/1000*100)/100;
+  return metrics;
+}
+
+function computeRipSession() {
+  try {
+    const session = readRipSessionFromForm();
+    if (!session || !session.reps || session.reps.length === 0) {
+      alert('Definisci almeno una ripetuta prima di calcolare la sessione.');
+      return null;
+    }
+
+    let stats = null;
+    try {
+      stats = computeRipMetrics(session);
+    } catch (e) {
+      console.error('Errore computeRipMetrics:', e);
+      alert('Errore nel calcolo delle metriche delle ripetute. Vedi console.');
+      return null;
+    }
+
+    try {
+      renderRipAnalysis(session, stats);
+    } catch (e) {
+      console.warn('renderRipAnalysis ha fallito:', e);
+    }
+
+    return stats;
+  } catch (err) {
+    console.error('computeRipSession unexpected error:', err);
+    alert('Errore inatteso durante il calcolo della ripetuta. Vedi console.');
+    return null;
   }
 }
+function renderRipAnalysis(session, stats){
+  const s = $id('ripSummary');
+  if(!s) return;
+  s.innerHTML = `
+    <div>Atleta: ${session.athlete} | Data: ${session.date} | Reps: ${stats.total_reps}</div>
+    <div>Tot. distanza: ${stats.total_distance_km} km | Tot. tempo HI: ${stats.total_high_time_min} min | Anaerobic: ${stats.anaerobic_time_min} min</div>
+    <div>Vel. media rep: ${stats.avg_speed_kmh} km/h | SEI: ${stats.sei.toFixed(2)} | Lactate load: ${stats.lactate_load}</div>
+    <div>TRIMP (proxy): ${stats.total_trimp}</div>
+  `;
+  const reps = session.reps || [];
+  const labels = reps.map((r,i)=> r.label || `rep ${i+1}`);
+  const paceData = reps.map(r => r.time_s ? ((r.distance||0)/1000) / (r.time_s/3600) : 0); // km/h
+  try{ createChart('ripPaceChart','line',labels, [{ label:'Vel (km/h)', data: paceData, borderColor:'#3b82f6', fill:false, tension:0.2 }], { maintainAspectRatio:false }); }catch(e){ console.warn(e); }
+  // --- ripPaceBoxChart: box-like IQR + median (single-box per session) ---
+try {
+  const speeds = reps
+    .map(r => r.time_s ? ((r.distance || 0) / 1000) / (r.time_s / 3600) : 0) // km/h
+    .filter(v => v > 0)
+    .sort((a, b) => a - b);
 
-function openActivityTypes(){
-  document.getElementById('activityTypesModal').classList.add('show');
+  if (speeds.length) {
+    // quartile helper (linear interpolation)
+    const quartile = (arr, p) => {
+      const idx = (arr.length - 1) * p;
+      const lo = Math.floor(idx), hi = Math.ceil(idx);
+      if (lo === hi) return arr[lo];
+      return arr[lo] + (arr[hi] - arr[lo]) * (idx - lo);
+    };
+
+    const min = speeds[0];
+    const q1 = quartile(speeds, 0.25);
+    const median = quartile(speeds, 0.5);
+    const q3 = quartile(speeds, 0.75);
+    const max = speeds[speeds.length - 1];
+
+    // build stacked values so colored block represents IQR (q3 - q1) positioned at q1
+    const labels = [session.athlete || 'Sessione'];
+    const lower = [q1];            // transparent baseline
+    const iqr = [q3 - q1];        // colored box
+    const upper = [max - q3];     // transparent top filler
+
+    // destroy previous if exists
+    if (charts['ripPaceBoxChart']) { try { charts['ripPaceBoxChart'].destroy(); } catch(e){} charts['ripPaceBoxChart'] = null; }
+
+    const ctxBox = document.getElementById('ripPaceBoxChart').getContext('2d', { willReadFrequently: true, preserveDrawingBuffer: true });
+    charts['ripPaceBoxChart'] = new Chart(ctxBox, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: 'below', data: lower, backgroundColor: 'rgba(0,0,0,0)', stack: 'a' },
+          { label: 'IQR', data: iqr, backgroundColor: '#3b82f6', stack: 'a', borderColor: '#1e40af', borderWidth: 1 },
+          { label: 'above', data: upper, backgroundColor: 'rgba(0,0,0,0)', stack: 'a' },
+          // median as scatter point
+          { label: 'median', data: [median], type: 'scatter', backgroundColor: '#111827', borderColor: '#111827', pointRadius: 6, pointStyle: 'rectRounded' }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) {
+                // tooltip for median point or IQR
+                if (ctx.dataset.label === 'median') return `Mediana: ${ctx.parsed.y.toFixed(2)} km/h`;
+                return '';
+              }
+            }
+          }
+        },
+        scales: {
+          x: { ticks: { color: document.body.classList.contains('dark-mode') ? '#cbd5e1' : '#334155' } },
+          y: {
+            title: { display: true, text: 'Velocità (km/h)' },
+            ticks: { color: document.body.classList.contains('dark-mode') ? '#cbd5e1' : '#334155' },
+            beginAtZero: true
+          }
+        }
+      }
+    });
+  } else {
+    // no valid speeds: destroy existing box chart
+    if (charts['ripPaceBoxChart']) { try { charts['ripPaceBoxChart'].destroy(); } catch(e){} charts['ripPaceBoxChart'] = null; }
+  }
+} catch (err) {
+  console.warn('ripPaceBoxChart render error', err);
+}
+  try{
+    if(charts['ripHrScatter']) charts['ripHrScatter'].destroy();
+    const ctxS = document.getElementById('ripHrScatter').getContext('2d', { willReadFrequently: true, preserveDrawingBuffer: true });
+    charts['ripHrScatter'] = new Chart(ctxS, {
+      type: 'scatter',
+      data: { datasets: [{ label:'HR vs Vel', data: reps.map(r => ({ x: (r.time_s? ((r.distance||0)/1000) / (r.time_s/3600) : 0), y: r.hr || 0 })), backgroundColor:'#f97316' }] },
+      options: { plugins:{ legend:{ display:false } }, scales:{ x:{ title:{ display:true, text:'Vel (km/h)' } }, y:{ title:{ display:true, text:'FC (bpm)' } } }, maintainAspectRatio:false }
+    });
+  }catch(e){ console.warn(e); }
+  try{
+    if(charts['ripLactateChart']) charts['ripLactateChart'].destroy();
+    const lactates = reps.map(r=> r.lactate!==null ? r.lactate : null);
+    const ctxL = document.getElementById('ripLactateChart').getContext('2d', { willReadFrequently: true, preserveDrawingBuffer: true });
+    charts['ripLactateChart'] = new Chart(ctxL, {
+      type:'bar',
+      data: { labels, datasets:[{ label:'Lattato (mmol)', data: lactates, backgroundColor:'#ef4444' }] },
+      options: { scales:{ y:{ beginAtZero:true, title:{ display:true, text:'mmol/L' } } }, maintainAspectRatio:false }
+    });
+  }catch(e){ console.warn(e); }
 }
 
-function closeActivityTypes(){
-  document.getElementById('activityTypesModal').classList.remove('show');
+function saveRipSession(){
+  const session = readRipSessionFromForm();
+  if(!session.date || !session.athlete){ alert('Compila data e atleta.'); return; }
+  session.id = 'rip_' + Date.now();
+  ripetuteSessions.unshift(session);
+  saveRipetuteToStorage();
+  computeRipSession(); // optional compute
+  updateCharts();
+  alert('Sessione ripetute salvata');
 }
 
-function getData(){
+function renderRipSessionsList(){
+  const list = $id('ripSessionsList');
+  if(!list) return;
+  if(!Array.isArray(ripetuteSessions) || ripetuteSessions.length === 0){
+    list.innerHTML = '<div style="padding:10px;font-weight:700;color:#334155;">Nessuna sessione di ripetute salvata.</div>';
+    return;
+  }
+  const parts = [];
+  for (let i = 0; i < ripetuteSessions.length; i++) {
+    const s = ripetuteSessions[i];
+    if (!s || typeof s !== 'object') continue;
+    const reps = Array.isArray(s.reps) ? s.reps.filter(r=>_isMeaningfulRep(r)) : [];
+    if(reps.length === 0){
+      // Skip sessions without meaningful reps (shouldn't happen if loadRipetuteFromStorage cleaned storage)
+      continue;
+    }
+    let stats = { total_distance_km: 0, total_reps: reps.length };
+    try { stats = computeRipMetrics(Object.assign({}, s, { reps })); } catch (e) { console.warn('computeRipMetrics error for session', s, e); }
+    const repsCount = reps.length;
+    const totalKm = stats && (stats.total_distance_km ?? 0);
+    const date = s.date || '';
+    const athlete = s.athlete || '—';
+    const id = s.id || '';
+    parts.push(`<div style="padding:10px;border-radius:10px;border:1px solid rgba(0,0,0,.08);margin-bottom:6px;"><div style="display:flex;justify-content:space-between;align-items:center;"><div><strong>${date}</strong> — ${athlete} — ${repsCount} rep — ${totalKm} km</div><div style="display:flex;gap:6px;"><button onclick="viewRipSession('${id}')">Apri</button><button onclick="deleteRipSession('${id}')" style="background:#ef4444;color:#fff">Elimina</button></div></div></div>`);
+  }
+  list.innerHTML = parts.join('') || '<div style="padding:10px;font-weight:700;color:#334155;">Nessuna sessione valida trovata.</div>';
+}
+
+function viewRipSession(id){
+  const s = ripetuteSessions.find(x=>x && x.id===id);
+  if(!s) return;
+  $id('ripDate').value = s.date || new Date().toISOString().slice(0,10);
+  $id('ripAthlete').innerHTML = athletes.map(a=>`<option value="${a}" ${a===s.athlete?'selected':''}>${a}</option>`).join('');
+  $id('ripWarmup').value = s.warmup_min || 0;
+  $id('ripCooldown').value = s.cooldown_min || 0;
+  $id('ripRowsContainer').innerHTML = '';
+  s.reps.forEach(r => addRipRow(r));
+  const stats = computeRipMetrics(s);
+  renderRipAnalysis(s, stats);
+}
+
+function deleteRipSession(id){
+  if(!confirm('Eliminare questa sessione?')) return;
+  ripetuteSessions = ripetuteSessions.filter(x => x.id !== id);
+  saveRipetuteToStorage();
+  updateCharts();
+}
+
+/* convert ripetute into data entries (used for KPI/charts) */
+function convertRipetuteToDataEntries(ripSessions){
+  const entries = [];
+  ripSessions.forEach(s => {
+    if(!s.reps) return;
+    s.reps.forEach(r=>{
+      const minutes = (r.time_s || 0) / 60;
+      const km = (r.distance || 0) / 1000;
+      entries.push({
+        date: s.date,
+        athlete: s.athlete,
+        km: km,
+        minutes: Math.round(minutes),
+        time: minutes/60,
+        rpe: r.rpe || s.rpe || 0,
+        hr: r.hr || 0,
+        type: 'Ripetute',
+        activityType: s.type || 'Ripetute',
+        note: `Rip: ${r.label||''} rec ${r.rest_s||0}s latt:${r.lactate||''}`
+      });
+    });
+  });
+  return entries;
+}
+
+/* explode ripetute into main table (each rep -> row) */
+function explodeRipToMainTable(){
+  const session = readRipSessionFromForm();
+  if(!session || !session.reps.length){ alert('Nessuna ripetuta definita'); return; }
+  const tb = document.querySelector('#dataTable tbody');
+  session.reps.forEach(r => {
+    const tr = document.createElement('tr');
+    const minutes = Math.round((r.time_s || 0) / 60);
+    tr.innerHTML = `
+      <td><input type="date" value="${session.date}"></td>
+      <td><select class="athlete-select"><option value="">-- Seleziona --</option>${athletes.map(a=>`<option value="${a}" ${a===session.athlete?'selected':''}>${a}</option>`).join('')}</select></td>
+      <td><input type="number" value="${((r.distance||0)/1000).toFixed(3)}"></td>
+      <td><input type="number" value="${minutes}"></td>
+      <td><input type="number" value="${r.rpe||0}"></td>
+      <td><input type="number" value="${r.hr||0}"></td>
+      <td><select class="sport-select">${sports.map(s=>`<option value="${s}">${s}</option>`).join('')}</select></td>
+      <td><select class="activity-type-select"><option value="">-- Tipo --</option><option value="Ripetute" selected>Ripetute</option></select></td>
+      <td><input type="text" value="Rip: ${r.label||''} | rec ${r.rest_s||0}s | latt:${r.lactate||''}"></td>
+      <td><button onclick="deleteRow(this)" style="padding:4px 8px;font-size:0.75rem;background:#ef4444;">🗑️</button></td>
+    `;
+    tb.insertBefore(tr, tb.firstChild);
+  });
+  updateTableFilters();
+  sortTableByDate(false);
+  updateCharts();
+  alert('Sessione esplosa in dati storici (ogni ripetuta è stata aggiunta come riga).');
+}
+
+/* import/export ripetute */
+function saveRipSessionsToFile(){
+  const b = new Blob([JSON.stringify(ripetuteSessions,null,2)], { type:'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(b);
+  a.download = 'ripetute_sessions.json';
+  a.click();
+}
+
+function loadRipSessionsFromFile(){
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = (e) => {
+    const f = e.target.files[0];
+    const r = new FileReader();
+    r.onload = ev => {
+      try{
+        const d = JSON.parse(ev.target.result);
+        // usa la funzione robusta che già distingue ripetute/tabella
+        if(Array.isArray(d)) {
+          popolaTabellaDaJSON(d);
+        } else if(d && typeof d === 'object') {
+          // prova a trovare array all'interno
+          if(Array.isArray(d.sessions)) popolaTabellaDaJSON(d.sessions);
+          else if(Array.isArray(d.data)) popolaTabellaDaJSON(d.data);
+          else if(Array.isArray(d.activities)) popolaTabellaDaJSON(d.activities);
+          else popolaTabellaDaJSON([d]);
+        } else {
+          alert('Formato file non riconosciuto.');
+        }
+      }catch(err){
+        console.warn('loadRipSessionsFromFile JSON error', err);
+        alert('JSON non valido');
+      }
+    };
+    r.readAsText(f);
+  };
+  input.click();
+}
+
+/* -----------------------------
+   TABLE DATA READ / WRITE
+   ----------------------------- */
+function getDataRaw(){
   return Array.from(document.querySelectorAll('#dataTable tbody tr')).map(r=>{
     const inputs=r.querySelectorAll('input');
     const selects=r.querySelectorAll('select');
-    return{
-      date:inputs[0].value,
-      athlete:selects[0].value,
-      km:+inputs[1].value||0,
-      time:(+inputs[2].value||0)/60,
-      rpe:+inputs[3].value||0,
-      hr:+inputs[4].value||0,
-      type:selects[1].value,
-      activityType:selects[2].value,
-      note:inputs[5].value
+    const minutes = +inputs[2]?.value || 0;
+    return {
+      date: inputs[0]?.value || '',
+      athlete: selects[0] ? selects[0].value : '',
+      km: +inputs[1]?.value || 0,
+      minutes: minutes,
+      time: (minutes) / 60,
+      rpe: +inputs[3]?.value || 0,
+      hr: +inputs[4]?.value || 0,
+      type: selects[1] ? selects[1].value : '',
+      activityType: selects[2] ? selects[2].value : '',
+      note: inputs[5] ? inputs[5].value : ''
     };
   }).filter(d=>d.date && d.athlete);
 }
 
-function aggiornaFiltroAtleti(data,acwr={}){
-  const sel=document.getElementById('athleteFilter');
-  const val=sel.value;
-  const nomi=[...new Set(data.map(d=>d.athlete))].filter(Boolean);
-  sel.innerHTML='<option value="all">Tutti</option>';
-  nomi.forEach(n=>{
-    const o=document.createElement('option');
-    o.value=n; o.textContent=n;
-    if(acwr[n]>1.5){o.classList.add('critical-athlete');}
-    sel.appendChild(o);
+function getData(){
+  const tableData = getDataRaw();
+  const ripConverted = convertRipetuteToDataEntries(ripetuteSessions);
+  return tableData.concat(ripConverted);
+}
+
+/* merge athletes found in imported arrays */
+function mergeAthletesFromArray(arr){
+  if(!Array.isArray(arr)) return;
+  const found = new Set();
+  arr.forEach(item=>{
+    if(!item) return;
+    if(typeof item.athlete === 'string' && item.athlete.trim()) found.add(item.athlete.trim());
+    if(Array.isArray(item.reps) && typeof item.athlete === 'string' && item.athlete.trim()){
+      found.add(item.athlete.trim());
+    }
+    if(Array.isArray(item.athletes)){
+      item.athletes.forEach(a=> { if(a && typeof a === 'string') found.add(a.trim()); });
+    }
   });
-  if(nomi.includes(val)) sel.value=val;
-  
-  document.getElementById('trendAthlete1').innerHTML=nomi.map((n,i)=>`<option value="${n}" ${i===0?'selected':''}>${n}</option>`).join('');
-  document.getElementById('trendAthlete2').innerHTML=nomi.map((n,i)=>`<option value="${n}" ${i===1?'selected':''}>${n}</option>`).join('');
-  document.getElementById('predictionAthlete').innerHTML=nomi.map((n,i)=>`<option value="${n}" ${i===0?'selected':''}>${n}</option>`).join('');
+  let added = false;
+  found.forEach(name=>{
+    if(name && !athletes.includes(name)){
+      athletes.push(name);
+      added = true;
+    }
+  });
+  if(added){
+    saveAthletes();
+    updateAthletesUI();
+    updateTableFilters();
+    const ripSel = $id('ripAthlete');
+    if(ripSel) ripSel.innerHTML = athletes.map(a=>`<option value="${a}">${a}</option>`).join('');
+    const ta1=$id('trendAthlete1'), ta2=$id('trendAthlete2'), pa=$id('predictionAthlete');
+    if(ta1) ta1.innerHTML=athletes.map((n,i)=>`<option value="${n}" ${i===0?'selected':''}>${n}</option>`).join('');
+    if(ta2) ta2.innerHTML=athletes.map((n,i)=>`<option value="${n}" ${i===1?'selected':''}>${n}</option>`).join('');
+    if(pa) pa.innerHTML=athletes.map((n,i)=>`<option value="${n}" ${i===0?'selected':''}>${n}</option>`).join('');
+  }
+}
+
+/* -----------------------------
+   IMPORT / EXPORT (table JSON)
+   ----------------------------- */
+// Robust import: separa sessioni "ripetute" (oggetti con .reps[]) dalle righe tabella
+function popolaTabellaDaJSON(d){
+  if(!Array.isArray(d)){ alert('Formato JSON non valido: ci aspettiamo un array.'); return; }
+
+  // Normalize and detect types
+  const ripSessions = [];
+  const tableRows = [];
+  for(const item of d){
+    if(!item || typeof item !== 'object') continue;
+
+    // Heuristics for ripetute: presence of reps array OR reps-like entries
+    if(Array.isArray(item.reps) && item.reps.length > 0){
+      ripSessions.push(item);
+      continue;
+    }
+
+    // Some exports store reps under different keys or objects with nested reps
+    if(Array.isArray(item.sessions) && item.sessions.some(s=>s && Array.isArray(s.reps))){
+      // flatten sessions that contain reps
+      item.sessions.forEach(s => {
+        if(Array.isArray(s.reps)) ripSessions.push(Object.assign({}, s, { date: s.date || item.date || '', athlete: s.athlete || item.athlete || '' }));
+      });
+      continue;
+    }
+
+    // Heuristics for table row: presence of km / minutes / time / distance
+    if(('km' in item) || ('minutes' in item) || ('time' in item) || ('distance' in item) || ('rpe' in item) || ('hr' in item)){
+      tableRows.push(item);
+      continue;
+    }
+
+    // Fallback: if item has athlete + date and no reps -> treat as empty table row (user likely exported rows)
+    if(typeof item.athlete === 'string' && item.athlete.trim() && (item.date || item.day || item.datetime)){
+      tableRows.push(item);
+      continue;
+    }
+
+    // Otherwise ignore (or you can push into tableRows for manual review)
+  }
+
+  // Merge detected athletes from both sources
+  mergeAthletesFromArray(d);
+
+  // If there are rip sessions, add them to ripetuteSessions (preserve existing)
+  if(ripSessions.length){
+    // Normalize minimal fields and ensure id
+    const normalizedRip = ripSessions.map(s => {
+      const copy = Object.assign({}, s);
+      if(!copy.date && copy.day) copy.date = copy.day;
+      if(!copy.date) copy.date = (new Date()).toISOString().slice(0,10);
+      if(!copy.athlete) copy.athlete = copy.athletes && copy.athletes[0] ? copy.athletes[0] : (athletes[0]||'');
+      if(!Array.isArray(copy.reps)) copy.reps = [];
+      if(!copy.id) copy.id = 'imp_rip_'+Date.now()+'_'+Math.floor(Math.random()*10000);
+      return copy;
+    });
+    // Prepend to existing ripetuteSessions
+    ripetuteSessions = normalizedRip.concat(ripetuteSessions || []);
+    try{ localStorage.setItem('ripetuteSessions', JSON.stringify(ripetuteSessions)); }catch(e){ console.warn('save ripetuteSessions failed', e); }
+    renderRipSessionsList();
+  }
+
+  // If there are table rows, populate the data table
+  if(tableRows.length){
+    const tb = document.querySelector('#dataTable tbody');
+    if(tb) tb.innerHTML = '';
+    tableRows.forEach(x=>{
+      // Prefer x.km, fallback to distance -> km conversion
+      let kmVal = 0;
+      if(typeof x.km === 'number') kmVal = x.km;
+      else if(typeof x.distance === 'number') kmVal = (x.distance / 1000);
+      else if(x.distance && typeof x.distance === 'string' && !isNaN(Number(x.distance))) kmVal = Number(x.distance)/1000;
+
+      const minutesVal = (x.minutes !== undefined) ? x.minutes : (x.time ? Math.round(x.time * 60) : (x.min !== undefined ? x.min : ''));
+
+      const dateVal = x.date || x.day || x.datetime || '';
+
+      // ensure selects show current lists
+      const athleteOptions = athletes.map(a=>`<option value="${a}" ${a===x.athlete?'selected':''}>${a}</option>`).join('');
+      const sportOptions = sports.map(s=>`<option value="${s}" ${s===x.type?'selected':''}>${s}</option>`).join('');
+      const activityOptions = activityTypes.map(t=>`<option value="${t}" ${t===x.activityType?'selected':''}>${t}</option>`).join('');
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><input type="date" value="${dateVal}"></td>
+        <td><select class="athlete-select"><option value="">-- Seleziona --</option>${athleteOptions}</select></td>
+        <td><input type="number" value="${kmVal !== '' ? Number(kmVal).toFixed(3) : ''}"></td>
+        <td><input type="number" value="${minutesVal !== undefined ? minutesVal : ''}"></td>
+        <td><input type="number" value="${x.rpe || ''}"></td>
+        <td><input type="number" value="${x.hr || ''}"></td>
+        <td><select class="sport-select">${sportOptions}</select></td>
+        <td><select class="activity-type-select"><option value="">-- Tipo --</option>${activityOptions}</select></td>
+        <td><input type="text" value="${x.note || x.notes || ''}"></td>
+        <td><button onclick="deleteRow(this)" style="padding:4px 8px;font-size:0.75rem;background:#ef4444;">🗑️</button></td>
+      `;
+      tb.appendChild(tr);
+    });
+
+    // Refresh UI elements
+    updateTableFilters();
+    sortTableByDate(false);
+    updateCharts();
+  }
+
+  // If neither detected, try a simple fallback: treat everything as table rows
+  if(ripSessions.length === 0 && tableRows.length === 0 && d.length){
+    // attempt to import as rows to allow manual correction
+    const tb = document.querySelector('#dataTable tbody');
+    if(tb) tb.innerHTML = '';
+    d.forEach(x=>{
+      const dateVal = x.date || x.day || x.datetime || '';
+      const athleteVal = x.athlete || '';
+      const kmVal = x.km || (x.distance ? x.distance/1000 : '');
+      const minutesVal = x.minutes || (x.time ? Math.round(x.time*60) : '');
+      const athleteOptions = athletes.map(a=>`<option value="${a}" ${a===athleteVal?'selected':''}>${a}</option>`).join('');
+      const sportOptions = sports.map(s=>`<option value="${s}" ${s===x.type?'selected':''}>${s}</option>`).join('');
+      const activityOptions = activityTypes.map(t=>`<option value="${t}" ${t===x.activityType?'selected':''}>${t}</option>`).join('');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><input type="date" value="${dateVal}"></td>
+        <td><select class="athlete-select"><option value="">-- Seleziona --</option>${athleteOptions}</select></td>
+        <td><input type="number" value="${kmVal !== '' ? Number(kmVal).toFixed(3) : ''}"></td>
+        <td><input type="number" value="${minutesVal !== undefined ? minutesVal : ''}"></td>
+        <td><input type="number" value="${x.rpe || ''}"></td>
+        <td><input type="number" value="${x.hr || ''}"></td>
+        <td><select class="sport-select">${sportOptions}</select></td>
+        <td><select class="activity-type-select"><option value="">-- Tipo --</option>${activityOptions}</select></td>
+        <td><input type="text" value="${x.note || x.notes || ''}"></td>
+        <td><button onclick="deleteRow(this)" style="padding:4px 8px;font-size:0.75rem;background:#ef4444;">🗑️</button></td>
+      `;
+      tb.appendChild(tr);
+    });
+    updateTableFilters();
+    sortTableByDate(false);
+    updateCharts();
+  }
+}
+// Persistenza File Handle (IndexedDB) + verifica permessi
+// Funzioni: saveSavedHandle(handle), getSavedHandle(), removeSavedHandle(), verifyPermission(handle, write)
+
+(function(){
+  const DB_NAME = 'squadra5_filehandles';
+  const STORE_NAME = 'handles';
+  const STORE_KEY = 'lastOpened';
+
+  function openDB(){
+    return new Promise((resolve, reject) => {
+      const rq = indexedDB.open(DB_NAME, 1);
+      rq.onupgradeneeded = () => {
+        try { rq.result.createObjectStore(STORE_NAME); } catch(e){ /* ignore if exists */ }
+      };
+      rq.onsuccess = () => resolve(rq.result);
+      rq.onerror = (e) => reject(e);
+    });
+  }
+
+  async function saveSavedHandle(handle){
+    try{
+      const db = await openDB();
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
+      store.put(handle, STORE_KEY);
+      return await new Promise((res, rej) => {
+        tx.oncomplete = () => { db.close(); res(true); };
+        tx.onerror = (e) => { db.close(); rej(e); };
+      });
+    }catch(e){
+      console.warn('saveSavedHandle error', e);
+      return false;
+    }
+  }
+
+  async function getSavedHandle(){
+    try{
+      const db = await openDB();
+      const tx = db.transaction(STORE_NAME, 'readonly');
+      const store = tx.objectStore(STORE_NAME);
+      const req = store.get(STORE_KEY);
+      return await new Promise((res, rej) => {
+        req.onsuccess = () => { db.close(); res(req.result); };
+        req.onerror = (e) => { db.close(); rej(e); };
+      });
+    }catch(e){
+      console.warn('getSavedHandle error', e);
+      return null;
+    }
+  }
+
+  async function removeSavedHandle(){
+    try{
+      const db = await openDB();
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
+      store.delete(STORE_KEY);
+      return await new Promise((res, rej) => {
+        tx.oncomplete = () => { db.close(); res(true); };
+        tx.onerror = (e) => { db.close(); rej(e); };
+      });
+    }catch(e){
+      console.warn('removeSavedHandle error', e);
+      return false;
+    }
+  }
+
+  // verifyPermission: returns true if granted, else tries requestPermission
+  async function verifyPermission(handle, write = false){
+    if(!handle) return false;
+    // Not all environments implement these methods — guard
+    try{
+      const opts = { mode: write ? 'readwrite' : 'read' };
+      if (typeof handle.queryPermission === 'function') {
+        const q = await handle.queryPermission(opts);
+        if (q === 'granted') return true;
+      }
+      if (typeof handle.requestPermission === 'function') {
+        const r = await handle.requestPermission(opts);
+        return r === 'granted';
+      }
+      // If methods don't exist, assume ok (best-effort) — may fail later
+      return true;
+    }catch(e){
+      console.warn('verifyPermission error', e);
+      return false;
+    }
+  }
+
+  // Export helpers to global scope so your other functions can use them
+  window.__squadra5_filehandle = {
+    saveSavedHandle,
+    getSavedHandle,
+    removeSavedHandle,
+    verifyPermission
+  };
+})();
+// Simplified apriFileDiretto that uses the robust popolaTabellaDaJSON
+// apriFileDiretto: apre un file JSON, lo importa con popolaTabellaDaJSON e
+// salva l'handle su IndexedDB se disponibile (File System Access API).
+async function apriFileDiretto(){
+  try{
+    // Preferiamo File System Access se disponibile (consente salvataggio persistente)
+    if(window.showOpenFilePicker){
+      const [handle] = await window.showOpenFilePicker({
+        types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }],
+        excludeAcceptAllOption: false
+      });
+      if(!handle) return;
+
+      fileHandle = handle;
+
+      // Se disponibile, richiediamo/verifichiamo permessi e salviamo l'handle in IndexedDB
+      if(window.__squadra5_filehandle && typeof window.__squadra5_filehandle.verifyPermission === 'function'){
+        try{
+          const granted = await window.__squadra5_filehandle.verifyPermission(fileHandle, true);
+          if(granted && typeof window.__squadra5_filehandle.saveSavedHandle === 'function'){
+            await window.__squadra5_filehandle.saveSavedHandle(fileHandle);
+            console.log('File handle salvato in IndexedDB per ripristino dopo refresh.');
+          } else {
+            console.log('Permesso non concesso per salvataggio handle o saveSavedHandle non disponibile.');
+          }
+        }catch(e){
+          console.warn('Verifica/salvataggio handle fallita:', e);
+        }
+      }
+
+      // Leggi file e importa
+      const f = await fileHandle.getFile();
+      const text = await f.text();
+      let parsed;
+      try { parsed = JSON.parse(text); }
+      catch(err){ alert('JSON non valido'); console.error('parse error', err); return; }
+
+      // Se è un oggetto con array interni, proviamo a estrarre l'array più rilevante
+      if(Array.isArray(parsed)){
+        popolaTabellaDaJSON(parsed);
+      } else if(parsed && typeof parsed === 'object'){
+        if(Array.isArray(parsed.data)) popolaTabellaDaJSON(parsed.data);
+        else if(Array.isArray(parsed.sessions)) popolaTabellaDaJSON(parsed.sessions);
+        else if(Array.isArray(parsed.activities)) popolaTabellaDaJSON(parsed.activities);
+        else if(Array.isArray(parsed.items)) popolaTabellaDaJSON(parsed.items);
+        else popolaTabellaDaJSON([parsed]); // fallback: importa singolo oggetto come array
+      } else {
+        alert('Formato file non riconosciuto.');
+      }
+
+      alert('File importato correttamente.');
+      try{ updateCharts(); }catch(e){ /* ignore */ }
+
+      return;
+    }
+
+    // Fallback per browser senza File System Access API: usa input file
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,application/json';
+    input.onchange = (e) => {
+      const f = e.target.files && e.target.files[0];
+      if(!f) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        try{
+          const d = JSON.parse(ev.target.result);
+          if(Array.isArray(d)) popolaTabellaDaJSON(d);
+          else if(d && typeof d === 'object'){
+            if(Array.isArray(d.data)) popolaTabellaDaJSON(d.data);
+            else if(Array.isArray(d.sessions)) popolaTabellaDaJSON(d.sessions);
+            else if(Array.isArray(d.activities)) popolaTabellaDaJSON(d.activities);
+            else popolaTabellaDaJSON([d]);
+          } else {
+            alert('Formato file non riconosciuto.');
+          }
+          alert('File importato correttamente.');
+          try{ updateCharts(); }catch(e){ /* ignore */ }
+        }catch(err){
+          console.error('FileReader parse error', err);
+          alert('JSON non valido');
+        }
+      };
+      reader.readAsText(f);
+    };
+    input.click();
+  }catch(err){
+    console.warn('apriFileDiretto error', err);
+    alert('Errore apertura file (vedi console).');
+  }
+}
+
+
+
+/* -----------------------------
+   FILTRI ATLETI E ACWR
+   ----------------------------- */
+function aggiornaFiltroAtleti(data,acwr={}) {
+  const sel = $id('athleteFilter');
+  const val = sel ? sel.value : 'all';
+  const nomi = [...new Set((data||[]).map(d=>d.athlete))].filter(Boolean);
+  if(sel){
+    sel.innerHTML = '<option value="all">Tutti</option>';
+    nomi.forEach(n=>{
+      const o = document.createElement('option');
+      o.value = n; o.textContent = n;
+      if(acwr[n] > 1.5) o.classList.add('critical-athlete');
+      sel.appendChild(o);
+    });
+    if(nomi.includes(val)) sel.value = val;
+  }
+  const ta1=$id('trendAthlete1'), ta2=$id('trendAthlete2'), pa=$id('predictionAthlete');
+  if(ta1) ta1.innerHTML = nomi.map((n,i)=>`<option value="${n}" ${i===0?'selected':''}>${n}</option>`).join('');
+  if(ta2) ta2.innerHTML = nomi.map((n,i)=>`<option value="${n}" ${i===1?'selected':''}>${n}</option>`).join('');
+  if(pa) pa.innerHTML = nomi.map((n,i)=>`<option value="${n}" ${i===0?'selected':''}>${n}</option>`).join('');
 }
 
 function computeACWR(data){
-  const acwr={},now=new Date();
-  const acuteStart=new Date(now-7*86400000),chronicStart=new Date(now-28*86400000);
-  [...new Set(data.map(d=>d.athlete))].forEach(a=>{
-    const da=data.filter(x=>x.athlete===a);
-    const acute=da.filter(x=>new Date(x.date)>=acuteStart).reduce((s,v)=>s+v.rpe*v.time,0);
-    const chronic=da.filter(x=>new Date(x.date)>=chronicStart).reduce((s,v)=>s+v.rpe*v.time,0)/4;
-    acwr[a]=chronic?acute/chronic:0;
+  const acwr = {}, now = new Date();
+  const acuteStart = new Date(now - 7*86400000), chronicStart = new Date(now - 28*86400000);
+  [...new Set((data||[]).map(d=>d.athlete))].forEach(a=>{
+    const da = (data||[]).filter(x=>x.athlete===a);
+    const acute = da.filter(x=> new Date(x.date) >= acuteStart).reduce((s,v)=>s + (v.rpe||0)*(v.time||0), 0);
+    const chronic = da.filter(x=> new Date(x.date) >= chronicStart).reduce((s,v)=>s + (v.rpe||0)*(v.time||0), 0)/4;
+    acwr[a] = chronic ? (acute/chronic) : 0;
   });
   return acwr;
 }
 
-function updateKPI(data,acwr){
-  const now=new Date();const week=(d)=>Math.floor((now-new Date(d))/(7*86400000));
-  let kmC=0,kmP=0,loadC=0,loadP=0,trC=0,trP=0,loadA={};
-  data.forEach(d=>{const w=week(d.date),l=d.rpe*d.time,tr=d.hr*d.time*0.1;
-    if(!loadA[d.athlete])loadA[d.athlete]=0;loadA[d.athlete]+=l;
-    if(w<1){kmC+=d.km;loadC+=l;trC+=tr;}else if(w<2){kmP+=d.km;loadP+=l;trP+=tr;}});
-  const delta=(a,b)=>b?`${((a-b)/b*100).toFixed(1)}%`:"";
-  document.getElementById('kpiKmWeek').textContent=kmC.toFixed(1);
-  document.getElementById('kpiLoadWeek').textContent=loadC.toFixed(0);
-  document.getElementById('kpiTrimpWeek').textContent=trC.toFixed(0);
-  document.getElementById('kpiKmWeekDelta').textContent=delta(kmC,kmP);
-  document.getElementById('kpiLoadWeekDelta').textContent=delta(loadC,loadP);
-  document.getElementById('kpiTrimpWeekDelta').textContent=delta(trC,trP);
-  const top=Object.entries(loadA).sort((a,b)=>b[1]-a[1])[0]||["-",0];
-  document.getElementById('kpiTopAthlete').textContent=top[0];
-  document.getElementById('kpiTopAthleteLoad').textContent=`${top[1].toFixed(0)}`;
-  const risk=Object.values(acwr).filter(v=>v>1.5).length||0;
-  const perc=(risk/(Object.keys(acwr).length||1)*100).toFixed(0);
-  const riskCard=document.getElementById('kpiRiskCard');
-  riskCard.style.border=(risk>0?'3px solid #ef4444':'3px solid #10b981');
-  document.getElementById('kpiRiskPercent').textContent=perc+"%";
-  document.getElementById('kpiRiskInfo').textContent=risk>0?`${risk} ⚠️`:'✅ Ok';
-}
-
+/* -----------------------------
+   Chart helpers
+   ----------------------------- */
+// replace existing createChart with this version
 function createChart(id,type,labels,sets,opt={}){
-  if(charts[id])charts[id].destroy();
-  const isDark=document.body.classList.contains('dark-mode');
-  charts[id]=new Chart(document.getElementById(id),{type,data:{labels,datasets:sets},
-  options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{labels:{color:isDark?'#cbd5e1':'#1e3c72',font:{size:10,weight:'bold'}}}},
-  scales:{x:{ticks:{color:isDark?'#cbd5e1':'#334155',font:{size:9,weight:'600'}}},y:{ticks:{color:isDark?'#cbd5e1':'#334155',font:{size:9,weight:'600'}}}},...opt}});
+  try{
+    if(charts[id]) charts[id].destroy();
+    const canvas = $id(id);
+    if(!canvas) return;
+    // get context with willReadFrequently and preserveDrawingBuffer so html2canvas can read pixels
+    const ctx = canvas.getContext('2d', { willReadFrequently: true, preserveDrawingBuffer: true });
+    const isDark = document.body.classList.contains('dark-mode');
+    charts[id] = new Chart(ctx, {
+      type,
+      data: { labels, datasets: sets },
+      options: Object.assign({
+        responsive:true,
+        maintainAspectRatio:true,
+        plugins:{ legend:{ labels:{ color:isDark?'#cbd5e1':'#1e3c72', font:{ size:10, weight:'bold' } } } },
+        scales:{ x:{ ticks:{ color:isDark?'#cbd5e1':'#334155' } }, y:{ ticks:{ color:isDark?'#cbd5e1':'#334155' } } }
+      }, opt)
+    });
+  }catch(e){ console.error('createChart', e); }
 }
 
-function createBoxPlot(id, labels, data) {
-  if (charts[id]) charts[id].destroy();
-  
-  const isDark = document.body.classList.contains('dark-mode');
-  const ctx = document.getElementById(id).getContext('2d');
-  
-  const boxWidth = Math.max(40, Math.min(80, 300 / labels.length));
-  
-  const datasets = [
-    {
-      label: 'Range (Min-Max)',
-      data: data.map(d => [d.min, d.max]),
-      backgroundColor: 'rgba(102, 126, 234, 0.2)',
-      borderColor: 'rgba(102, 126, 234, 1)',
-      borderWidth: 3,
-      borderSkipped: false,
-      barThickness: boxWidth * 0.15,
-    },
-    {
-      label: 'IQR (Q1-Q3)',
-      data: data.map(d => [d.q1, d.q3]),
-      backgroundColor: colors.map(c => c + 'AA'),
-      borderColor: colors,
-      borderWidth: 4,
-      borderSkipped: false,
-      barThickness: boxWidth,
+/* -----------------------------
+   Update charts (main)
+   - kmChart: horizontal totals per athlete
+   - speedChart: radar (avg,max,median,q3)
+   - weeklyChart: rendered via renderWeeklyChart (horizontal grouped bars)
+   ----------------------------- */
+   function renderWeeklyChart(byA, opts = {}) {
+  const chartId = opts.chartId || 'weeklyChart';
+  const localColors = opts.colors || (typeof colors !== 'undefined' ? colors : ['#06b6d4']);
+  const indexAxis = opts.indexAxis || 'y';
+
+  // defensive
+  if (!byA || typeof byA !== 'object') {
+    if (window.charts && window.charts[chartId]) {
+      try { window.charts[chartId].destroy(); } catch (e) { /* ignore */ }
+      window.charts[chartId] = null;
     }
-  ];
-  
-  charts[id] = new Chart(ctx, {
+    return null;
+  }
+
+  // build per-week sums
+  const weekMap = {};
+  const perAthWeek = {};
+  Object.keys(byA).forEach(ath => {
+    perAthWeek[ath] = {};
+    const sessions = Array.isArray(byA[ath]) ? byA[ath] : [];
+    sessions.forEach(s => {
+      if (!s || !s.date) return;
+      const wk = (typeof getWeekStartKey === 'function') ? getWeekStartKey(s.date) : (s.date || '').slice(0,10);
+      perAthWeek[ath][wk] = (perAthWeek[ath][wk] || 0) + (Number(s.km) || 0);
+      weekMap[wk] = true;
+    });
+  });
+
+  const weekKeys = Object.keys(weekMap).sort((a,b) => a.localeCompare(b));
+  const weekLabels = weekKeys.map(k => `set. ${k}`);
+  const athletesList = Object.keys(perAthWeek);
+
+  const datasets = athletesList.map((ath, i) => {
+    const data = weekKeys.map(wk => perAthWeek[ath][wk] || 0);
+    const color = localColors[i % localColors.length];
+    return {
+      label: ath,
+      data,
+      backgroundColor: color,
+      borderColor: color,
+      borderWidth: 1
+    };
+  });
+
+  if (!window.charts) window.charts = {};
+  if (window.charts[chartId]) {
+    try { window.charts[chartId].destroy(); } catch (e) { console.warn('destroy chart error', e); }
+    window.charts[chartId] = null;
+  }
+
+  const canvas = document.getElementById(chartId);
+  if (!canvas) {
+    console.warn('renderWeeklyChart: canvas not found with id', chartId);
+    return null;
+  }
+
+  const ctx = canvas.getContext('2d', { willReadFrequently: true, preserveDrawingBuffer: true });
+  window.charts[chartId] = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: labels,
-      datasets: datasets
+      labels: weekLabels.length ? weekLabels : ['-'],
+      datasets: weekLabels.length ? datasets : [{ label: 'Km', data: [0], backgroundColor: localColors[0] }]
     },
     options: {
-      indexAxis: 'x',
+      indexAxis,
       responsive: true,
-      maintainAspectRatio: true,
+      maintainAspectRatio: false,
       plugins: {
-        legend: {
-          labels: {
-            color: isDark ? '#cbd5e1' : '#1e3c72',
-            font: { size: 11, weight: 'bold' }
-          }
-        },
+        legend: { labels: { color: document.body.classList.contains('dark-mode') ? '#cbd5e1' : '#1e3c72' } },
         tooltip: {
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          titleFont: { size: 13, weight: 'bold' },
-          bodyFont: { size: 12 },
-          padding: 12,
           callbacks: {
-            label: function(context) {
-              const d = data[context.dataIndex];
-              return [
-                `Min: ${d.min.toFixed(2)} km/h`,
-                `Q1: ${d.q1.toFixed(2)} km/h`,
-                `Mediana: ${d.median.toFixed(2)} km/h`,
-                `Q3: ${d.q3.toFixed(2)} km/h`,
-                `Max: ${d.max.toFixed(2)} km/h`
-              ];
+            label: function(ctx) {
+              const v = ctx.parsed.x !== undefined ? ctx.parsed.x : ctx.parsed.y;
+              return `${ctx.dataset.label}: ${Number(v).toFixed(2)} km`;
             }
           }
         }
       },
       scales: {
-        x: {
-          ticks: {
-            color: isDark ? '#cbd5e1' : '#334155',
-            font: { size: 10, weight: '700' }
-          },
-          grid: {
-            display: false
-          }
-        },
-        y: {
-          min: 5,
-          title: {
-            display: true,
-            text: 'Velocità (km/h)',
-            color: isDark ? '#cbd5e1' : '#1e3c72',
-            font: { size: 13, weight: 'bold' }
-          },
-          ticks: {
-            color: isDark ? '#cbd5e1' : '#334155',
-            font: { size: 10, weight: '600' },
-            stepSize: 1
-          },
-          grid: {
-            color: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
-          }
-        }
+        x: { ticks: { color: document.body.classList.contains('dark-mode') ? '#cbd5e1' : '#334155' } },
+        y: { ticks: { color: document.body.classList.contains('dark-mode') ? '#cbd5e1' : '#334155' } }
       }
     }
   });
-  
-  setTimeout(() => {
-    const chart = charts[id];
-    const ctx = chart.ctx;
-    
-    labels.forEach((label, i) => {
-      const meta = chart.getDatasetMeta(1);
-      const bar = meta.data[i];
-      
-      if (bar) {
-        const x = bar.x;
-        const yMin = chart.scales.y.getPixelForValue(data[i].min);
-        const yMax = chart.scales.y.getPixelForValue(data[i].max);
-        const yMedian = chart.scales.y.getPixelForValue(data[i].median);
-        const yQ1 = chart.scales.y.getPixelForValue(data[i].q1);
-        const yQ3 = chart.scales.y.getPixelForValue(data[i].q3);
-        
-        const halfWidth = boxWidth / 2;
-        
-        ctx.save();
-        ctx.strokeStyle = '#ef4444';
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.moveTo(x - halfWidth, yMedian);
-        ctx.lineTo(x + halfWidth, yMedian);
-        ctx.stroke();
-        ctx.restore();
-        
-        ctx.save();
-        ctx.strokeStyle = isDark ? '#94a3b8' : '#475569';
-        ctx.lineWidth = 3;
-        ctx.setLineDash([6, 4]);
-        
-        ctx.beginPath();
-        ctx.moveTo(x, yMin);
-        ctx.lineTo(x, yQ1);
-        ctx.stroke();
-        
-        ctx.beginPath();
-        ctx.moveTo(x, yQ3);
-        ctx.lineTo(x, yMax);
-        ctx.stroke();
-        
-        ctx.restore();
-        
-        ctx.save();
-        ctx.strokeStyle = isDark ? '#94a3b8' : '#475569';
-        ctx.lineWidth = 3;
-        ctx.setLineDash([]);
-        
-        const capWidth = halfWidth * 0.8;
-        
-        ctx.beginPath();
-        ctx.moveTo(x - capWidth, yMin);
-        ctx.lineTo(x + capWidth, yMin);
-        ctx.stroke();
-        
-        ctx.beginPath();
-        ctx.moveTo(x - capWidth, yMax);
-        ctx.lineTo(x + capWidth, yMax);
-        ctx.stroke();
-        
-        ctx.restore();
+
+  return window.charts[chartId];
+}
+function updateKPI(data, acwr){
+  const now=new Date();
+  const week=(d)=>Math.floor((now-new Date(d))/(7*86400000));
+  let kmC=0, kmP=0, loadC=0, loadP=0, trC=0, trP=0;
+  const loadA={};
+  (data||[]).forEach(d=>{
+    const w = week(d.date);
+    const l = (d.rpe||0)*(d.time||0);
+    const tr = (d.hr||0)*(d.time||0)*0.1;
+    loadA[d.athlete] = (loadA[d.athlete]||0) + l;
+    if(w < 1){ kmC += d.km||0; loadC += l; trC += tr; }
+    else if(w < 2){ kmP += d.km||0; loadP += l; trP += tr; }
+  });
+  const deltaText = (a,b) => (b ? `${((a-b)/b*100).toFixed(1)}%` : '');
+  if($id('kpiKmWeek')) $id('kpiKmWeek').textContent = (kmC).toFixed(1);
+  if($id('kpiLoadWeek')) $id('kpiLoadWeek').textContent = Math.round(loadC);
+  if($id('kpiTrimpWeek')) $id('kpiTrimpWeek').textContent = Math.round(trC);
+  if($id('kpiKmWeekDelta')) $id('kpiKmWeekDelta').textContent = deltaText(kmC, kmP);
+  if($id('kpiLoadWeekDelta')) $id('kpiLoadWeekDelta').textContent = deltaText(loadC, loadP);
+  if($id('kpiTrimpWeekDelta')) $id('kpiTrimpWeekDelta').textContent = deltaText(trC, trP);
+  const top = Object.entries(loadA).sort((a,b)=>b[1]-a[1])[0] || ["-",0];
+  if($id('kpiTopAthlete')) $id('kpiTopAthlete').textContent = top[0];
+  if($id('kpiTopAthleteLoad')) $id('kpiTopAthleteLoad').textContent = `${top[1].toFixed(0)}`;
+  const risky = Object.values(acwr || {}).filter(v=>v>1.5).length || 0;
+  const perc = (risky / (Object.keys(acwr || {}).length || 1) * 100).toFixed(0);
+  const riskCard = $id('kpiRiskCard');
+  if(riskCard) riskCard.style.border = (risky>0 ? '3px solid #ef4444' : '3px solid #10b981');
+  if($id('kpiRiskPercent')) $id('kpiRiskPercent').textContent = perc + "%";
+  if($id('kpiRiskInfo')) $id('kpiRiskInfo').textContent = risky>0 ? `${risky} ⚠️` : '✅ Ok';
+}
+function updateCharts(){
+  const combinedData = getData();
+  const fA = $id('athleteFilter') ? $id('athleteFilter').value : 'all';
+  const t = $id('typeFilter') ? $id('typeFilter').value : 'all';
+  const da = $id('dateFrom') ? $id('dateFrom').value : '';
+  const a = $id('dateTo') ? $id('dateTo').value : '';
+
+  const filt = combinedData.filter(d =>
+    (fA === 'all' || d.athlete === fA) &&
+    (t === 'all' || d.type === t || d.activityType === t) &&
+    (!da || d.date >= da) &&
+    (!a || d.date <= a)
+  );
+
+  const byA = {};
+  filt.forEach(d => { if(!byA[d.athlete]) byA[d.athlete] = []; byA[d.athlete].push(d); });
+
+  const acwr = computeACWR(combinedData);
+  aggiornaFiltroAtleti(combinedData, acwr);
+
+  if(filt.length === 0){
+    Object.keys(charts).forEach(k=>{ if(charts[k]){ charts[k].destroy(); charts[k] = null; }});
+    $id('kpiKmWeek').textContent='0';
+    $id('kpiLoadWeek').textContent='0';
+    $id('kpiTrimpWeek').textContent='0';
+    $id('kpiKmWeekDelta').textContent='';
+    $id('kpiLoadWeekDelta').textContent='';
+    $id('kpiTrimpWeekDelta').textContent='';
+    $id('kpiTopAthlete').textContent='-';
+    $id('kpiTopAthleteLoad').textContent='';
+    $id('kpiRiskPercent').textContent='0%';
+    $id('kpiRiskInfo').textContent='';
+    return;
+  }
+
+  // Km cumulativi
+  const athletesForKm = Object.keys(byA);
+  const totalKmPerAthlete = athletesForKm.map(ath => {
+    return byA[ath].reduce((sum, s) => sum + (s.km || 0), 0);
+  });
+
+  if (charts['kmChart']) { charts['kmChart'].destroy(); charts['kmChart'] = null; }
+
+  if (athletesForKm.length) {
+    const ctxKm = document.getElementById('kmChart').getContext('2d', { willReadFrequently: true, preserveDrawingBuffer: true });
+    charts['kmChart'] = new Chart(ctxKm, {
+      type: 'bar',
+      data: {
+        labels: athletesForKm,
+        datasets: [{
+          label: 'Km cumulativi totali',
+          data: totalKmPerAthlete,
+          backgroundColor: athletesForKm.map((_,i) => colors[i % colors.length]),
+          borderColor: athletesForKm.map((_,i) => colors[i % colors.length]),
+          borderWidth: 1
+        }]
+      },
+      options: {
+        indexAxis: 'y', // horizontal bars
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const v = context.parsed.x !== undefined ? context.parsed.x : context.parsed.y;
+                return `${context.dataset.label}: ${Number(v).toFixed(2)} km`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            title: { display: true, text: 'Km cumulativi', color: document.body.classList.contains('dark-mode') ? '#cbd5e1' : '#1e3c72' },
+            ticks: { color: document.body.classList.contains('dark-mode') ? '#cbd5e1' : '#334155' }
+          },
+          y: {
+            ticks: { color: document.body.classList.contains('dark-mode') ? '#cbd5e1' : '#334155' }
+          }
+        }
       }
     });
-  }, 100);
-}
+  }
 
-function updateCharts(){
-  const data=getData();
-  const fA=document.getElementById('athleteFilter').value,t=document.getElementById('typeFilter').value,da=document.getElementById('dateFrom').value,a=document.getElementById('dateTo').value;
-  const filt=data.filter(d=>(fA==='all'||d.athlete===fA)&&(t==='all'||d.type===t)&&(!da||d.date>=da)&&(!a||d.date<=a));
-  const byA={};filt.forEach(d=>(byA[d.athlete]=byA[d.athlete]||[]).push(d));
-  const acwr=computeACWR(filt);
-  aggiornaFiltroAtleti(data,acwr);
-  updateKPI(filt,acwr);
-  const labels=[...new Set(filt.map(d=>d.date))].sort();
-  createChart('kmChart','line',labels,Object.keys(byA).map((a,i)=>{let c=0;return{label:a,data:byA[a].sort((x,y)=>x.date.localeCompare(y.date)).map(x=>c+=x.km),borderColor:colors[i%colors.length],fill:false,borderWidth:3,tension:0.3};}));
-  
-  const boxPlotData = Object.keys(byA).map(a => {
-    const speeds = byA[a].map(v => v.time > 0 ? v.km / v.time : 0).filter(s => s > 0).sort((x, y) => x - y);
-    if (speeds.length === 0) return { min: 0, q1: 0, median: 0, q3: 0, max: 0 };
-    
-    const min = speeds[0];
+  // Speed radar
+  const speedMetricsLabels = ['Vel. media', 'Vel. max', 'Mediana', 'Q3'];
+  const speedStats = Object.keys(byA).map(aName => {
+    const speeds = byA[aName]
+      .map(v => v.time > 0 ? v.km / v.time : 0)
+      .filter(s => s > 0)
+      .sort((x, y) => x - y);
+
+    if (speeds.length === 0) return { avg: 0, max: 0, median: 0, q3: 0 };
+
+    const sum = speeds.reduce((s,v)=>s+v,0);
+    const avg = sum / speeds.length;
     const max = speeds[speeds.length - 1];
     const median = speeds[Math.floor(speeds.length / 2)];
-    const q1 = speeds[Math.floor(speeds.length / 4)];
     const q3 = speeds[Math.floor(speeds.length * 3 / 4)];
-    
-    return { min, q1, median, q3, max };
+    return { avg, max, median, q3 };
   });
-  
-  createBoxPlot('speedChart', Object.keys(byA), boxPlotData);
-  
-  createChart('loadChart','bar',Object.keys(byA),[{label:'Carico',data:Object.keys(byA).map(a=>byA[a].reduce((s,v)=>s+v.rpe*v.time,0)),backgroundColor:'#f59e0b'}]);
-  createChart('trimpChart','bar',Object.keys(byA),[{label:'TRIMP',data:Object.keys(byA).map(a=>byA[a].reduce((s,v)=>s+v.hr*v.time*0.1,0)),backgroundColor:'#10b981'}]);
-  createChart('acwrChart','bar',Object.keys(acwr),[{label:'ACWR',data:Object.values(acwr),backgroundColor:Object.values(acwr).map(v=>v>1.5?'#ef4444':v>1.3?'#f59e0b':'#10b981')}]);
-  const weekly={};filt.forEach(d=>{const k=d.date.slice(0,7);weekly[k]=(weekly[k]||0)+d.km;});
-  createChart('weeklyChart','bar',Object.keys(weekly),[{label:'Km',data:Object.values(weekly),backgroundColor:'#06b6d4'}]);
+
+  if (charts['speedChart']) { charts['speedChart'].destroy(); charts['speedChart'] = null; }
+
+  const speedLabels = Object.keys(byA);
+  if (speedLabels.length) {
+    const allSpeedVals = speedStats.flatMap(s => [s.avg, s.max, s.median, s.q3]).filter(v => isFinite(v));
+    let radarMax = allSpeedVals.length ? Math.max(...allSpeedVals) : 5;
+    const radarPadding = Math.max(0.5, radarMax * 0.1);
+    radarMax = radarMax + radarPadding;
+
+    const ctx = document.getElementById('speedChart').getContext('2d', { willReadFrequently: true, preserveDrawingBuffer: true });
+    charts['speedChart'] = new Chart(ctx, {
+      type: 'radar',
+      data: {
+        labels: speedMetricsLabels,
+        datasets: speedStats.map((s, i) => ({
+          label: speedLabels[i],
+          data: [ Number(s.avg.toFixed(2)), Number(s.max.toFixed(2)), Number(s.median.toFixed(2)), Number(s.q3.toFixed(2)) ],
+          borderColor: colors[i % colors.length],
+          backgroundColor: colors[i % colors.length] + '44',
+          pointBackgroundColor: colors[i % colors.length],
+          fill: true,
+          tension: 0.3,
+          borderWidth: 2
+        }))
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { color: document.body.classList.contains('dark-mode') ? '#cbd5e1' : '#1e3c72' } },
+          tooltip: { enabled: true }
+        },
+        scales: {
+          r: {
+            suggestedMin: 0,
+            suggestedMax: radarMax,
+            ticks: { color: document.body.classList.contains('dark-mode') ? '#cbd5e1' : '#334155' },
+            pointLabels: { color: document.body.classList.contains('dark-mode') ? '#cbd5e1' : '#334155' }
+          }
+        }
+      }
+    });
+  }
+
+  // Weekly chart via renderWeeklyChart (defined above)
+  renderWeeklyChart(byA, { chartId: 'weeklyChart', colors, indexAxis: 'y' });
+
+  // Carico e TRIMP
+  const athletesList = Object.keys(byA);
+  const loadData = athletesList.map(aName => byA[aName].reduce((s, v) => s + (v.rpe||0) * (v.time||0), 0));
+  const trimpData = athletesList.map(aName => byA[aName].reduce((s, v) => s + (v.hr||0) * (v.time||0) * 0.1, 0));
+  createChart('loadChart','bar',athletesList,[{ label:'Carico', data:loadData, backgroundColor:'#f59e0b' }]);
+  createChart('trimpChart','bar',athletesList,[{ label:'TRIMP', data:trimpData, backgroundColor:'#10b981' }]);
+
+  // ACWR
+  createChart('acwrChart','bar', Object.keys(acwr), [{ label: 'ACWR', data: Object.values(acwr), backgroundColor: Object.values(acwr).map(v => v>1.5? '#ef4444' : v>1.3 ? '#f59e0b' : '#10b981') }]);
+
+  // KPI
+  updateKPI(filt, acwr);
 }
 
+/* -----------------------------
+   TABLE: add/delete/sort/filter
+   ----------------------------- */
 function addRow(){
   const tb=document.querySelector('#dataTable tbody');
   const tr=document.createElement('tr');
@@ -1899,318 +2866,331 @@ function addRow(){
   `;
   tb.insertBefore(tr, tb.firstChild);
 }
-
-function deleteRow(btn){
-  if(confirm('Vuoi eliminare questa sessione?')){
-    btn.closest('tr').remove();
-  }
-}
+function deleteRow(btn){ if(confirm('Vuoi eliminare questa sessione?')) btn.closest('tr').remove(); }
 
 function sortTableByDate(ascending = false){
   const tbody = document.querySelector('#dataTable tbody');
   const rows = Array.from(tbody.querySelectorAll('tr'));
-  
   rows.sort((a, b) => {
     const dateA = a.querySelector('input[type="date"]').value;
     const dateB = b.querySelector('input[type="date"]').value;
-    
     if(!dateA) return 1;
     if(!dateB) return -1;
-    
-    if(ascending) {
-      return dateA.localeCompare(dateB);
-    } else {
-      return dateB.localeCompare(dateA);
-    }
+    if(ascending) return dateA.localeCompare(dateB);
+    return dateB.localeCompare(dateA);
   });
-  
   rows.forEach(row => tbody.appendChild(row));
 }
 
 function applyTableFilter(){
-  const athlete = document.getElementById('tableFilterAthlete').value;
-  const sport = document.getElementById('tableFilterSport').value;
-  const activityType = document.getElementById('tableFilterActivityType').value;
-  const dateFrom = document.getElementById('tableFilterFrom').value;
-  const dateTo = document.getElementById('tableFilterTo').value;
-  
+  const athlete = $id('tableFilterAthlete').value;
+  const sport = $id('tableFilterSport').value;
+  const activityType = $id('tableFilterActivityType').value;
+  const dateFrom = $id('tableFilterFrom').value;
+  const dateTo = $id('tableFilterTo').value;
   const rows = document.querySelectorAll('#dataTable tbody tr');
-  
   rows.forEach(row => {
     const inputs = row.querySelectorAll('input');
     const selects = row.querySelectorAll('select');
-    
     const rowDate = inputs[0].value;
-    const rowAthlete = selects[0].value;
-    const rowSport = selects[1].value;
-    const rowActivityType = selects[2].value;
-    
+    const rowAthlete = selects[0] ? selects[0].value : '';
+    const rowSport = selects[1] ? selects[1].value : '';
+    const rowActivityType = selects[2] ? selects[2].value : '';
     let show = true;
-    
     if(athlete !== 'all' && rowAthlete && rowAthlete !== athlete) show = false;
     if(sport !== 'all' && rowSport && rowSport !== sport) show = false;
     if(activityType !== 'all' && rowActivityType && rowActivityType !== activityType) show = false;
     if(dateFrom && rowDate && rowDate < dateFrom) show = false;
     if(dateTo && rowDate && rowDate > dateTo) show = false;
-    
     row.style.display = show ? '' : 'none';
   });
 }
 
 function resetTableFilter(){
-  document.getElementById('tableFilterAthlete').value = 'all';
-  document.getElementById('tableFilterSport').value = 'all';
-  document.getElementById('tableFilterActivityType').value = 'all';
-  document.getElementById('tableFilterFrom').value = '';
-  document.getElementById('tableFilterTo').value = '';
-  
-  document.querySelectorAll('#dataTable tbody tr').forEach(row => {
-    row.style.display = '';
-  });
+  $id('tableFilterAthlete').value = 'all';
+  $id('tableFilterSport').value = 'all';
+  $id('tableFilterActivityType').value = 'all';
+  $id('tableFilterFrom').value = '';
+  $id('tableFilterTo').value = '';
+  document.querySelectorAll('#dataTable tbody tr').forEach(row => row.style.display = '');
 }
 
 function updateTableFilters(){
-  const sel = document.getElementById('tableFilterAthlete');
+  const sel = $id('tableFilterAthlete');
   if(sel){
     const val = sel.value || 'all';
-    sel.innerHTML = '<option value="all">Tutti gli atleti</option>' + 
-      athletes.map(n => `<option value="${n}" ${n===val?'selected':''}>${n}</option>`).join('');
+    sel.innerHTML = '<option value="all">Tutti gli atleti</option>' + athletes.map(n => `<option value="${n}" ${n===val?'selected':''}>${n}</option>`).join('');
   }
-  
-  const selSport = document.getElementById('tableFilterSport');
+  const selSport = $id('tableFilterSport');
   if(selSport){
     const valSport = selSport.value || 'all';
-    selSport.innerHTML = '<option value="all">Tutti gli sport</option>' + 
-      sports.map(s => `<option value="${s}" ${s===valSport?'selected':''}>${s}</option>`).join('');
+    selSport.innerHTML = '<option value="all">Tutti gli sport</option>' + sports.map(s => `<option value="${s}" ${s===valSport?'selected':''}>${s}</option>`).join('');
   }
-  
-  const selActivity = document.getElementById('tableFilterActivityType');
+  const selActivity = $id('tableFilterActivityType');
   if(selActivity){
     const valActivity = selActivity.value || 'all';
-    selActivity.innerHTML = '<option value="all">Tutti i tipi</option>' + 
-      activityTypes.map(t => `<option value="${t}" ${t===valActivity?'selected':''}>${t}</option>`).join('');
+    selActivity.innerHTML = '<option value="all">Tutti i tipi</option>' + activityTypes.map(t => `<option value="${t}" ${t===valActivity?'selected':''}>${t}</option>`).join('');
   }
 }
 
-function openComparison(){
-  const data=getData();
-  const nomi=[...new Set(data.map(d=>d.athlete))].filter(Boolean);
-  let html='';
-  
-  nomi.forEach((nome,idx)=>{
-    const dat=data.filter(d=>d.athlete===nome);
-    const km=dat.reduce((s,v)=>s+v.km,0);
-    const tempo=dat.reduce((s,v)=>s+v.time,0);
-    const carico=dat.reduce((s,v)=>s+v.rpe*v.time,0);
-    const trimp=dat.reduce((s,v)=>s+v.hr*v.time*0.1,0);
-    const velMedia=tempo?km/tempo:0;
-    const rpe_med=dat.length?dat.reduce((s,v)=>s+v.rpe,0)/dat.length:0;
-    const hr_med=dat.length?dat.reduce((s,v)=>s+v.hr,0)/dat.length:0;
-    const acwr=computeACWR(data)[nome]||0;
-    
-    html+=`
-    <div class="athlete-card" style="border-left-color:${colors[idx%colors.length]}">
-      <h3>${nome}</h3>
-      <div class="stat-row"><span class="stat-label">Km totali:</span><span class="stat-value">${km.toFixed(1)}</span></div>
-      <div class="stat-row"><span class="stat-label">Tempo (h):</span><span class="stat-value">${tempo.toFixed(1)}</span></div>
-      <div class="stat-row"><span class="stat-label">Velocità media:</span><span class="stat-value">${velMedia.toFixed(2)} km/h</span></div>
-      <div class="stat-row"><span class="stat-label">Carico totale:</span><span class="stat-value">${carico.toFixed(0)}</span></div>
-      <div class="stat-row"><span class="stat-label">TRIMP:</span><span class="stat-value">${trimp.toFixed(0)}</span></div>
-      <div class="stat-row"><span class="stat-label">RPE medio:</span><span class="stat-value">${rpe_med.toFixed(1)}/10</span></div>
-      <div class="stat-row"><span class="stat-label">FC media:</span><span class="stat-value">${hr_med.toFixed(0)} bpm</span></div>
-      <div class="stat-row"><span class="stat-label">ACWR:</span><span class="stat-value" style="color:${acwr>1.5?'#ef4444':acwr>1.3?'#f59e0b':'#10b981'}">${acwr.toFixed(2)}</span></div>
-      <div class="stat-row"><span class="stat-label">Sessioni:</span><span class="stat-value">${dat.length}</span></div>
-    </div>
-    `;
-  });
-  
-  document.getElementById('comparisonGrid').innerHTML=html;
-  document.getElementById('comparisonModal').classList.add('show');
-}
+/* -----------------------------
+   CONFRONTO / TREND / PREDIZIONI
+   ----------------------------- */
+function openComparison() {
+  try {
+    const data = getData(); // tabella + ripetute convertite
+    console.log('openComparison: data length', data.length);
 
-function closeComparison(){
-  document.getElementById('comparisonModal').classList.remove('show');
-}
-
-function generateTrendChart(){
-  const data=getData();
-  const a1=document.getElementById('trendAthlete1').value;
-  const a2=document.getElementById('trendAthlete2').value;
-  const metric=document.getElementById('trendMetric').value;
-  const period=document.getElementById('trendPeriod').value;
-  
-  const dat1=data.filter(d=>d.athlete===a1).sort((x,y)=>x.date.localeCompare(y.date));
-  const dat2=data.filter(d=>d.athlete===a2).sort((x,y)=>x.date.localeCompare(y.date));
-  
-  let labels=[],vals1=[],vals2=[];
-  
-  if(period==='daily'){
-    const dateMap1={},dateMap2={};
-    dat1.forEach(d=>{
-      const val=metric==='km'?d.km:metric==='carico'?d.rpe*d.time:metric==='trimp'?d.hr*d.time*0.1:d.time?d.km/d.time:0;
-      dateMap1[d.date]=(dateMap1[d.date]||0)+val;
-    });
-    dat2.forEach(d=>{
-      const val=metric==='km'?d.km:metric==='carico'?d.rpe*d.time:metric==='trimp'?d.hr*d.time*0.1:d.time?d.km/d.time:0;
-      dateMap2[d.date]=(dateMap2[d.date]||0)+val;
-    });
-    labels=Object.keys({...dateMap1,...dateMap2}).sort();
-    vals1=labels.map(l=>dateMap1[l]||0);
-    vals2=labels.map(l=>dateMap2[l]||0);
-  }
-  else if(period==='weekly'){
-    const weekMap1={},weekMap2={};
-    dat1.forEach(d=>{
-      const w=d.date.slice(0,7);
-      const val=metric==='km'?d.km:metric==='carico'?d.rpe*d.time:metric==='trimp'?d.hr*d.time*0.1:d.time?d.km/d.time:0;
-      weekMap1[w]=(weekMap1[w]||0)+val;
-    });
-    dat2.forEach(d=>{
-      const w=d.date.slice(0,7);
-      const val=metric==='km'?d.km:metric==='carico'?d.rpe*d.time:metric==='trimp'?d.hr*d.time*0.1:d.time?d.km/d.time:0;
-      weekMap2[w]=(weekMap2[w]||0)+val;
-    });
-    labels=Object.keys({...weekMap1,...weekMap2}).sort();
-    vals1=labels.map(l=>weekMap1[l]||0);
-    vals2=labels.map(l=>weekMap2[l]||0);
-  }
-  else{
-    const monthMap1={},monthMap2={};
-    dat1.forEach(d=>{
-      const m=d.date.slice(0,7);
-      const val=metric==='km'?d.km:metric==='carico'?d.rpe*d.time:metric==='trimp'?d.hr*d.time*0.1:d.time?d.km/d.time:0;
-      monthMap1[m]=(monthMap1[m]||0)+val;
-    });
-    dat2.forEach(d=>{
-      const m=d.date.slice(0,7);
-      const val=metric==='km'?d.km:metric==='carico'?d.rpe*d.time:metric==='trimp'?d.hr*d.time*0.1:d.time?d.km/d.time:0;
-      monthMap2[m]=(monthMap2[m]||0)+val;
-    });
-    labels=Object.keys({...monthMap1,...monthMap2}).sort();
-    vals1=labels.map(l=>monthMap1[l]||0);
-    vals2=labels.map(l=>monthMap2[l]||0);
-  }
-  
-  const metricLabel=metric==='km'?'Km':metric==='carico'?'Carico':metric==='trimp'?'TRIMP':'Vel (km/h)';
-  
-  if(charts['trendChart'])charts['trendChart'].destroy();
-  
-  const isDark=document.body.classList.contains('dark-mode');
-  const ctx=document.getElementById('trendChart').getContext('2d');
-  charts['trendChart']=new Chart(ctx,{
-    type:'line',
-    data:{
-      labels,
-      datasets:[
-        {label:a1,data:vals1,borderColor:'#3b82f6',backgroundColor:'#3b82f688',fill:false,borderWidth:3,tension:0.3},
-        {label:a2,data:vals2,borderColor:'#ec4899',backgroundColor:'#ec489988',fill:false,borderWidth:3,tension:0.3}
-      ]
-    },
-    options:{
-      responsive:true,
-      maintainAspectRatio:false,
-      plugins:{legend:{labels:{font:{size:11,weight:'bold'},color:isDark?'#cbd5e1':'#1e3c72'}}},
-      scales:{
-        x:{ticks:{font:{size:10,weight:'600'},color:isDark?'#cbd5e1':'#334155'}},
-        y:{title:{display:true,text:metricLabel,font:{weight:'bold'},color:isDark?'#cbd5e1':'#1e3c72'},ticks:{font:{size:10,weight:'600'},color:isDark?'#cbd5e1':'#334155'}}
-      }
+    const grid = $id('comparisonGrid');
+    if (!grid) {
+      console.warn('comparisonGrid element not found');
+      return;
     }
-  });
-  
-  const avg1=vals1.reduce((a,b)=>a+b,0)/vals1.length||0;
-  const avg2=vals2.reduce((a,b)=>a+b,0)/vals2.length||0;
-  const max1=Math.max(...vals1);
-  const max2=Math.max(...vals2);
-  const total1=vals1.reduce((a,b)=>a+b,0);
-  const total2=vals2.reduce((a,b)=>a+b,0);
-  
-  document.getElementById('trendStats1').innerHTML=`<strong>${a1}</strong><br>Media: ${avg1.toFixed(2)}<br>Max: ${max1.toFixed(2)}<br>Totale: ${total1.toFixed(2)}<br>Sessioni: ${dat1.length}`;
-  document.getElementById('trendStats2').innerHTML=`<strong>${a2}</strong><br>Media: ${avg2.toFixed(2)}<br>Max: ${max2.toFixed(2)}<br>Totale: ${total2.toFixed(2)}<br>Sessioni: ${dat2.length}`;
+
+    if (!Array.isArray(data) || data.length === 0) {
+      grid.innerHTML = '<div style="padding:18px;font-weight:700;color:#334155;">Nessun dato disponibile per il confronto.</div>';
+      $id('comparisonModal')?.classList.add('show');
+      return;
+    }
+
+    const names = [...new Set(
+      data.map(d => (d.athlete || '').toString().trim()).filter(Boolean)
+    )].sort();
+
+    if (names.length === 0) {
+      grid.innerHTML = '<div style="padding:18px;font-weight:700;color:#334155;">Nessun atleta valido trovato nei dati.</div>';
+      $id('comparisonModal')?.classList.add('show');
+      return;
+    }
+
+    let html = '';
+    names.forEach((nome, idx) => {
+      const dat = data.filter(d => (d.athlete || '').toString().trim() === nome);
+
+      const km = dat.reduce((s, v) => s + (Number(v.km) || 0), 0);
+      const tempo = dat.reduce((s, v) => s + (Number(v.time) || 0), 0);
+      const carico = dat.reduce((s, v) => s + ((Number(v.rpe) || 0) * (Number(v.time) || 0)), 0);
+      const trimp = dat.reduce((s, v) => s + ((Number(v.hr) || 0) * (Number(v.time) || 0) * 0.1), 0);
+      const velMedia = tempo ? (km / tempo) : 0;
+      const rpe_med = dat.length ? (dat.reduce((s, v) => s + (Number(v.rpe) || 0), 0) / dat.length) : 0;
+      const hr_med = dat.length ? (dat.reduce((s, v) => s + (Number(v.hr) || 0), 0) / dat.length) : 0;
+      const acwr = (typeof computeACWR === 'function') ? (computeACWR(data)[nome] || 0) : 0;
+
+      html += `
+        <div class="athlete-card" style="border-left-color:${colors[idx % colors.length]}">
+          <h3>${nome}</h3>
+          <div class="stat-row"><span class="stat-label">Km totali:</span><span class="stat-value">${km.toFixed(1)}</span></div>
+          <div class="stat-row"><span class="stat-label">Tempo (h):</span><span class="stat-value">${tempo.toFixed(2)}</span></div>
+          <div class="stat-row"><span class="stat-label">Velocità media:</span><span class="stat-value">${velMedia.toFixed(2)} km/h</span></div>
+          <div class="stat-row"><span class="stat-label">Carico totale:</span><span class="stat-value">${Math.round(carico)}</span></div>
+          <div class="stat-row"><span class="stat-label">TRIMP:</span><span class="stat-value">${Math.round(trimp)}</span></div>
+          <div class="stat-row"><span class="stat-label">RPE medio:</span><span class="stat-value">${rpe_med.toFixed(1)}/10</span></div>
+          <div class="stat-row"><span class="stat-label">FC media:</span><span class="stat-value">${Math.round(hr_med)} bpm</span></div>
+          <div class="stat-row"><span class="stat-label">ACWR:</span><span class="stat-value" style="color:${acwr > 1.5 ? '#ef4444' : acwr > 1.3 ? '#f59e0b' : '#10b981'}">${acwr.toFixed(2)}</span></div>
+          <div class="stat-row"><span class="stat-label">Sessioni:</span><span class="stat-value">${dat.length}</span></div>
+        </div>
+      `;
+    });
+
+    grid.innerHTML = html;
+    $id('comparisonModal')?.classList.add('show');
+  } catch (e) {
+    console.error('openComparison error', e);
+    alert('Errore durante la generazione del confronto (vedi console).');
+  }
 }
 
-function openTrend(){
-  document.getElementById('trendModal').classList.add('show');
-  setTimeout(()=>generateTrendChart(),200);
+
+function closeComparison(){ $id('comparisonModal').classList.remove('show'); }
+
+function getWeekStartKey(dateStr){
+  const d = new Date(dateStr);
+  d.setHours(0,0,0,0);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(d);
+  monday.setDate(diff);
+  monday.setHours(0,0,0,0);
+  return monday.toISOString().slice(0,10);
 }
 
-function closeTrend(){
-  document.getElementById('trendModal').classList.remove('show');
+/* -----------------------------
+   TREND & PREDICTION
+   ----------------------------- */
+function generateTrendChart(){
+  try{
+    const data = getData();
+    const a1 = $id('trendAthlete1') ? $id('trendAthlete1').value : null;
+    const a2 = $id('trendAthlete2') ? $id('trendAthlete2').value : null;
+    const metric = $id('trendMetric') ? $id('trendMetric').value : 'km';
+    const period = $id('trendPeriod') ? $id('trendPeriod').value : 'daily';
+    if(!a1 || !a2){ alert('Seleziona due atleti per il confronto.'); return; }
+    const dat1_all = data.filter(d => d.athlete === a1).sort((x,y)=>x.date.localeCompare(y.date));
+    const dat2_all = data.filter(d => d.athlete === a2).sort((x,y)=>x.date.localeCompare(y.date));
+    function aggregateByPeriod(rows, period){
+      const map = {};
+      rows.forEach(r=>{
+        let key;
+        if(period === 'daily') key = r.date;
+        else if(period === 'weekly') key = getWeekStartKey(r.date);
+        else key = r.date.slice(0,7);
+        if(!map[key]) map[key] = { kmSum:0, timeSum:0, loadSum:0, trimpSum:0, count:0 };
+        map[key].kmSum += (r.km||0);
+        map[key].timeSum += (r.time||0);
+        map[key].loadSum += (r.rpe||0) * (r.time||0);
+        map[key].trimpSum += (r.hr||0) * (r.time||0) * 0.1;
+        map[key].count += 1;
+      });
+      return map;
+    }
+    const agg1 = aggregateByPeriod(dat1_all, period);
+    const agg2 = aggregateByPeriod(dat2_all, period);
+    const allKeys = Array.from(new Set([ ...Object.keys(agg1), ...Object.keys(agg2) ]));
+    allKeys.sort((a,b)=> a > b ? 1 : (a < b ? -1 : 0));
+    function computeMetricForKey(aggMap, key, metric){
+      const bucket = aggMap[key];
+      if(!bucket) return 0;
+      if(metric === 'km') return bucket.kmSum;
+      if(metric === 'carico') return bucket.loadSum;
+      if(metric === 'trimp') return bucket.trimpSum;
+      if(metric === 'velocita') return bucket.timeSum ? (bucket.kmSum / bucket.timeSum) : 0;
+      return 0;
+    }
+    const vals1 = allKeys.map(k => computeMetricForKey(agg1, k, metric));
+    const vals2 = allKeys.map(k => computeMetricForKey(agg2, k, metric));
+    let labels;
+    if(period === 'daily') labels = allKeys;
+    else if(period === 'weekly') labels = allKeys.map(k => `set. ${k}`);
+    else labels = allKeys.map(k => `${k}`);
+    if(charts['trendChart']) charts['trendChart'].destroy();
+    createChart('trendChart','line',labels, [
+      { label: a1, data: vals1, borderColor:'#3b82f6', backgroundColor:'#3b82f688', fill:false, borderWidth:3, tension:0.3, pointRadius:3 },
+      { label: a2, data: vals2, borderColor:'#ec4899', backgroundColor:'#ec489988', fill:false, borderWidth:3, tension:0.3, pointRadius:3 }
+    ], { maintainAspectRatio:false });
+    const avg1 = vals1.length ? (vals1.reduce((s,v)=>s+v,0)/vals1.length) : 0;
+    const avg2 = vals2.length ? (vals2.reduce((s,v)=>s+v,0)/vals2.length) : 0;
+    const max1 = vals1.length ? Math.max(...vals1) : 0;
+    const max2 = vals2.length ? Math.max(...vals2) : 0;
+    const total1 = vals1.reduce((s,v)=>s+v,0);
+    const total2 = vals2.reduce((s,v)=>s+v,0);
+    $id('trendStats1').innerHTML = `<strong>${a1}</strong><br>Media: ${avg1.toFixed(2)}<br>Max: ${max1.toFixed(2)}<br>Totale: ${total1.toFixed(2)}<br>Sessioni: ${dat1_all.length}`;
+    $id('trendStats2').innerHTML = `<strong>${a2}</strong><br>Media: ${avg2.toFixed(2)}<br>Max: ${max2.toFixed(2)}<br>Totale: ${total2.toFixed(2)}<br>Sessioni: ${dat2_all.length}`;
+  }catch(e){ console.error('generateTrendChart', e); alert('Errore generazione trend (vedi console)'); }
 }
 
-function linearRegression(x, y) {
+function openTrend(){ $id('trendModal')?.classList.add('show'); setTimeout(()=>generateTrendChart(),200); }
+function closeTrend(){ $id('trendModal')?.classList.remove('show'); }
+
+/* -----------------------------
+   LINEAR REGRESSION (weighted)
+   ----------------------------- */
+function linearRegression(x,y){
   const n = x.length;
-  const sumX = x.reduce((a, b) => a + b, 0);
-  const sumY = y.reduce((a, b) => a + b, 0);
-  const sumXY = x.reduce((sum, xi, i) => sum + xi * y[i], 0);
-  const sumX2 = x.reduce((sum, xi) => sum + xi * xi, 0);
-  
-  const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+  if(n === 0) return { slope:0, intercept:0, r2:0 };
+  const sumX = x.reduce((a,b)=>a+b,0);
+  const sumY = y.reduce((a,b)=>a+b,0);
+  const sumXY = x.reduce((s,xi,i)=>s + xi*y[i],0);
+  const sumX2 = x.reduce((s,xi)=>s + xi*xi,0);
+  const denom = (n * sumX2 - sumX * sumX) || 1e-9;
+  const slope = (n * sumXY - sumX * sumY) / denom;
   const intercept = (sumY - slope * sumX) / n;
-  
   const yMean = sumY / n;
-  const ssTotal = y.reduce((sum, yi) => sum + Math.pow(yi - yMean, 2), 0);
-  const ssRes = y.reduce((sum, yi, i) => sum + Math.pow(yi - (slope * x[i] + intercept), 2), 0);
-  const r2 = 1 - (ssRes / ssTotal);
-  
+  const ssTotal = y.reduce((s,yi)=>s + Math.pow(yi - yMean,2),0);
+  const ssRes = y.reduce((s,yi,i)=>s + Math.pow(yi - (slope * x[i] + intercept),2),0);
+  const r2 = ssTotal ? Math.max(0,1 - (ssRes / ssTotal)) : 0;
   return { slope, intercept, r2 };
 }
 
-function generatePredictions() {
-  const data = getData();
-  const athlete = document.getElementById('predictionAthlete').value;
-  const futureDays = parseInt(document.getElementById('predictionDays').value) || 7;
-  
-  if (!athlete) {
-    alert('Seleziona un atleta!');
-    return;
+function weightedLinearRegression(x,y,w){
+  const n = x.length;
+  let sumW=0, sumWX=0, sumWY=0, sumWXX=0, sumWXY=0;
+  for(let i=0;i<n;i++){
+    const wi = w[i] || 0;
+    sumW += wi;
+    sumWX += wi * x[i];
+    sumWY += wi * y[i];
+    sumWXX += wi * x[i] * x[i];
+    sumWXY += wi * x[i] * y[i];
   }
-  
-  const athleteData = data.filter(d => d.athlete === athlete).sort((a, b) => a.date.localeCompare(b.date));
-  
-  if (athleteData.length < 3) {
-    alert('Dati insufficienti per generare predizioni (minimo 3 sessioni)');
-    return;
+  if(sumW === 0) return linearRegression(x,y);
+  const denom = (sumW * sumWXX - sumWX * sumWX) || 1e-12;
+  const slope = (sumW * sumWXY - sumWX * sumWY) / denom;
+  const intercept = (sumWY - slope * sumWX) / sumW;
+  const yMean = sumWY / sumW;
+  let ssTot=0, ssRes=0;
+  for(let i=0;i<n;i++){
+    const wi = w[i] || 0;
+    const yi = y[i];
+    const yPred = slope * x[i] + intercept;
+    ssTot += wi * Math.pow(yi - yMean, 2);
+    ssRes += wi * Math.pow(yi - yPred, 2);
   }
-  
-  const dates = athleteData.map(d => new Date(d.date).getTime());
-  const baseDate = dates[0];
-  const x = dates.map(d => (d - baseDate) / (1000 * 60 * 60 * 24));
-  const yKm = athleteData.map(d => d.km);
-  const ySpeed = athleteData.map(d => d.time > 0 ? d.km / d.time : 0);
-  
-  const regressionKm = linearRegression(x, yKm);
-  const regressionSpeed = linearRegression(x, ySpeed);
-  
-  const lastDate = new Date(athleteData[athleteData.length - 1].date);
-  const lastX = x[x.length - 1];
-  
-  const futureDates = [];
-  const predictedKm = [];
-  const predictedSpeed = [];
-  
-  for (let i = 1; i <= futureDays; i++) {
-    const futureDate = new Date(lastDate);
-    futureDate.setDate(futureDate.getDate() + i);
-    futureDates.push(futureDate.toISOString().split('T')[0]);
-    
-    const futureX = lastX + i;
-    predictedKm.push(Math.max(0, regressionKm.slope * futureX + regressionKm.intercept));
-    predictedSpeed.push(Math.max(0, regressionSpeed.slope * futureX + regressionSpeed.intercept));
-  }
-  
-  displayPredictions(athlete, athleteData, futureDates, predictedKm, predictedSpeed, regressionKm.r2, regressionSpeed.r2);
+  const r2 = ssTot ? Math.max(0, 1 - ssRes / ssTot) : 0;
+  return { slope, intercept, r2 };
 }
 
-function displayPredictions(athlete, historicalData, futureDates, predictedKm, predictedSpeed, r2Km, r2Speed) {
-  const resultsDiv = document.getElementById('predictionResults');
-  
-  const avgKm = predictedKm.reduce((a, b) => a + b, 0) / predictedKm.length;
-  const avgSpeed = predictedSpeed.reduce((a, b) => a + b, 0) / predictedSpeed.length;
-  const totalKm = predictedKm.reduce((a, b) => a + b, 0);
-  
+/* -----------------------------
+   PREDICTIONS (weighted to reduce rip impact)
+   ----------------------------- */
+function generatePredictions(){
+  try{
+    const data = getData();
+    const athlete = $id('predictionAthlete') ? $id('predictionAthlete').value : null;
+    const futureDays = parseInt($id('predictionDays') ? $id('predictionDays').value : 7) || 7;
+    const targetDistance = parseFloat($id('predictionTarget') ? $id('predictionTarget').value : 10) || 10;
+    if(!athlete){ alert('Seleziona un atleta!'); return; }
+    const athleteData = data.filter(d => d.athlete === athlete).sort((a,b)=>a.date.localeCompare(b.date));
+    if(athleteData.length < 3){ alert('Dati insufficienti per generare predizioni (minimo 3 sessioni)'); return; }
+
+    const dates = athleteData.map(d => new Date(d.date).getTime());
+    const baseDate = dates[0];
+    const x = dates.map(d => (d - baseDate) / (1000 * 60 * 60 * 24));
+    const yKm = athleteData.map(d => d.km);
+    const ySpeed = athleteData.map(d => d.time > 0 ? d.km / d.time : 0);
+
+    const refDistance = 10;    // km reference
+    const exponent = 1.6;      // >1 reduces small sessions more
+    const damping = 0.45;      // global damping factor
+    const epsilon = 1e-3;
+
+    const weights = athleteData.map(d=>{
+      const dist = (d.km || 0);
+      let base = dist > 0 ? Math.log(1 + dist) / Math.log(1 + refDistance) : epsilon;
+      const scale = targetDistance > refDistance ? (refDistance / targetDistance) : 1;
+      let w = damping * Math.pow(base, exponent) * scale;
+      if(!isFinite(w) || w <= 0) w = epsilon;
+      return w;
+    });
+
+    const regressionKm = weightedLinearRegression(x, yKm, weights);
+    const regressionSpeed = weightedLinearRegression(x, ySpeed, weights);
+
+    const lastDate = new Date(athleteData[athleteData.length - 1].date);
+    const lastX = x[x.length - 1];
+
+    const futureDates = [], predictedKm = [], predictedSpeed = [];
+    for(let i=1;i<=futureDays;i++){
+      const fd = new Date(lastDate);
+      fd.setDate(fd.getDate() + i);
+      futureDates.push(fd.toISOString().split('T')[0]);
+      const fx = lastX + i;
+      predictedKm.push(Math.max(0, regressionKm.slope * fx + regressionKm.intercept));
+      predictedSpeed.push(Math.max(0, regressionSpeed.slope * fx + regressionSpeed.intercept));
+    }
+
+    displayPredictions(athlete, athleteData, futureDates, predictedKm, predictedSpeed, regressionKm.r2, regressionSpeed.r2);
+
+  }catch(err){ console.error('generatePredictions', err); alert('Errore generazione predizioni (vedi console)'); }
+}
+
+function displayPredictions(athlete, historicalData, futureDates, predictedKm, predictedSpeed, r2Km, r2Speed){
+  const resultsDiv = $id('predictionResults');
+  if(!resultsDiv) return;
+  const avgKm = predictedKm.reduce((a,b)=>a+b,0) / predictedKm.length;
+  const avgSpeed = predictedSpeed.reduce((a,b)=>a+b,0) / predictedSpeed.length;
+  const totalKm = predictedKm.reduce((a,b)=>a+b,0);
   const confidenceKm = r2Km > 0.7 ? 'Alta 🟢' : r2Km > 0.4 ? 'Media 🟡' : 'Bassa 🔴';
   const confidenceSpeed = r2Speed > 0.7 ? 'Alta 🟢' : r2Speed > 0.4 ? 'Media 🟡' : 'Bassa 🔴';
-  
   resultsDiv.innerHTML = `
     <div class="prediction-grid">
       <div class="prediction-card">
@@ -2225,7 +3205,6 @@ function displayPredictions(athlete, historicalData, futureDates, predictedKm, p
           <canvas id="predictionKmChart"></canvas>
         </div>
       </div>
-      
       <div class="prediction-card">
         <h4>🏃 Predizione Velocità (km/h)</h4>
         <div class="prediction-info">
@@ -2240,178 +3219,280 @@ function displayPredictions(athlete, historicalData, futureDates, predictedKm, p
       </div>
     </div>
   `;
-  
+
   const historicalDates = historicalData.map(d => d.date);
   const historicalKm = historicalData.map(d => d.km);
-  
-  if (charts['predictionKmChart']) charts['predictionKmChart'].destroy();
-  
-  const isDark=document.body.classList.contains('dark-mode');
-  const ctxKm = document.getElementById('predictionKmChart').getContext('2d');
-  charts['predictionKmChart'] = new Chart(ctxKm, {
-    type: 'line',
-    data: {
-      labels: [...historicalDates, ...futureDates],
-      datasets: [
-        {
-          label: 'Dati Storici',
-          data: [...historicalKm, ...Array(futureDates.length).fill(null)],
-          borderColor: '#3b82f6',
-          backgroundColor: '#3b82f688',
-          borderWidth: 3,
-          tension: 0.3,
-          pointRadius: 5,
-          pointHoverRadius: 7
-        },
-        {
-          label: 'Predizioni',
-          data: [...Array(historicalDates.length).fill(null), ...predictedKm],
-          borderColor: '#10b981',
-          backgroundColor: '#10b98188',
-          borderWidth: 3,
-          borderDash: [8, 4],
-          tension: 0.3,
-          pointRadius: 5,
-          pointHoverRadius: 7
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { labels: { font: { size: 11, weight: 'bold' }, color: isDark?'#cbd5e1':'#1e3c72' } }
+  try{
+    if(charts['predictionKmChart']) charts['predictionKmChart'].destroy();
+    const ctxKm = document.getElementById('predictionKmChart').getContext('2d', { willReadFrequently: true, preserveDrawingBuffer: true });
+    charts['predictionKmChart'] = new Chart(ctxKm, {
+      type: 'line',
+      data: {
+        labels: [...historicalDates, ...futureDates],
+        datasets: [
+          { label: 'Dati Storici', data: [...historicalKm, ...Array(futureDates.length).fill(null)], borderColor:'#3b82f6', backgroundColor:'#3b82f688', borderWidth:3, tension:0.3, pointRadius:5 },
+          { label: 'Predizioni', data: [...Array(historicalDates.length).fill(null), ...predictedKm], borderColor:'#10b981', backgroundColor:'#10b98188', borderWidth:3, borderDash:[8,4], tension:0.3, pointRadius:5 }
+        ]
       },
-      scales: {
-        x: { ticks: { font: { size: 9, weight: '600' }, color: isDark?'#cbd5e1':'#334155' } },
-        y: { 
-          title: { display: true, text: 'Km', font: { weight: 'bold' }, color: isDark?'#cbd5e1':'#1e3c72' },
-          ticks: { font: { size: 9, weight: '600' }, color: isDark?'#cbd5e1':'#334155' }
+      options: { responsive:true, maintainAspectRatio:false }
+    });
+  }catch(e){ console.warn('predictionKmChart error', e); }
+
+  try{
+    if(charts['predictionSpeedChart']) charts['predictionSpeedChart'].destroy();
+    const ctxSp = document.getElementById('predictionSpeedChart').getContext('2d', { willReadFrequently: true, preserveDrawingBuffer: true });
+    const historicalSpeed = historicalData.map(d => d.time>0 ? d.km / d.time : 0);
+    charts['predictionSpeedChart'] = new Chart(ctxSp, {
+      type: 'line',
+      data: {
+        labels: [...historicalData.map(d=>d.date), ...futureDates],
+        datasets: [
+          { label: 'Dati Storici', data: [...historicalSpeed, ...Array(futureDates.length).fill(null)], borderColor:'#ec4899', backgroundColor:'#ec489988', borderWidth:3, tension:0.3, pointRadius:5 },
+          { label: 'Predizioni', data: [...Array(historicalSpeed.length).fill(null), ...predictedSpeed], borderColor:'#10b981', backgroundColor:'#10b98188', borderWidth:3, borderDash:[8,4], tension:0.3, pointRadius:5 }
+        ]
+      },
+      options: { responsive:true, maintainAspectRatio:false }
+    });
+  }catch(e){ console.warn('predictionSpeedChart error', e); }
+}
+
+/* -----------------------------
+   FILE I/O - save
+   ----------------------------- */
+$id('saveFileBtn')?.addEventListener('click', async ()=>{
+  try{
+    const dati = getDataRaw().map(x=>({ date:x.date, athlete:x.athlete, km:x.km, minutes:x.minutes, time:x.time, rpe:x.rpe, hr:x.hr, type:x.type, activityType:x.activityType, note:x.note }));
+    if(fileHandle){
+      try{
+        const w = await fileHandle.createWritable();
+        await w.write(JSON.stringify(dati,null,2));
+        await w.close();
+        alert('✅ Salvato');
+        return;
+      }catch(e){ console.warn('Save error:', e); }
+    }
+    const b = new Blob([JSON.stringify(dati,null,2)], { type:'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(b);
+    a.download = 'dati_squadra.json';
+    a.click();
+  }catch(e){ console.error('saveFile error', e); alert('Errore salvataggio (vedi console)'); }
+});
+$id('exportJsonBtn')?.addEventListener('click', ()=> $id('saveFileBtn').click() );
+
+/* -----------------------------
+   PDF export robusto (try/catch + fallback)
+   ----------------------------- */
+// robust export: aggiorna i grafici, attende, poi cattura/salva PDF
+// Export PDF robusto: sostituisce temporaneamente i canvas dei Chart.js con immagini (toBase64Image),
+// poi usa html2canvas sul DOM risultante, poi ripristina i canvas e genera il PDF.
+$id('exportPdfBtn')?.addEventListener('click', async () => {
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  async function makeCanvasFor(target, scale = 1) {
+    return html2canvas(target, { scale, useCORS: true, allowTaint: false, logging: false, imageTimeout: 20000, scrollY: -window.scrollY });
+  }
+
+  // trova il target da catturare
+  const target = $id('tab-dashboard') || document.body;
+
+  // 1) sostituisci i canvas dei grafici con immagini (se possibile)
+  const replaced = []; // { canvas, img }
+  try {
+    for (const key of Object.keys(charts || {})) {
+      try {
+        const chart = charts[key];
+        if (!chart) continue;
+        // ottieni element canvas
+        const canvas = chart.canvas || (chart.ctx && chart.ctx.canvas) || document.getElementById(key);
+        if (!canvas || canvas.nodeName !== 'CANVAS') continue;
+
+        // ottieni dataURL preferendo chart.toBase64Image per rispettare dimensioni e stile Chart.js
+        let dataUrl = null;
+        try {
+          if (typeof chart.toBase64Image === 'function') dataUrl = chart.toBase64Image();
+        } catch (e) { console.warn('toBase64Image failed for', key, e); }
+        if (!dataUrl) {
+          try { dataUrl = canvas.toDataURL('image/png'); } catch (e) { console.warn('canvas.toDataURL failed for', key, e); }
         }
+        if (!dataUrl) continue;
+
+        // crea <img> con stessa dimensione e posizionalo al posto del canvas
+        const img = document.createElement('img');
+        img.src = dataUrl;
+        // preserva dimensioni css se presenti, altrimenti imposta width/height in px
+        if (canvas.style && canvas.style.width) img.style.width = canvas.style.width;
+        else img.style.width = canvas.width + 'px';
+        if (canvas.style && canvas.style.height) img.style.height = canvas.style.height;
+        else img.style.height = canvas.height + 'px';
+        img.style.display = getComputedStyle(canvas).display || 'block';
+        // inserisci l'immagine prima del canvas e nascondi il canvas
+        canvas.parentNode.insertBefore(img, canvas);
+        canvas.style.visibility = 'hidden';
+        replaced.push({ canvas, img });
+      } catch (e) {
+        console.warn('replace chart with img error for key', key, e);
       }
     }
-  });
-  
-  const historicalSpeed = historicalData.map(d => d.time > 0 ? d.km / d.time : 0);
-  
-  if (charts['predictionSpeedChart']) charts['predictionSpeedChart'].destroy();
-  
-  const ctxSpeed = document.getElementById('predictionSpeedChart').getContext('2d');
-  charts['predictionSpeedChart'] = new Chart(ctxSpeed, {
-    type: 'line',
-    data: {
-      labels: [...historicalDates, ...futureDates],
-      datasets: [
-        {
-          label: 'Dati Storici',
-          data: [...historicalSpeed, ...Array(futureDates.length).fill(null)],
-          borderColor: '#ec4899',
-          backgroundColor: '#ec489988',
-          borderWidth: 3,
-          tension: 0.3,
-          pointRadius: 5,
-          pointHoverRadius: 7
-        },
-        {
-          label: 'Predizioni',
-          data: [...Array(historicalDates.length).fill(null), ...predictedSpeed],
-          borderColor: '#10b981',
-          backgroundColor: '#10b98188',
-          borderWidth: 3,
-          borderDash: [8, 4],
-          tension: 0.3,
-          pointRadius: 5,
-          pointHoverRadius: 7
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { labels: { font: { size: 11, weight: 'bold' }, color: isDark?'#cbd5e1':'#1e3c72' } }
-      },
-      scales: {
-        x: { ticks: { font: { size: 9, weight: '600' }, color: isDark?'#cbd5e1':'#334155' } },
-        y: { 
-          title: { display: true, text: 'km/h', font: { weight: 'bold' }, color: isDark?'#cbd5e1':'#1e3c72' },
-          ticks: { font: { size: 9, weight: '600' }, color: isDark?'#cbd5e1':'#334155' }
-        }
+  } catch (err) {
+    console.warn('Errore durante replacement charts->images:', err);
+  }
+
+  // 2) assicurati che il DOM sia stabile e i nuovi img siano renderizzati
+  await sleep(300);
+
+  // 3) genera il canvas html2canvas provando scale varie e fallback su body
+  let capturedCanvas = null;
+  try {
+    const scales = [1.5, 1.0, 0.9, 0.75];
+    for (const s of scales) {
+      try {
+        capturedCanvas = await makeCanvasFor(target, s);
+        if (capturedCanvas && capturedCanvas.width > 100 && capturedCanvas.height > 100) break;
+      } catch (e) {
+        console.warn(`html2canvas scale=${s} failed:`, e);
+        capturedCanvas = null;
       }
     }
-  });
-}
+    if (!capturedCanvas) {
+      // fallback: proviamo su document.body
+      try { capturedCanvas = await makeCanvasFor(document.body, 0.9); } catch (e) { console.warn('Fallback body capture failed', e); }
+    }
+    if (!capturedCanvas) throw new Error('Impossible to capture canvas with html2canvas');
+  } catch (err) {
+    console.error('Capture failed:', err);
+    // ripristina prima di uscire
+    for (const r of replaced) { try { r.img.remove(); r.canvas.style.visibility = ''; } catch(e){} }
+    alert('Errore nella cattura per il PDF. Vedi console per dettagli.');
+    return;
+  }
 
-function openPrediction() {
-  document.getElementById('predictionModal').classList.add('show');
-}
+  // 4) ripristina i canvas (rimuovi img inserite)
+  try {
+    for (const r of replaced) {
+      try { if (r.img && r.img.parentNode) r.img.parentNode.removeChild(r.img); r.canvas.style.visibility = ''; } catch(e){ console.warn('restore failed', e); }
+    }
+  } catch(e){ console.warn('restore loop failed', e); }
 
-function closePrediction() {
-  document.getElementById('predictionModal').classList.remove('show');
-}
+  // 5) sanity check pixel (opzionale)
+  try {
+    const ctx = capturedCanvas.getContext('2d', { willReadFrequently: true });
+    const w = Math.min(50, capturedCanvas.width), h = Math.min(50, capturedCanvas.height);
+    const d = ctx.getImageData(0,0,w,h).data;
+    let totA = 0;
+    for (let i=3;i<d.length;i+=4) totA += d[i];
+    const avgA = totA / (d.length/4);
+    console.log('Captured canvas avg alpha', avgA);
+  } catch(e){ console.warn('pixel-check failed', e); }
 
-async function apriFileDiretto(){try{[fileHandle]=await window.showOpenFilePicker({types:[{description:'JSON',accept:{'application/json':['.json']}}]});const f=await fileHandle.getFile();const t=await f.text();const d=JSON.parse(t);popolaTabellaDaJSON(d);updateCharts();alert('✅ Aperto');}catch(e){console.warn('Picker:',e);}}
+  // 6) crea PDF (JPEG, spezzamento se necessario)
+  try {
+    const imgData = capturedCanvas.toDataURL('image/jpeg', 0.92);
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p','mm','a4');
+    const pdfW = pdf.internal.pageSize.getWidth();
+    const pdfH = pdf.internal.pageSize.getHeight();
+    const imgProps = pdf.getImageProperties(imgData);
+    const imgH = (imgProps.height * pdfW) / imgProps.width;
 
-document.getElementById('openFileInput').addEventListener('change',e=>{const f=e.target.files[0];if(f){const r=new FileReader();r.onload=ev=>{const d=JSON.parse(ev.target.result);popolaTabellaDaJSON(d);updateCharts();};r.readAsText(f);}});
+    // bianco di sfondo
+    pdf.setFillColor(255,255,255);
+    pdf.rect(0,0,pdfW,pdfH,'F');
 
-function popolaTabellaDaJSON(d){
-  const tb=document.querySelector('#dataTable tbody');
-  tb.innerHTML='';
-  d.forEach(x=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML=`
-      <td><input type="date" value="${x.date||''}"></td>
-      <td><select class="athlete-select"><option value="">-- Seleziona --</option>${athletes.map(a=>`<option value="${a}" ${a===x.athlete?'selected':''}>${a}</option>`).join('')}</select></td>
-      <td><input type="number" value="${x.km||0}"></td>
-      <td><input type="number" value="${x.minutes||0}"></td>
-      <td><input type="number" value="${x.rpe||0}"></td>
-      <td><input type="number" value="${x.hr||0}"></td>
-      <td><select class="sport-select">${sports.map(s=>`<option value="${s}" ${s===x.type?'selected':''}>${s}</option>`).join('')}</select></td>
-      <td><select class="activity-type-select"><option value="">-- Tipo --</option>${activityTypes.map(t=>`<option value="${t}" ${t===x.activityType?'selected':''}>${t}</option>`).join('')}</select></td>
-      <td><input type="text" value="${x.note||''}"></td>
-      <td><button onclick="deleteRow(this)" style="padding:4px 8px;font-size:0.75rem;background:#ef4444;">🗑️</button></td>
-    `;
-    tb.appendChild(tr);
-  });
-  updateTableFilters();
-  sortTableByDate(false);
-}
+    if (imgH <= pdfH) {
+      pdf.addImage(imgData, 'JPEG', 0, 0, pdfW, imgH);
+      pdf.save('dashboard.pdf');
+      return;
+    }
 
-document.getElementById('saveFileBtn').onclick=async()=>{const dati=getData().map(x=>({...x,minutes:x.minutes??(x.time?x.time*60:0)}));if(fileHandle){try{const w=await fileHandle.createWritable();await w.write(JSON.stringify(dati,null,2));await w.close();alert('✅ Salvato');return;}catch(e){console.warn('Save:',e);}}const b=new Blob([JSON.stringify(dati,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='dati_squadra.json';a.click();};
-document.getElementById('exportJsonBtn').onclick=()=>document.getElementById('saveFileBtn').click();
-document.getElementById('toggleThemeBtn').onclick=()=>{document.body.classList.toggle('dark-mode');updateCharts();};
-document.getElementById('addRowBtn').onclick=addRow;
-document.getElementById('manageSportsBtn').onclick=openSports;
-document.getElementById('manageAthletesBtn').onclick=openAthletes;
-document.getElementById('manageActivityTypesBtn').onclick=openActivityTypes;
-document.getElementById('applyFilters').onclick=updateCharts;
-document.getElementById('updateChartsBtn').onclick=updateCharts;
-document.getElementById('comparisonBtn').onclick=openComparison;
-document.getElementById('trendBtn').onclick=openTrend;
-document.getElementById('predictionBtn').onclick=openPrediction;
-document.getElementById('exportPdfBtn').onclick=async()=>{const{jsPDF}=window.jspdf;const c=await html2canvas(document.getElementById('tab-dashboard'),{scale:1.5});const pdf=new jsPDF('p','mm','a4');const w=pdf.internal.pageSize.width,h=c.height*w/c.width;pdf.addImage(c.toDataURL('image/png'),'PNG',0,0,w,h);pdf.save('dashboard.pdf');};
+    // spezza verticalmente
+    const pxPerMm = capturedCanvas.width / pdfW;
+    const pageHeightPx = Math.floor(pdfH * pxPerMm);
+    let remaining = capturedCanvas.height;
+    let y = 0;
+    let pageIdx = 0;
+    while (remaining > 0) {
+      const pageCanvas = document.createElement('canvas');
+      pageCanvas.width = capturedCanvas.width;
+      pageCanvas.height = Math.min(pageHeightPx, remaining);
+      pageCanvas.getContext('2d').drawImage(capturedCanvas, 0, y, capturedCanvas.width, pageCanvas.height, 0, 0, capturedCanvas.width, pageCanvas.height);
+      const pageData = pageCanvas.toDataURL('image/jpeg', 0.92);
+      if (pageIdx > 0) pdf.addPage();
+      const pImgProps = pdf.getImageProperties(pageData);
+      const pImgH = (pImgProps.height * pdfW) / pImgProps.width;
+      pdf.addImage(pageData, 'JPEG', 0, 0, pdfW, pImgH);
+      y += pageCanvas.height;
+      remaining -= pageCanvas.height;
+      pageIdx++;
+    }
+    pdf.save('dashboard.pdf');
+  } catch (err) {
+    console.error('Errore generazione PDF:', err);
+    alert('Errore creazione PDF (vedi console).');
+  }
+});
 
-window.onload=()=>{
+/* -----------------------------
+   UI helpers & bindings
+   ----------------------------- */
+$id('toggleThemeBtn')?.addEventListener('click', ()=>{
+  document.body.classList.toggle('dark-mode');
+  $id('toggleThemeBtn').textContent = document.body.classList.contains('dark-mode') ? '☀️' : '🌙';
+  updateCharts();
+});
+
+$id('addRowBtn')?.addEventListener('click', addRow);
+$id('manageSportsBtn')?.addEventListener('click', ()=> $id('sportsModal')?.classList.add('show'));
+$id('manageAthletesBtn')?.addEventListener('click', ()=> $id('athletesModal')?.classList.add('show'));
+$id('manageActivityTypesBtn')?.addEventListener('click', ()=> $id('activityTypesModal')?.classList.add('show'));
+$id('applyFilters')?.addEventListener('click', updateCharts);
+$id('updateChartsBtn')?.addEventListener('click', updateCharts);
+$id('comparisonBtn')?.addEventListener('click', openComparison);
+$id('trendBtn')?.addEventListener('click', ()=>{ $id('trendModal')?.classList.add('show'); setTimeout(()=>generateTrendChart(), 200); });
+$id('predictionBtn')?.addEventListener('click', ()=> $id('predictionModal')?.classList.add('show'));
+
+document.addEventListener('click', (e)=>{ if(e.target.classList && e.target.classList.contains('modal')) e.target.classList.remove('show'); });
+
+/* -----------------------------
+   Onload init
+   ----------------------------- */
+window.addEventListener('load', ()=>{
   loadSports();
   loadAthletes();
   loadActivityTypes();
+  loadRipetuteFromStorage();
   addRow();
   updateCharts();
   updateTableFilters();
-  
-  // Auto-apply filtri tabella
-  document.getElementById('tableFilterAthlete').addEventListener('change', applyTableFilter);
-  document.getElementById('tableFilterSport').addEventListener('change', applyTableFilter);
-  document.getElementById('tableFilterActivityType').addEventListener('change', applyTableFilter);
-  document.getElementById('tableFilterFrom').addEventListener('change', applyTableFilter);
-  document.getElementById('tableFilterTo').addEventListener('change', applyTableFilter);
-  
-  // Auto-update grafici quando cambiano i filtri nell'header
-  document.getElementById('athleteFilter').addEventListener('change', updateCharts);
-  document.getElementById('dateFrom').addEventListener('change', updateCharts);
-  document.getElementById('dateTo').addEventListener('change', updateCharts);
-  document.getElementById('typeFilter').addEventListener('change', updateCharts);
-};
+
+  $id('tableFilterAthlete')?.addEventListener('change', applyTableFilter);
+  $id('tableFilterSport')?.addEventListener('change', applyTableFilter);
+  $id('tableFilterActivityType')?.addEventListener('change', applyTableFilter);
+  $id('tableFilterFrom')?.addEventListener('change', applyTableFilter);
+  $id('tableFilterTo')?.addEventListener('change', applyTableFilter);
+
+  $id('athleteFilter')?.addEventListener('change', updateCharts);
+  $id('dateFrom')?.addEventListener('change', updateCharts);
+  $id('dateTo')?.addEventListener('change', updateCharts);
+  $id('typeFilter')?.addEventListener('change', updateCharts);
+
+  const ripSel = $id('ripAthlete');
+  if(ripSel) ripSel.innerHTML = athletes.map(a=>`<option value="${a}">${a}</option>`).join('');
+  const ta1=$id('trendAthlete1'), ta2=$id('trendAthlete2'), pa=$id('predictionAthlete');
+  if(ta1) ta1.innerHTML=athletes.map((n,i)=>`<option value="${n}" ${i===0?'selected':''}>${n}</option>`).join('');
+  if(ta2) ta2.innerHTML=athletes.map((n,i)=>`<option value="${n}" ${i===1?'selected':''}>${n}</option>`).join('');
+  if(pa) pa.innerHTML=athletes.map((n,i)=>`<option value="${n}" ${i===0?'selected':''}>${n}</option>`).join('');
+});
+
+/* -----------------------------
+   Modal helpers
+   ----------------------------- */
+function closeAthletes(){ $id('athletesModal')?.classList.remove('show'); }
+function closeSports(){ $id('sportsModal')?.classList.remove('show'); }
+function closeActivityTypes(){ $id('activityTypesModal')?.classList.remove('show'); }
+function closeComparison(){ $id('comparisonModal')?.classList.remove('show'); }
+function closePrediction(){ $id('predictionModal')?.classList.remove('show'); }
+function closeTrend(){ $id('trendModal')?.classList.remove('show'); }
+
 </script>
 </body>
 </html>
