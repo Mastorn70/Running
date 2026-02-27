@@ -1209,8 +1209,47 @@ body.dark-mode .prediction-chart-container {
     <button id="manageAthletesBtn">👥 Atleti</button>
     <!--<button id="exportPdfBtn">PDF</button>-->
     <button id="toggleThemeBtn">🌙</button>
+    <button id="kpiInfoBtn" type="button" style="background:#6366f1;color:#fff;font-weight:700;" onclick="openKpiModal()">❓ Spiegazione KPI/Algoritmi</button>
   </div>
 </header>
+
+<!-- MODAL SPIEGAZIONE KPI/ALGORITMI -->
+<div id="kpiInfoModal" class="modal" style="display:none;position:fixed;z-index:10000;left:0;top:0;width:100vw;height:100vh;background:rgba(30,41,59,0.55);backdrop-filter:blur(2px);justify-content:center;align-items:center;">
+  <div class="modal-content" style="background:#fff;color:#222;max-width:500px;width:90vw;padding:32px 28px 18px 28px;border-radius:18px;box-shadow:0 8px 32px #0005;position:relative;animation:fadeIn 0.3s;">
+    <button onclick="closeKpiModal()" style="position:absolute;top:10px;right:14px;font-size:1.5em;background:none;border:none;color:#6366f1;cursor:pointer;">&times;</button>
+    <h2 style="margin-top:0;font-size:1.3em;color:#6366f1;">Spiegazione KPI e Algoritmi</h2>
+    <div style="font-size:1em;line-height:1.6;">
+      <strong>KPI principali:</strong>
+      <ul>
+        <li><b>Km settimana</b>: chilometri totali percorsi dalla squadra nella settimana selezionata.</li>
+        <li><b>Carico (RPE×min)</b>: somma dei carichi di allenamento (RPE × minuti) di tutti gli atleti nella settimana.</li>
+        <li><b>TRIMP</b>: Training Impulse, misura del carico fisiologico basata su durata e intensità (algoritmo Banister).</li>
+        <li><b>Top atleta</b>: atleta con il carico settimanale più alto.</li>
+        <li><b>% a rischio</b>: percentuale di atleti con carico settimanale superiore al 130% della media personale (rischio overload).</li>
+      </ul>
+      <strong>Algoritmi:</strong>
+      <ul>
+        <li><b>TRIMP</b>: calcolato come <i>Durata × Intensità × Fattore sesso</i> (Banister, 1991).</li>
+        <li><b>Carico settimanale</b>: somma dei valori RPE×minuti per ogni sessione.</li>
+        <li><b>Rischio overload</b>: atleti con carico settimanale &gt;130% della loro media delle ultime 4 settimane.</li>
+      </ul>
+      <strong>Predizione (Predizioni):</strong>
+      <ul>
+        <li><b>Predizione performance</b>: viene utilizzata una regressione lineare sui dati storici di allenamento (carico, km, TRIMP) per stimare la prestazione futura dell’atleta. Il modello tiene conto delle ultime settimane e dei trend individuali.</li>
+        <li><b>Input</b>: dati recenti di carico, distanza, RPE, TRIMP, risultati precedenti.</li>
+        <li><b>Output</b>: previsione del valore atteso (es. tempo gara, carico, rischio infortunio) per la settimana o evento selezionato.</li>
+      </ul>
+      <strong>Maratona (Calcolo previsione maratona):</strong>
+      <ul>
+        <li><b>Stima tempo maratona</b>: viene usata la formula di Riegel:<br>
+          <i>Tempo previsto = Tempo recente × (Distanza maratona / Distanza recente)<sup>1.06</sup></i><br>
+          dove il tempo recente è quello ottenuto su una distanza più breve (es. mezza maratona o 10km).</li>
+        <li><b>Personalizzazione</b>: il calcolo può essere aggiustato in base a parametri individuali (età, sesso, storico infortuni, andamento allenamenti).</li>
+      </ul>
+      <p style="font-size:0.95em;color:#666;margin-top:10px;">Per dettagli o personalizzazioni, contatta lo staff tecnico.</p>
+    </div>
+  </div>
+</div>
 
 <div class="container" id="dashboardRoot">
   <!-- TABS -->
@@ -3772,6 +3811,13 @@ function closeComparison(){ $id('comparisonModal')?.classList.remove('show'); }
 function closePrediction(){ $id('predictionModal')?.classList.remove('show'); }
 function closeTrend(){ $id('trendModal')?.classList.remove('show'); }
 
+// ...existing code...
+function openKpiModal() {
+  document.getElementById('kpiInfoModal').style.display = 'flex';
+}
+function closeKpiModal() {
+  document.getElementById('kpiInfoModal').style.display = 'none';
+}
 </script>
 </body>
 </html>
