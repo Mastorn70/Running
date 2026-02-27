@@ -1188,6 +1188,7 @@ body.dark-mode .prediction-chart-container {
 </style>
 </head>
 <body>
+<div id="notificaSalvataggio" style="display:none;position:fixed;top:24px;right:24px;z-index:99999;background:#10b981;color:#fff;padding:12px 24px;border-radius:8px;box-shadow:0 2px 8px #0002;font-size:1.1em;transition:opacity 0.4s;opacity:0;">Dati sincronizzati!</div>
 <div style="position:fixed;top:10px;right:10px;z-index:9999;">
   <button onclick="importFromFirebase()" style="padding:6px 14px;margin-right:8px;">Importa da Firebase</button>
   <button onclick="saveToFirebase()" style="padding:6px 14px;">Salva su Firebase</button>
@@ -1277,7 +1278,7 @@ body.dark-mode .prediction-chart-container {
       <button id="manageActivityTypesBtn">🏷️ Tipi Attività</button>
       <button onclick="apriFileDiretto()">📂 Apri File</button>
       <input type="file" id="openFileInput" accept=".json" style="display:none;">
-      <button id="saveFileBtn">💾 Salva</button>
+      <button id="refreshTableBtn">🔄 Aggiorna Tabella</button>
       <button id="exportJsonBtn">⬇️ Esporta JSON</button>
     </div>
 
@@ -1510,48 +1511,72 @@ body.dark-mode .prediction-chart-container {
 // --- Firebase RTDB import/export ---
 const FIREBASE_URL = 'https://running-7a13f-default-rtdb.europe-west1.firebasedatabase.app/data.json';
 
-function importFromFirebase() {
+window.importFromFirebase = function() {
   fetch(FIREBASE_URL)
     .then(res => res.json())
     .then(data => {
-      if (!data) { alert('Nessun dato trovato su Firebase!'); return; }
-      // Sostituisci i dati locali con quelli importati
+      if (!data) { console.warn('Nessun dato trovato su Firebase!'); return; }
       try {
-        // Sostituisci i dati locali (ad esempio in localStorage o dove serve)
         localStorage.setItem('importedData', JSON.stringify(data));
-        // Aggiorna la tabella principale se i dati sono un array o hanno la proprietà data
         if (typeof popolaTabellaDaJSON === 'function') {
           if (Array.isArray(data)) popolaTabellaDaJSON(data);
           else if (data && typeof data === 'object' && Array.isArray(data.data)) popolaTabellaDaJSON(data.data);
         }
-        // TEST: Mostra i dati importati in console per verifica
         console.log('Dati importati da Firebase:', data);
-        // Se la tua app usa getData() da localStorage, aggiorna qui
         if(typeof updateCharts === 'function') {
           window._importedData = data;
           window.getData = () => Array.isArray(window._importedData) ? window._importedData : [];
           updateCharts();
         }
-        alert('Dati importati da Firebase e dashboard aggiornata!');
-      } catch (e) { alert('Errore salvataggio dati importati'); }
+        // Forza il calcolo KPI dopo l'import usando i dati filtrati
+        if(typeof updateCharts === 'function') {
+          setTimeout(()=>{
+            const combinedData = window.getData ? window.getData() : [];
+            const fA = $id('athleteFilter') ? $id('athleteFilter').value : 'all';
+            const t = $id('typeFilter') ? $id('typeFilter').value : 'all';
+            const da = $id('dateFrom') ? $id('dateFrom').value : '';
+            const a = $id('dateTo') ? $id('dateTo').value : '';
+            const filt = combinedData.filter(d =>
+              (fA === 'all' || d.athlete === fA) &&
+              (t === 'all' || d.type === t || d.activityType === t) &&
+              (!da || d.date >= da) &&
+              (!a || d.date <= a)
+            );
+            if(typeof updateKPI === 'function') updateKPI(filt, computeACWR(combinedData));
+          }, 100);
+        }
+      } catch (e) { console.error('Errore salvataggio dati importati', e); }
     })
-    .catch(err => { alert('Errore importazione Firebase: ' + err); });
+    .catch(err => { console.error('Errore importazione Firebase:', err); });
 }
 
 function saveToFirebase() {
-  // Adatta qui per esportare i dati che vuoi salvare
   let dati = [];
   try {
-    dati = getData ? getData() : [];
+    dati = getDataRaw().map(x=>({ date:x.date, athlete:x.athlete, km:x.km, minutes:x.minutes, time:x.time, rpe:x.rpe, hr:x.hr, type:x.type, activityType:x.activityType, note:x.note }));
   } catch(e) {}
+  console.log('Dati inviati a Firebase:', dati);
   fetch(FIREBASE_URL, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(dati)
   })
     .then(res => res.json())
-    .then(() => { alert('Dati salvati su Firebase!'); })
-    .catch(err => { alert('Errore salvataggio Firebase: ' + err); });
+    .then(() => {
+      window.mostraNotificaSalvataggio();
+      if(typeof window.importFromFirebase === 'function') window.importFromFirebase();
+    })
+    .catch(err => { console.error('Errore salvataggio Firebase:', err); });
+}
+
+// Mostra una notifica discreta in alto a destra
+window.mostraNotificaSalvataggio = function(){
+  const n = document.getElementById('notificaSalvataggio');
+  if(!n) return;
+  n.style.display = 'block';
+  n.style.opacity = '1';
+  setTimeout(()=>{ n.style.opacity = '0'; }, 1800);
+  setTimeout(()=>{ n.style.display = 'none'; }, 2200);
 }
 // Modal Marathon
 window.openMarathon = function(){
@@ -2335,20 +2360,28 @@ function loadRipSessionsFromFile(){
    ----------------------------- */
 function getDataRaw(){
   return Array.from(document.querySelectorAll('#dataTable tbody tr')).map(r=>{
-    const inputs=r.querySelectorAll('input');
-    const selects=r.querySelectorAll('select');
-    const minutes = +inputs[2]?.value || 0;
+    const cells = r.children;
+    const date = cells[0]?.querySelector('input')?.value || '';
+    const athlete = cells[1]?.querySelector('select')?.value || '';
+    const km = +(cells[2]?.querySelector('input')?.value || 0);
+    const minutes = +(cells[3]?.querySelector('input')?.value || 0);
+    const time = minutes / 60;
+    const rpe = +(cells[4]?.querySelector('input')?.value || 0);
+    const hr = +(cells[5]?.querySelector('input')?.value || 0);
+    const type = cells[6]?.querySelector('select')?.value || '';
+    const activityType = cells[7]?.querySelector('select')?.value || '';
+    const note = cells[8]?.querySelector('input')?.value || '';
     return {
-      date: inputs[0]?.value || '',
-      athlete: selects[0] ? selects[0].value : '',
-      km: +inputs[1]?.value || 0,
-      minutes: minutes,
-      time: (minutes) / 60,
-      rpe: +inputs[3]?.value || 0,
-      hr: +inputs[4]?.value || 0,
-      type: selects[1] ? selects[1].value : '',
-      activityType: selects[2] ? selects[2].value : '',
-      note: inputs[5] ? inputs[5].value : ''
+      date,
+      athlete,
+      km,
+      minutes,
+      time,
+      rpe,
+      hr,
+      type,
+      activityType,
+      note
     };
   }).filter(d=>d.date && d.athlete);
 }
@@ -3493,26 +3526,38 @@ function displayPredictions(athlete, historicalData, futureDates, predictedKm, p
 /* -----------------------------
    FILE I/O - save
    ----------------------------- */
-$id('saveFileBtn')?.addEventListener('click', async ()=>{
-  try{
-    const dati = getDataRaw().map(x=>({ date:x.date, athlete:x.athlete, km:x.km, minutes:x.minutes, time:x.time, rpe:x.rpe, hr:x.hr, type:x.type, activityType:x.activityType, note:x.note }));
-    if(fileHandle){
-      try{
-        const w = await fileHandle.createWritable();
-        await w.write(JSON.stringify(dati,null,2));
-        await w.close();
-        alert('✅ Salvato');
-        return;
-      }catch(e){ console.warn('Save error:', e); }
+// Pulsante Aggiorna Tabella: aggiorna i grafici e i KPI dopo modifica manuale
+$id('refreshTableBtn')?.addEventListener('click', ()=>{
+  try {
+    // Forza il refresh degli input prima di aggiornare
+    // Forza il blur su tutti gli input/select della tabella
+    const tb = document.querySelector('#dataTable tbody');
+    if(tb){
+      tb.querySelectorAll('input,select').forEach(el=>el.blur());
     }
+    setTimeout(()=>{
+      updateCharts();
+      saveToFirebase();
+      alert('Tabella e Firebase aggiornati!');
+    }, 100);
+  } catch(e) {
+    alert('Errore aggiornamento tabella/Firebase (vedi console)');
+    console.error('refreshTable error', e);
+  }
+});
+$id('exportJsonBtn')?.addEventListener('click', ()=>{
+  try {
+    const dati = getDataRaw().map(x=>({ date:x.date, athlete:x.athlete, km:x.km, minutes:x.minutes, time:x.time, rpe:x.rpe, hr:x.hr, type:x.type, activityType:x.activityType, note:x.note }));
     const b = new Blob([JSON.stringify(dati,null,2)], { type:'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(b);
     a.download = 'data_squadra.json';
     a.click();
-  }catch(e){ console.error('saveFile error', e); alert('Errore salvataggio (vedi console)'); }
+  }catch(e){
+    alert('Errore esportazione JSON (vedi console)');
+    console.error('exportJson error', e);
+  }
 });
-$id('exportJsonBtn')?.addEventListener('click', ()=> $id('saveFileBtn').click() );
 /* -----------------------------
    PDF export robusto (try/catch + fallback)
    ----------------------------- */
