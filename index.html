@@ -1207,7 +1207,7 @@ body.dark-mode .prediction-chart-container {
     <button id="predictionBtn">🔮 Predizioni</button>
     <button id="marathonBtn" onclick="openMarathon()">🧮 Maratona</button>
     <button id="manageAthletesBtn">👥 Atleti</button>
-    <button id="exportPdfBtn">PDF</button>
+    <!--<button id="exportPdfBtn">PDF</button>-->
     <button id="toggleThemeBtn">🌙</button>
   </div>
 </header>
@@ -1216,8 +1216,8 @@ body.dark-mode .prediction-chart-container {
   <!-- TABS -->
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('dashboard', event)">📊 Dashboard</button>
-    <button class="tab-btn" onclick="switchTab('data', event)">📋 Dati Storici</button>
-    <button class="tab-btn" onclick="switchTab('ripetute', event)">🏃‍♂️ Ripetute</button>
+    <button class="tab-btn" onclick="switchTab('data', event)">📋Inserimento Dati</button>
+    <button class="tab-btn" onclick="switchTab('ripetute', event)">🏃‍♂️Inserimento Ripetute</button>
   </div>
 
   <!-- TAB DASHBOARD -->
@@ -1276,10 +1276,10 @@ body.dark-mode .prediction-chart-container {
       <button id="updateChartsBtn">🔄 Aggiorna Grafici</button>
       <button id="manageSportsBtn">⚙️ Sport</button>
       <button id="manageActivityTypesBtn">🏷️ Tipi Attività</button>
-      <button onclick="apriFileDiretto()">📂 Apri File</button>
+      <!-- <button onclick="apriFileDiretto()">📂 Apri File</button>-->
       <input type="file" id="openFileInput" accept=".json" style="display:none;">
       <button id="refreshTableBtn">🔄 Aggiorna Tabella</button>
-      <button id="exportJsonBtn">⬇️ Esporta JSON</button>
+      <!-- <button id="exportJsonBtn">⬇️ Esporta JSON</button>-->
     </div>
 
     <table id="dataTable">
@@ -1306,8 +1306,8 @@ body.dark-mode .prediction-chart-container {
       <label>Warm-up (min):</label><input type="number" id="ripWarmup" value="20" style="width:80px;">
       <label>Cool-down (min):</label><input type="number" id="ripCooldown" value="15" style="width:80px;">
       <button onclick="startNewRipSession()">➕ Nuova Sessione</button>
-      <button onclick="saveRipSessionsToFile()">⬇️ Esporta</button>
-      <button onclick="loadRipSessionsFromFile()">📂 Importa</button>
+      <!--<button onclick="saveRipSessionsToFile()">⬇️ Esporta</button>-->
+      <!--<button onclick="loadRipSessionsFromFile()">📂 Importa</button>-->
     </div>
 
     <div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap;">
