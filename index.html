@@ -103,7 +103,7 @@ body.dark-mode button {
 }
 
 body.dark-mode button:hover {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, #595cf0 0%, #8b5cf6 100%);
 }
 
 body.dark-mode .kpi-card:nth-child(1) {
@@ -111,19 +111,19 @@ body.dark-mode .kpi-card:nth-child(1) {
 }
 
 body.dark-mode .kpi-card:nth-child(2) {
-  background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%);
+  background: linear-gradient(135deg, #682095 0%, #9f273b 100%);
 }
 
 body.dark-mode .kpi-card:nth-child(3) {
-  background: linear-gradient(135deg, #06b6d4 0%, #0ea5e9 100%);
+  background: linear-gradient(135deg, #174c55 0%, #1a5f7f 100%);
 }
 
 body.dark-mode .kpi-card:nth-child(4) {
-  background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
+  background: linear-gradient(135deg, #0f825c 0%, #1b8d80 100%);
 }
 
 body.dark-mode .kpi-card:nth-child(5) {
-  background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+  background: linear-gradient(135deg, #845504 0%, #760a04 100%);
 }
 
 body.dark-mode .athlete-card {
@@ -374,31 +374,31 @@ header h2 {
 
 .kpi-card:nth-child(1) {
   animation-delay: 0.1s;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4c5681 0%, #472f5e 100%);
   box-shadow: 0 10px 25px rgba(102, 126, 234, 0.5);
 }
 
 .kpi-card:nth-child(2) {
   animation-delay: 0.15s;
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background: linear-gradient(135deg, #824f88 0%, #8d434d 100%);
   box-shadow: 0 10px 25px rgba(240, 147, 251, 0.5);
 }
 
 .kpi-card:nth-child(3) {
   animation-delay: 0.2s;
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  background: linear-gradient(135deg, #346188 0%, #148388 100%);
   box-shadow: 0 10px 25px rgba(79, 172, 254, 0.5);
 }
 
 .kpi-card:nth-child(4) {
   animation-delay: 0.25s;
-  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  background: linear-gradient(135deg, #2f814a 0%, #319986 100%);
   box-shadow: 0 10px 25px rgba(67, 233, 123, 0.5);
 }
 
 .kpi-card:nth-child(5) {
   animation-delay: 0.3s;
-  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  background: linear-gradient(135deg, #7a4052 0%, #928126 100%);
   box-shadow: 0 10px 25px rgba(250, 112, 154, 0.5);
 }
 
@@ -512,7 +512,7 @@ table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  background: rgba(255, 255, 255, 0.98);
+  background: rgba(206, 196, 196, 0.98);
   font-size: 0.8rem;
   border-radius: 16px;
   overflow: hidden;
@@ -1188,6 +1188,10 @@ body.dark-mode .prediction-chart-container {
 </style>
 </head>
 <body>
+<div style="position:fixed;top:10px;right:10px;z-index:9999;">
+  <button onclick="importFromFirebase()" style="padding:6px 14px;margin-right:8px;">Importa da Firebase</button>
+  <button onclick="saveToFirebase()" style="padding:6px 14px;">Salva su Firebase</button>
+</div>
 
 <header>
   <h2>📊 Dashboard Squadra</h2>
@@ -1200,6 +1204,7 @@ body.dark-mode .prediction-chart-container {
     <button id="comparisonBtn">🔄 Confronto</button>
     <button id="trendBtn">📈 Trend</button>
     <button id="predictionBtn">🔮 Predizioni</button>
+    <button id="marathonBtn" onclick="openMarathon()">🧮 Maratona</button>
     <button id="manageAthletesBtn">👥 Atleti</button>
     <button id="exportPdfBtn">PDF</button>
     <button id="toggleThemeBtn">🌙</button>
@@ -1453,7 +1458,30 @@ body.dark-mode .prediction-chart-container {
   </div>
 </div>
 
-<!-- MODAL PREDIZIONI -->
+<!-- MODAL PROBABILITÀ MARATONA -->
+<div id="marathonModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>🧮 Probabilità Maratona</h2>
+      <span class="close-btn" onclick="closeMarathon()">&times;</span>
+    </div>
+    <div class="trend-section">
+      <h3>Seleziona atleta e parametri</h3>
+      <div class="trend-controls">
+        <label>Atleta:</label>
+        <select id="marathonAthlete"></select>
+        <label>Tempo obiettivo:</label>
+        <input type="time" id="marathonTargetTime" step="1" value="03:30:00" style="width:110px;">
+        <label>Distanza:</label>
+        <input type="number" id="marathonDistance" value="42.195" min="1" step="0.001" style="width:90px;">
+        <label>Preparazione (giorni):</label>
+        <input type="number" id="marathonPrepDays" value="90" min="1" style="width:80px;">
+        <button onclick="calculateMarathonProbability()">🧮 Calcola</button>
+      </div>
+    </div>
+    <div id="marathonResults"></div>
+  </div>
+</div>
 <div id="predictionModal" class="modal">
   <div class="modal-content">
     <div class="modal-header">
@@ -1479,6 +1507,202 @@ body.dark-mode .prediction-chart-container {
 </div>
 
 <script>
+// --- Firebase RTDB import/export ---
+const FIREBASE_URL = 'https://running-7a13f-default-rtdb.europe-west1.firebasedatabase.app/data.json';
+
+function importFromFirebase() {
+  fetch(FIREBASE_URL)
+    .then(res => res.json())
+    .then(data => {
+      if (!data) { alert('Nessun dato trovato su Firebase!'); return; }
+      // Sostituisci i dati locali con quelli importati
+      try {
+        // Sostituisci i dati locali (ad esempio in localStorage o dove serve)
+        localStorage.setItem('importedData', JSON.stringify(data));
+        // Aggiorna la tabella principale se i dati sono un array o hanno la proprietà data
+        if (typeof popolaTabellaDaJSON === 'function') {
+          if (Array.isArray(data)) popolaTabellaDaJSON(data);
+          else if (data && typeof data === 'object' && Array.isArray(data.data)) popolaTabellaDaJSON(data.data);
+        }
+        // TEST: Mostra i dati importati in console per verifica
+        console.log('Dati importati da Firebase:', data);
+        // Se la tua app usa getData() da localStorage, aggiorna qui
+        if(typeof updateCharts === 'function') {
+          window._importedData = data;
+          window.getData = () => Array.isArray(window._importedData) ? window._importedData : [];
+          updateCharts();
+        }
+        alert('Dati importati da Firebase e dashboard aggiornata!');
+      } catch (e) { alert('Errore salvataggio dati importati'); }
+    })
+    .catch(err => { alert('Errore importazione Firebase: ' + err); });
+}
+
+function saveToFirebase() {
+  // Adatta qui per esportare i dati che vuoi salvare
+  let dati = [];
+  try {
+    dati = getData ? getData() : [];
+  } catch(e) {}
+  fetch(FIREBASE_URL, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(dati)
+  })
+    .then(res => res.json())
+    .then(() => { alert('Dati salvati su Firebase!'); })
+    .catch(err => { alert('Errore salvataggio Firebase: ' + err); });
+}
+// Modal Marathon
+window.openMarathon = function(){
+  document.getElementById('marathonModal').classList.add('show');
+  // Popola select atleta
+  const sel = document.getElementById('marathonAthlete');
+  if(sel && window.athletes){
+    sel.innerHTML = window.athletes.map((a,i)=>`<option value="${a}" ${i===0?'selected':''}>${a}</option>`).join('');
+  }
+}
+function closeMarathon(){
+  document.getElementById('marathonModal').classList.remove('show');
+}
+function calculateMarathonProbability(){
+  const athlete = document.getElementById('marathonAthlete').value;
+  const targetTime = document.getElementById('marathonTargetTime').value;
+  const distance = parseFloat(document.getElementById('marathonDistance').value);
+  const prepDays = parseInt(document.getElementById('marathonPrepDays').value);
+  // Calcolo basato sui dati storici
+  const data = typeof getData === 'function' ? getData() : [];
+  const athleteData = data.filter(d => d.athlete === athlete && d.km && d.time);
+  let avgSpeed = 0;
+  let best10k = null, bestHalf = null;
+  if(athleteData.length > 0) {
+    avgSpeed = athleteData.map(d => d.time > 0 ? d.km / d.time : 0).reduce((a,b)=>a+b,0) / athleteData.length;
+    // Cerca miglior 10k e mezza maratona
+    best10k = athleteData.filter(d => d.km >= 9.5 && d.km <= 10.5).sort((a,b)=>a.time-b.time)[0];
+    bestHalf = athleteData.filter(d => d.km >= 20 && d.km <= 22).sort((a,b)=>a.time-b.time)[0];
+  }
+  // Modello storico: media velocità
+  let predictedTimeH_hist = avgSpeed > 0 ? (distance / avgSpeed) : 4.5;
+  // Modello fisiologico (Riegel): T2 = T1 * (D2/D1)^1.06
+  let predictedTimeH_riegel = null;
+  if(bestHalf) {
+    predictedTimeH_riegel = (bestHalf.time * Math.pow(distance / bestHalf.km, 1.06)) / 3600;
+  } else if(best10k) {
+    predictedTimeH_riegel = (best10k.time * Math.pow(distance / best10k.km, 1.08)) / 3600;
+  }
+  // Media pesata: se entrambi disponibili, 60% storico, 40% Riegel
+  let predictedTimeH = predictedTimeH_hist;
+  if(predictedTimeH_riegel) predictedTimeH = 0.6 * predictedTimeH_hist + 0.4 * predictedTimeH_riegel;
+  // Imposta un limite minimo realistico (2h55m)
+  if(predictedTimeH < 2.9167) predictedTimeH = 2.9167;
+  let timeMin = new Date(predictedTimeH * 3600 * 1000).toISOString().substr(11, 8);
+  let timeMax = new Date((predictedTimeH+0.25) * 3600 * 1000).toISOString().substr(11, 8);
+  // Probabilità e tempo influenzati dai giorni di preparazione
+  let targetSeconds = 0;
+  if(targetTime && targetTime.length >= 5) {
+    const parts = targetTime.split(':');
+    targetSeconds = (+parts[0])*3600 + (+parts[1])*60 + (+parts[2]||0);
+  }
+  let predictedSeconds = predictedTimeH * 3600;
+  let diff = Math.abs(predictedSeconds - targetSeconds);
+  let prob = 0.5;
+  // Effetto preparazione: se <60 giorni, penalizza; se >120 giorni, premia
+  let prepEffect = 1;
+  if(prepDays < 60) prepEffect = 0.8;
+  else if(prepDays > 120) prepEffect = 1.1;
+  // Modifica tempo previsto
+  predictedSeconds = predictedSeconds / prepEffect;
+  timeMin = new Date(predictedSeconds * 1000).toISOString().substr(11, 8);
+  timeMax = new Date((predictedSeconds+900) * 1000).toISOString().substr(11, 8);
+  // Modifica probabilità
+  if(diff < 900) prob = 0.85 * prepEffect;
+  else if(diff < 1800) prob = 0.7 * prepEffect;
+  else if(diff < 3600) prob = 0.5 * prepEffect;
+  else prob = 0.2 * prepEffect;
+  prob = Math.max(0.05, Math.min(prob, 0.99));
+  // Genera piano di allenamento
+  let weeks = Math.max(4, Math.round(prepDays/7));
+  let longRuns = Math.max(2, Math.round(weeks/3));
+  let testRuns = Math.max(1, Math.round(weeks/6));
+  let recoveryWeeks = Math.max(1, Math.round(weeks/6));
+  let baseLong = Math.min(distance*0.7, 32);
+  let planArr = [];
+  let kmArr = [];
+  for(let w=1;w<=weeks;w++){
+    let km = 0;
+    if(w%3===0 && longRuns>0){
+      planArr.push(`Settimana ${w}: Lungo ${Math.round(baseLong)} km, ritmo lento`);
+      km = Math.round(baseLong);
+      longRuns--;
+    }else if(w%6===0 && testRuns>0){
+      planArr.push(`Settimana ${w}: Test gara 21 km, ritmo obiettivo`);
+      km = 21;
+      testRuns--;
+    }else if(w%5===0 && recoveryWeeks>0){
+      planArr.push(`Settimana ${w}: Settimana di recupero, volume ridotto`);
+      km = Math.round(baseLong*0.5);
+      recoveryWeeks--;
+    }else{
+      planArr.push(`Settimana ${w}: Progressione, allenamento misto (interval, medio, lento)`);
+      km = Math.round(baseLong*0.7);
+    }
+    km = 30 + Math.max(km, 0); // 30 km base + proposto
+    kmArr.push(km);
+  }
+  let plan = '<ul>' + planArr.map(p=>`<li>${p}</li>`).join('') + '</ul>';
+  let advice = 'Allenamento consigliato: segui il piano sotto, inserisci almeno 2 lunghi >30km, 1 test gara, e una settimana di recupero.';
+  if(prepDays < 60) advice += ' (Preparazione breve: aumenta i lunghi e la gradualità)';
+  if(athleteData.length < 5) advice += ' (Aumenta le sessioni di corsa lunga per migliorare la stima)';
+  document.getElementById('marathonResults').innerHTML = `
+    <div class="prediction-grid">
+      <div class="prediction-card">
+        <h4>🧮 Probabilità di chiusura</h4>
+        <div class="prediction-info">
+          <strong>Probabilità stimata:</strong> ${(prob*100).toFixed(1)}%<br>
+          <strong>Tempo previsto:</strong> ${timeMin} – ${timeMax}<br>
+          <strong>Fattori:</strong> velocità media, distanza, preparazione<br>
+        </div>
+      </div>
+      <div class="prediction-card">
+        <h4>💡 Suggerimento allenamento</h4>
+        <div class="prediction-info">${advice}<br><button id='openPlanBtn' style='background:#f59e0b;color:#fff;font-weight:700;border:none;border-radius:8px;padding:10px 18px;animation:pulsePlan 1s infinite;'>📋 Apri Piano</button></div>
+      </div>
+    </div>
+    <style>@keyframes pulsePlan{0%,100%{box-shadow:0 0 0 0 #f59e0b;}50%{box-shadow:0 0 16px 4px #f59e0b;}}</style>
+    <div id='planModal' class='modal'>
+      <div class='modal-content'>
+        <div class='modal-header'>
+          <h2>📋 Piano Allenamento</h2>
+          <span class='close-btn' onclick="document.getElementById('planModal').classList.remove('show')">&times;</span>
+        </div>
+        <div class='modal-body'>
+          <div class="prediction-grid">
+            <div class="prediction-card">
+              <h4>📋 Piano Settimanale</h4>
+              <div class="prediction-info" style="max-height:260px;overflow:auto;font-size:1rem;">${plan}</div>
+            </div>
+            <div class="prediction-card">
+              <h4>📈 Km/Settimana</h4>
+              <div class="prediction-chart-container" style="height:220px;">
+                <canvas id='planKmChart'></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  setTimeout(()=>{
+    const btn=document.getElementById('openPlanBtn');
+    if(btn) btn.onclick=()=>document.getElementById('planModal').classList.add('show');
+    // Render chart
+    const ctx=document.getElementById('planKmChart');
+    if(ctx && window.Chart){
+      if(window.planKmChart) try{window.planKmChart.destroy();}catch(e){}
+      window.planKmChart=new Chart(ctx,{type:'line',data:{labels:Array.from({length:weeks},(_,i)=>'Settimana '+(i+1)),datasets:[{label:'Km previsti',data:kmArr,backgroundColor:'#3b82f6',borderColor:'#3b82f6',fill:false, tension:0.3}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true}}}});
+    }
+  },300);
+}
 // helper $id
 function $id(id){ return document.getElementById(id); }
 
@@ -1501,8 +1725,8 @@ let charts = {};
 let fileHandle = null;
 
 let sports=['corsa','bici','palestra','nuoto','sci'];
-let athletes=['Atleta 1','Atleta 2','Atleta 3'];
-let activityTypes=['Allenamento','Gara','Test','Recupero','Tecnica'];
+let athletes=['Max'];
+let activityTypes=['Allenamento','Gara','Test','Recupero','Tecnica','Ripetute'];
 
 // ripetute storage
 let ripetuteSessions = [];
@@ -1728,7 +1952,7 @@ function addRipRow(data = {}){
   const id = 'ripRow' + Date.now() + Math.floor(Math.random()*1000);
   const div = document.createElement('div');
   div.id = id;
-  div.style = "display:flex;gap:8px;align-items:center;margin-bottom:6px;";
+  div.style = "display:flex;gap:8px;align-items:center;margin-bottom:6px;overflow:auto;padding:4px;border-radius:8px;background:#f7fafc;box-shadow:0 2px 8px rgba(0,0,0,0.07);";
   div.innerHTML = `
     <input placeholder="Tipo (es. 400m)" style="width:90px" value="${data.label||''}">
     <input placeholder="distanza m" type="number" style="width:90px" value="${data.distance||''}">
@@ -1737,7 +1961,7 @@ function addRipRow(data = {}){
     <input placeholder="RPE" type="number" min="0" max="10" style="width:60px" value="${data.rpe||''}">
     <input placeholder="FC" type="number" style="width:70px" value="${data.hr||''}">
     <input placeholder="lattato (mmol)" type="number" step="0.1" style="width:100px" value="${data.lactate||''}">
-    <button onclick="this.closest('div').remove()" style="background:#ef4444;">✖</button>
+    <button onclick="this.closest('div').remove()" style="background:#ef4444;color:#fff;border:none;border-radius:6px;padding:6px 12px;min-width:32px;max-height:32px;align-self:center;box-shadow:0 1px 4px rgba(239,68,68,0.15);">✖</button>
   `;
   container.appendChild(div);
 }
@@ -2413,10 +2637,16 @@ async function apriFileDiretto(){
     // Preferiamo File System Access se disponibile (consente salvataggio persistente)
     if(window.showOpenFilePicker){
       const [handle] = await window.showOpenFilePicker({
-        types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }],
-        excludeAcceptAllOption: false
+        types: [{ description: 'Squadra JSON', accept: { 'application/json': ['.json'] } }],
+        excludeAcceptAllOption: false,
+        suggestedName: 'data_squadra.json'
       });
       if(!handle) return;
+
+      if(handle.name && handle.name !== 'data_squadra.json') {
+        alert('Seleziona il file corretto: data_squadra.json');
+        return;
+      }
 
       fileHandle = handle;
 
@@ -2442,7 +2672,6 @@ async function apriFileDiretto(){
       try { parsed = JSON.parse(text); }
       catch(err){ alert('JSON non valido'); console.error('parse error', err); return; }
 
-      // Se è un oggetto con array interni, proviamo a estrarre l'array più rilevante
       if(Array.isArray(parsed)){
         popolaTabellaDaJSON(parsed);
       } else if(parsed && typeof parsed === 'object'){
@@ -2450,7 +2679,7 @@ async function apriFileDiretto(){
         else if(Array.isArray(parsed.sessions)) popolaTabellaDaJSON(parsed.sessions);
         else if(Array.isArray(parsed.activities)) popolaTabellaDaJSON(parsed.activities);
         else if(Array.isArray(parsed.items)) popolaTabellaDaJSON(parsed.items);
-        else popolaTabellaDaJSON([parsed]); // fallback: importa singolo oggetto come array
+        else popolaTabellaDaJSON([parsed]);
       } else {
         alert('Formato file non riconosciuto.');
       }
@@ -2465,9 +2694,14 @@ async function apriFileDiretto(){
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.json,application/json';
+    input.setAttribute('nwsaveas', 'data_squadra.json');
     input.onchange = (e) => {
       const f = e.target.files && e.target.files[0];
       if(!f) return;
+      if(f.name !== 'data_squadra.json') {
+        alert('Seleziona il file corretto: data_squadra.json');
+        return;
+      }
       const reader = new FileReader();
       reader.onload = ev => {
         try{
@@ -3274,12 +3508,11 @@ $id('saveFileBtn')?.addEventListener('click', async ()=>{
     const b = new Blob([JSON.stringify(dati,null,2)], { type:'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(b);
-    a.download = 'dati_squadra.json';
+    a.download = 'data_squadra.json';
     a.click();
   }catch(e){ console.error('saveFile error', e); alert('Errore salvataggio (vedi console)'); }
 });
 $id('exportJsonBtn')?.addEventListener('click', ()=> $id('saveFileBtn').click() );
-
 /* -----------------------------
    PDF export robusto (try/catch + fallback)
    ----------------------------- */
@@ -3477,10 +3710,11 @@ window.addEventListener('load', ()=>{
 
   const ripSel = $id('ripAthlete');
   if(ripSel) ripSel.innerHTML = athletes.map(a=>`<option value="${a}">${a}</option>`).join('');
-  const ta1=$id('trendAthlete1'), ta2=$id('trendAthlete2'), pa=$id('predictionAthlete');
+  const ta1=$id('trendAthlete1'), ta2=$id('trendAthlete2'), pa=$id('predictionAthlete'), ma=$id('marathonAthlete');
   if(ta1) ta1.innerHTML=athletes.map((n,i)=>`<option value="${n}" ${i===0?'selected':''}>${n}</option>`).join('');
   if(ta2) ta2.innerHTML=athletes.map((n,i)=>`<option value="${n}" ${i===1?'selected':''}>${n}</option>`).join('');
   if(pa) pa.innerHTML=athletes.map((n,i)=>`<option value="${n}" ${i===0?'selected':''}>${n}</option>`).join('');
+  if(ma) ma.innerHTML=athletes.map((n,i)=>`<option value="${n}" ${i===0?'selected':''}>${n}</option>`).join('');
 });
 
 /* -----------------------------
