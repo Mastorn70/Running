@@ -1191,7 +1191,7 @@ body.dark-mode .prediction-chart-container {
 <div id="notificaSalvataggio" style="display:none;position:fixed;top:24px;right:24px;z-index:99999;background:#10b981;color:#fff;padding:12px 24px;border-radius:8px;box-shadow:0 2px 8px #0002;font-size:1.1em;transition:opacity 0.4s;opacity:0;">Dati sincronizzati!</div>
 <div style="position:fixed;top:10px;right:10px;z-index:9999;">
   <button onclick="importFromFirebase()" style="padding:6px 14px;margin-right:8px;">Importa da Firebase</button>
-  <button onclick="saveToFirebase()" style="padding:6px 14px;">Salva su Firebase</button>
+  <button id="saveFirebaseBtn" onclick="saveToFirebase()" style="padding:6px 14px;">Salva su Firebase</button>
 </div>
 
 <header>
@@ -1594,6 +1594,10 @@ function saveToFirebase() {
   try {
     dati = getDataRaw().map(x=>({ date:x.date, athlete:x.athlete, km:x.km, minutes:x.minutes, time:x.time, rpe:x.rpe, hr:x.hr, type:x.type, activityType:x.activityType, note:x.note }));
   } catch(e) {}
+  if (!dati || dati.length === 0) {
+    alert('Nessun dato da salvare!');
+    return;
+  }
   console.log('Dati inviati a Firebase:', dati);
   fetch(FIREBASE_URL, {
     method: 'PUT',
@@ -3818,6 +3822,35 @@ function openKpiModal() {
 function closeKpiModal() {
   document.getElementById('kpiInfoModal').style.display = 'none';
 }
+</script>
+<script>
+// Carica automaticamente i dati da Firebase all'apertura della pagina
+window.addEventListener('DOMContentLoaded', function() {
+  if (typeof importFromFirebase === 'function') {
+    importFromFirebase();
+  }
+});
+</script>
+<script>
+// Disabilita il pulsante "Salva su Firebase" se non ci sono dati
+function updateSaveFirebaseBtn() {
+  let btn = document.getElementById('saveFirebaseBtn');
+  let dati = [];
+  try {
+    dati = getDataRaw();
+  } catch(e) {}
+  btn.disabled = !dati || dati.length === 0;
+  btn.style.opacity = btn.disabled ? 0.5 : 1;
+}
+// Aggiorna subito e ogni volta che cambiano i dati
+window.addEventListener('DOMContentLoaded', updateSaveFirebaseBtn);
+if (window.addDataRow || window.removeDataRow || window.importFromFirebase) {
+  let origAdd = window.addDataRow, origRemove = window.removeDataRow, origImport = window.importFromFirebase;
+  window.addDataRow = function() { if(origAdd) origAdd.apply(this, arguments); updateSaveFirebaseBtn(); };
+  window.removeDataRow = function() { if(origRemove) origRemove.apply(this, arguments); updateSaveFirebaseBtn(); };
+  window.importFromFirebase = function() { if(origImport) origImport.apply(this, arguments); updateSaveFirebaseBtn(); };
+}
+// In caso di altre modifiche ai dati, puoi chiamare updateSaveFirebaseBtn() manualmente dopo ogni modifica.
 </script>
 </body>
 </html>
