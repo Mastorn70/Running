@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" aria-labelledby="title desc" role="img">
+  <title id="title">Omino che corre all'alba</title>
+  <desc id="desc">Icona stilizzata in bianco e nero: figura corridore a sinistra, orizzonte, sole nascente e raggi a destra.</desc>
+  <g fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Orizzonte -->
+    <line x1="24" y1="320" x2="488" y2="320" stroke-width="14"/>
+    <!-- Sole semicircolare -->
+  
+    <!-- Raggi del sole -->
+    <g stroke-width="8">
+      <line x1="360" y1="234" x2="360" y2="198"/>
+      <line x1="388" y1="244" x2="412" y2="216"/>
+      <line x1="332" y1="244" x2="308" y2="216"/>
+      <line x1="424" y1="268" x2="452" y2="252"/>
+      <line x1="300" y1="268" x2="272" y2="252"/>
+    </g>
+
+    <!-- Omino corridore (stile minimal/lineare) -->
+    <!-- Testa -->
+    <circle cx="140" cy="220" r="18" stroke-width="10"/>
+    <!-- Corpo -->
+    <path d="M140 238 C150 260, 160 280, 152 300" stroke-width="12"/>
+    <!-- Braccio anteriore (in avanti) -->
+    <path d="M140 248 C168 250, 188 238, 200 230" stroke-width="12"/>
+    <!-- Braccio posteriore (indietro) -->
+    <path d="M140 248 C118 260, 110 260, 102 268" stroke-width="12"/>
+    <!-- Gamba anteriore (in avanti) -->
+    <path d="M152 300 C170 292, 188 288, 204 304" stroke-width="12"/>
+    <!-- Gamba posteriore (spinta) -->
+    <path d="M152 300 C136 320, 118 332, 104 348" stroke-width="12"/>
+    <!-- Piccola ombra/terra sotto il piede anteriore -->
+    <ellipse cx="204" cy="312" rx="24" ry="6" fill="#000" stroke="none" opacity="0.12"/>
+  </g>
+</svg>
