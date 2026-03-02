@@ -2,12 +2,142 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1e3c72">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="format-detection" content="telephone=no">
 <title>Dashboard Squadra 5:50</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <style>
+/* MOBILE DASHBOARD STYLE */
+.mobile-dashboard {
+  display: none;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 8px;
+}
+.mini-card {
+  background: #181f2e;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px #0003;
+  padding: 10px 6px 6px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #fff;
+  min-width: 0;
+}
+.mini-card canvas {
+  width: 100% !important;
+  max-width: 100vw;
+  min-width: 0;
+  height: 60px !important;
+  margin-bottom: 2px;
+  box-sizing: border-box;
+}
+.kpi-value {
+  font-size: 1.3em;
+  font-weight: bold;
+  margin: 4px 0 0 0;
+}
+.kpi-unit {
+  font-size: 0.8em;
+  color: #7dd3fc;
+}
+.kpi-label {
+  font-size: 0.9em;
+  color: #b0b8d0;
+}
+.kpi-icons span {
+  margin: 0 2px;
+  font-size: 1.1em;
+}
+@media (max-width: 900px) {
+  .mobile-dashboard { display: grid; }
+  #dashboardRoot { display: block !important; }
+  /* Nascondi barra Firebase e notifiche su mobile */
+  #notificaSalvataggio,
+  body > div[style*="position:fixed"][style*="top:10px"] {
+    display: none !important;
+  }
+  /* Nascondi header/top bar su mobile */
+  header {
+    display: none !important;
+  }
+  /* Migliora tap su bottoni */
+  button, .tab-btn, .mini-card {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: rgba(99,102,241,0.15);
+  }
+  #mobileMenuBtn { display: flex !important; }
+  /* Fullscreen su mobile */
+  html, body {
+    min-height: 100vh;
+    height: 100vh;
+    overscroll-behavior-y: contain;
+  }
+}
+@media (min-width: 901px) {
+  .mobile-dashboard { display: none !important; }
+  #dashboardRoot { display: block; }
+}
+/* HAMBURGER MENU */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  z-index: 10001;
+  background: none;
+  border: none;
+  margin-left: 8px;
+}
+.hamburger span {
+  height: 4px;
+  width: 28px;
+  background: #6366f1;
+  margin: 4px 0;
+  border-radius: 2px;
+  transition: 0.3s;
+  display: block;
+}
+
+@media (max-width: 900px) {
+  .hamburger { display: flex; }
+  .filters {
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    background: rgba(255,255,255,0.98);
+    position: absolute;
+    left: 0;
+    top: 60px;
+    z-index: 10000;
+    box-shadow: 0 8px 24px #0002;
+    border-radius: 0 0 12px 12px;
+    padding: 10px 8px 8px 8px;
+  }
+  .filters.open {
+    display: flex;
+  }
+  header {
+    position: relative;
+  }
+}
+
+@media (max-width: 600px) {
+  .hamburger { display: flex; }
+  .filters {
+    top: 48px;
+    padding: 7px 4px 4px 4px;
+    border-radius: 0 0 8px 8px;
+  }
+}
 /* GRAFICA MIGLIORATA CON COLORI PIÙ DECISI */
 * {
   box-sizing: border-box;
@@ -37,6 +167,123 @@ body {
   font-size: 13px;
   color: #1a202c;
   min-height: 100vh;
+}
+
+/* RESPONSIVE DESIGN */
+@media (max-width: 900px) {
+  .container {
+    padding: 8px;
+    max-width: 100vw;
+  }
+  .tabs {
+    position: static;
+    flex-direction: row;
+    gap: 4px;
+    margin-bottom: 10px;
+    width: 100%;
+    border-radius: 10px;
+    box-shadow: none;
+    padding: 6px 2px;
+    background: rgba(255,255,255,0.95);
+    z-index: 1;
+  }
+  .tab-btn {
+    min-width: unset;
+    font-size: 0.95em;
+    padding: 8px 8px;
+    border-radius: 7px;
+  }
+  .tab-content {
+    margin-left: 0;
+  }
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 6px;
+  }
+  .filters {
+    flex-wrap: wrap;
+    gap: 4px;
+    font-size: 0.95em;
+  }
+  .filters label, .filters select, .filters input, .filters button {
+    font-size: 0.95em;
+    height: 28px;
+    padding: 2px 6px;
+    border-radius: 6px;
+  }
+  .card, .kpi-card {
+    padding: 10px;
+    border-radius: 10px;
+  }
+  #notificaSalvataggio {
+    font-size: 1em;
+    padding: 8px 12px;
+    top: 10px;
+    right: 10px;
+  }
+}
+
+@media (max-width: 600px) {
+  .container {
+    padding: 2px;
+    max-width: 100vw;
+  }
+  .tabs {
+    flex-direction: column;
+    gap: 2px;
+    padding: 2px 0;
+    border-radius: 6px;
+  }
+  .tab-btn {
+    font-size: 0.95em;
+    padding: 7px 4px;
+    border-radius: 5px;
+  }
+  .kpi-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 6px 2px;
+  }
+  .filters {
+    flex-direction: column;
+    gap: 2px;
+    font-size: 1em;
+  }
+  .filters label, .filters select, .filters input, .filters button {
+    font-size: 1em;
+    height: 26px;
+    padding: 2px 4px;
+    border-radius: 5px;
+  }
+  .card, .kpi-card {
+    padding: 7px;
+    border-radius: 7px;
+  }
+  #notificaSalvataggio {
+    font-size: 0.95em;
+    padding: 6px 8px;
+    top: 6px;
+    right: 6px;
+  }
 }
 
 body.dark-mode {
@@ -1110,39 +1357,27 @@ body.dark-mode .prediction-chart-container {
 }
 
 /* RESPONSIVE */
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   header {
     padding: 12px 15px;
+    display: none !important;
   }
-  
-  header h2 {
-    font-size: 1.2rem;
-  }
-  
   .container {
     padding: 12px;
   }
-  
-  .kpi-grid {
+  .kpi-grid, .grid {
     grid-template-columns: 1fr;
   }
-  
-  .grid {
-    grid-template-columns: 1fr;
-  }
-  
   .filters {
     flex-direction: column;
     align-items: stretch;
     width: 100%;
   }
-  
   .filters select,
   .filters input,
   .filters button {
     width: 100%;
   }
-  
   .tabs {
     position: static;
     flex-direction: row;
@@ -1151,17 +1386,22 @@ body.dark-mode .prediction-chart-container {
     left: auto;
     flex-wrap: wrap;
     margin-bottom: 20px;
+    display: none !important;
   }
-  
   .tab-btn {
     min-width: auto;
     padding: 10px 16px;
     font-size: 0.85rem;
     text-align: center;
   }
-  
   .tab-content {
     margin-left: 0;
+  }
+  #mobileMenuBtn {
+    display: flex !important;
+  }
+  #mobileMenu, #mobileMenuOverlay {
+    display: none;
   }
 }
 
@@ -1187,7 +1427,25 @@ body.dark-mode .prediction-chart-container {
 
 </style>
 </head>
-<body>
+<body ontouchstart="">
+  <!-- MENU MOBILE FISSO -->
+<div id="mobileMenuBtn" style="display:none;position:fixed;top:18px;left:18px;z-index:10001;background:#232946;border-radius:50%;width:56px;height:56px;box-shadow:0 2px 12px #0004;align-items:center;justify-content:center;cursor:pointer;">
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;">
+    <span style="display:block;width:28px;height:4px;background:#fff;border-radius:2px;margin:4px 0;"></span>
+    <span style="display:block;width:28px;height:4px;background:#fff;border-radius:2px;margin:4px 0;"></span>
+    <span style="display:block;width:28px;height:4px;background:#fff;border-radius:2px;margin:4px 0;"></span>
+  </div>
+</div>
+<div id="mobileMenuOverlay" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(30,41,59,0.45);z-index:10000;"></div>
+<nav id="mobileMenu" style="display:none;position:fixed;top:90px;left:18px;z-index:10002;background:#fff;border-radius:18px;box-shadow:0 4px 24px #0005;padding:18px 12px;min-width:180px;">
+  <button style="display:block;width:100%;margin-bottom:8px;font-size:1.1em;" data-section="dashboard">📊 Dashboard</button>
+  <button style="display:block;width:100%;margin-bottom:8px;font-size:1.1em;" data-section="data">📋 Inserimento Dati</button>
+  <button style="display:block;width:100%;font-size:1.1em;" data-section="ripetute">🏃‍♂️ Ripetute</button>
+  <button style="display:block;width:100%;margin-top:8px;font-size:1.1em;" data-section="predizione">🔮 Predizione</button>
+  <button style="display:block;width:100%;margin-top:8px;font-size:1.1em;" data-section="maratona">🧮 Maratona</button>
+  <button style="display:block;width:100%;margin-top:8px;font-size:1.1em;" data-section="confronto">🔄 Confronto</button>
+</nav>
+<!-- Notifica e barra Firebase rimangono ma sono nascosti su mobile -->
 <div id="notificaSalvataggio" style="display:none;position:fixed;top:24px;right:24px;z-index:99999;background:#10b981;color:#fff;padding:12px 24px;border-radius:8px;box-shadow:0 2px 8px #0002;font-size:1.1em;transition:opacity 0.4s;opacity:0;">Dati sincronizzati!</div>
 <div style="position:fixed;top:10px;right:10px;z-index:9999;">
   <button onclick="importFromFirebase()" style="padding:6px 14px;margin-right:8px;">Importa da Firebase</button>
@@ -1195,8 +1453,14 @@ body.dark-mode .prediction-chart-container {
 </div>
 
 <header>
-  <h2>📊 Dashboard Squadra</h2>
-  <div class="filters">
+  <h2 style="margin-right:auto;">📊 Dashboard Squadra</h2>
+  <button class="hamburger" id="hamburgerBtn" aria-label="Apri menu filtri" onclick="toggleFiltersMenu()">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
+  <div class="filters" id="filtersMenu">
+    <span style="flex:1 1 auto;"></span>
     <label>Atleta:</label><select id="athleteFilter"><option value="all">Tutti</option></select>
     <label>Da:</label><input type="date" id="dateFrom" style="width:100px;">
     <label>A:</label><input type="date" id="dateTo" style="width:100px;">
@@ -1209,9 +1473,477 @@ body.dark-mode .prediction-chart-container {
     <button id="manageAthletesBtn">👥 Atleti</button>
     <!--<button id="exportPdfBtn">PDF</button>-->
     <button id="toggleThemeBtn">🌙</button>
+    <button id="importStravaBtn" type="button" style="background:#0ea5e9;color:#fff;font-weight:700;">⬇️ Importa Strava</button>
     <button id="kpiInfoBtn" type="button" style="background:#6366f1;color:#fff;font-weight:700;" onclick="openKpiModal()">❓ Spiegazione KPI/Algoritmi</button>
   </div>
 </header>
+<!-- PULSANTE CONFIGURA STRAVA SEMPRE VISIBILE -->
+<button id="openStravaConfigBtn" style="position:fixed;top:18px;right:18px;z-index:10050;background:#6366f1;color:#fff;padding:10px 22px;border-radius:12px;font-weight:700;box-shadow:0 4px 16px #0003;">⚙️ Configura Strava</button>
+
+<style>
+@media (max-width: 900px) {
+  #openStravaConfigBtn { display: none !important; }
+  #stravaTableContainer { display: none !important; }
+}
+</style>
+<!-- MODAL CONFIG STRAVA -->
+<div id="stravaConfigModal" style="display:none;position:fixed;z-index:10020;left:0;top:0;width:100vw;height:100vh;background:rgba(30,41,59,0.55);backdrop-filter:blur(2px);justify-content:center;align-items:center;">
+  <div style="background:#fff;color:#222;max-width:350px;width:90vw;padding:24px 18px 18px 18px;border-radius:18px;box-shadow:0 8px 32px #0005;position:relative;animation:fadeIn 0.3s;display:flex;flex-direction:column;align-items:stretch;">
+    <button id="closeStravaConfigModalBtn" onclick="document.getElementById('stravaConfigModal').style.display='none'" style="position:absolute;top:10px;right:14px;font-size:1.5em;background:none;border:none;color:#6366f1;cursor:pointer;">&times;</button>
+    <h3 style="margin-top:0;font-size:1.1em;color:#6366f1;">Configura Strava</h3>
+    <div style="font-size:0.95em;color:#444;margin-bottom:8px;line-height:1.3;">
+      Inserisci le tue credenziali Strava. Puoi ottenere un nuovo Access Token cliccando su "Aggiorna Access Token".<br>
+      <span style="color:#6366f1;font-size:0.95em;">NB: L'access token scade periodicamente, usa il refresh token per aggiornarlo.</span>
+    </div>
+    <label>Client ID:<input id="stravaClientId" type="text" style="width:100%"></label>
+    <label>Client Secret:<input id="stravaClientSecret" type="text" style="width:100%"></label>
+    <label>Refresh Token:<input id="stravaRefreshToken" type="text" style="width:100%"></label>
+    <label>Access Token:<input id="stravaAccessToken" type="text" style="width:100%"></label>
+    <button id="refreshStravaTokenBtn" type="button" style="margin-top:10px;background:#f1f5f9;color:#6366f1;border:1px solid #6366f1;padding:8px 0;border-radius:8px;font-weight:700;" onclick="refreshAndFillStravaToken()">🔄 Aggiorna Access Token</button>
+    <button onclick="saveStravaConfig()" style="margin-top:10px;background:#6366f1;color:#fff;padding:8px 0;border-radius:8px;font-weight:700;">Salva</button>
+  </div>
+</div>
+
+<!-- STRAVA ACTIVITIES TABLE (desktop) -->
+<div class="container" id="stravaTableContainer" style="margin-top:24px;display:none;">
+  <h3 style="margin-top:0;">Attività Strava Importate</h3>
+  <table id="stravaActivitiesTable" style="width:100%;border-collapse:collapse;">
+    <thead>
+      <tr>
+        <th>Data</th>
+        <th>Nome</th>
+        <th>Distanza (km)</th>
+        <th>FC media</th>
+        <th>Durata</th>
+        <th>Tipo</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<!-- MOBILE DASHBOARD (solo su mobile) -->
+<div class="mobile-dashboard">
+  <!-- MODALE FILTRI MOBILE -->
+  <div id="mobileFilterModal" style="display:none;position:fixed;z-index:10010;left:0;top:0;width:100vw;height:100vh;background:rgba(30,41,59,0.55);backdrop-filter:blur(2px);justify-content:center;align-items:center;">
+    <div style="background:#fff;color:#222;max-width:350px;width:90vw;padding:24px 18px 18px 18px;border-radius:18px;box-shadow:0 8px 32px #0005;position:relative;animation:fadeIn 0.3s;">
+      <button onclick="document.getElementById('mobileFilterModal').style.display='none'" style="position:absolute;top:10px;right:14px;font-size:1.5em;background:none;border:none;color:#6366f1;cursor:pointer;">&times;</button>
+      <h3 style="margin-top:0;font-size:1.1em;color:#6366f1;">Filtra dati</h3>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <label>Atleta:
+          <select id="mobileAthleteFilter"></select>
+        </label>
+        <label>Da:
+          <input type="date" id="mobileDateFrom">
+        </label>
+        <label>A:
+          <input type="date" id="mobileDateTo">
+        </label>
+        <button onclick="applyMobileFilters()" style="margin-top:10px;background:#6366f1;color:#fff;padding:8px 0;border-radius:8px;font-weight:700;">Applica</button>
+      </div>
+    </div>
+  </div>
+  <!-- /MODALE FILTRI MOBILE -->
+    <button id="openMobileFilterBtn" style="position:absolute;top:8px;right:10px;padding:6px 10px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:0.95em;font-weight:600;z-index:10011;box-shadow:0 2px 8px #0002;">🔍 Filtra</button>
+  <style>@media (max-width:900px){.mobile-dashboard{position:relative;}}</style>
+  <div class="mini-card">
+    <canvas id="chartMobile1"></canvas>
+    <div class="kpi-value">2,27 <span class="kpi-unit">km</span></div>
+    <div class="kpi-label">Distanza</div>
+    <div class="kpi-icons"><span>❤️</span><span>📈</span></div>
+  </div>
+  <div class="mini-card">
+    <canvas id="chartMobile2"></canvas>
+    <div class="kpi-value">43 <span class="kpi-unit">min</span></div>
+    <div class="kpi-label">Durata</div>
+    <div class="kpi-icons"><span>🔥</span><span>💪</span></div>
+  </div>
+  <div class="mini-card">
+    <canvas id="chartMobile3"></canvas>
+    <div class="kpi-value">216 <span class="kpi-unit">TRIMP</span></div>
+    <div class="kpi-label">Carico</div>
+    <div class="kpi-icons"><span>⚡</span><span>📊</span></div>
+  </div>
+  <div class="mini-card">
+    <canvas id="chartMobile4"></canvas>
+    <div class="kpi-value">40 <span class="kpi-unit">bpm</span></div>
+    <div class="kpi-label">Frequenza</div>
+    <div class="kpi-icons"><span>💓</span><span>⬆️</span></div>
+  </div>
+</div>
+<script>
+// Modal Config Strava - funzioni globali
+function openStravaConfigModal() {
+  document.getElementById('stravaConfigModal').style.display = 'flex';
+  document.getElementById('stravaClientId').value = localStorage.getItem('stravaClientId') || '';
+  document.getElementById('stravaClientSecret').value = localStorage.getItem('stravaClientSecret') || '';
+  document.getElementById('stravaRefreshToken').value = localStorage.getItem('stravaRefreshToken') || '';
+  document.getElementById('stravaAccessToken').value = localStorage.getItem('stravaAccessToken') || '';
+}
+// Associa il click solo dopo che tutte le funzioni sono definite
+if(window.matchMedia('(min-width: 901px)').matches) {
+  var btn = document.getElementById('openStravaConfigBtn');
+  if(btn) btn.onclick = openStravaConfigModal;
+}
+var importBtn = document.getElementById('importStravaBtn');
+if(importBtn) {
+  importBtn.addEventListener('click', () => {
+    if (window.__stravaImportInProgress) return;
+    if(!STRAVA_ACCESS_TOKEN) {
+      alert('Configura Strava prima di importare i dati.');
+      openStravaConfigModal();
+      return;
+    }
+    fetchStravaActivities();
+  });
+}
+// Aggiorna access token e compila il campo Access Token nel modal
+async function refreshAndFillStravaToken() {
+  document.getElementById('refreshStravaTokenBtn').disabled = true;
+  document.getElementById('refreshStravaTokenBtn').innerText = 'Attendere...';
+  // Prendi i valori attuali dal modal
+  const cid = document.getElementById('stravaClientId').value;
+  const csec = document.getElementById('stravaClientSecret').value;
+  const rtoken = document.getElementById('stravaRefreshToken').value;
+  try {
+    const params = new URLSearchParams({
+      client_id: cid,
+      client_secret: csec,
+      grant_type: 'refresh_token',
+      refresh_token: rtoken
+    });
+    const response = await fetch('https://www.strava.com/api/v3/oauth/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params
+    });
+    if (!response.ok) throw new Error('Errore refresh token: ' + response.status);
+    const data = await response.json();
+    document.getElementById('stravaAccessToken').value = data.access_token;
+    if (data.refresh_token) {
+      document.getElementById('stravaRefreshToken').value = data.refresh_token;
+      localStorage.setItem('stravaRefreshToken', data.refresh_token);
+      STRAVA_REFRESH_TOKEN = data.refresh_token;
+    }
+    // Aggiorna localStorage e variabili globali
+    localStorage.setItem('stravaAccessToken', data.access_token);
+    STRAVA_ACCESS_TOKEN = data.access_token;
+    alert('Nuovo access token ottenuto e compilato!');
+  } catch (e) {
+    alert('Errore durante il refresh token Strava: ' + e.message);
+  } finally {
+    document.getElementById('refreshStravaTokenBtn').disabled = false;
+    document.getElementById('refreshStravaTokenBtn').innerText = '🔄 Aggiorna Access Token';
+  }
+}
+
+// Chiudi modal con ESC
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    var modal = document.getElementById('stravaConfigModal');
+    if (modal && modal.style.display !== 'none') {
+      modal.style.display = 'none';
+    }
+  }
+});
+// === STRAVA: Refresh Access Token ===
+// Inserisci qui i tuoi dati personali Strava:
+let STRAVA_CLIENT_ID = localStorage.getItem('stravaClientId') || '';
+let STRAVA_CLIENT_SECRET = localStorage.getItem('stravaClientSecret') || '';
+let STRAVA_REFRESH_TOKEN = localStorage.getItem('stravaRefreshToken') || '';
+
+async function refreshStravaAccessToken() {
+  try {
+    const params = new URLSearchParams({
+      client_id: STRAVA_CLIENT_ID,
+      client_secret: STRAVA_CLIENT_SECRET,
+      grant_type: 'refresh_token',
+      refresh_token: STRAVA_REFRESH_TOKEN
+    });
+    const response = await fetch('https://www.strava.com/api/v3/oauth/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params
+    });
+    if (!response.ok) {
+      const errDetails = await response.text();
+      throw new Error('Errore refresh token: ' + response.status + (errDetails ? ' - ' + errDetails : ''));
+    }
+    const data = await response.json();
+    console.log('Nuovo access token:', data.access_token);
+    STRAVA_ACCESS_TOKEN = data.access_token;
+    localStorage.setItem('stravaAccessToken', data.access_token);
+    if (data.refresh_token) {
+      STRAVA_REFRESH_TOKEN = data.refresh_token;
+      localStorage.setItem('stravaRefreshToken', data.refresh_token);
+    }
+    alert('Nuovo access token generato e salvato!');
+    return data.access_token;
+  } catch (e) {
+    console.error('Errore durante il refresh token Strava:', e);
+    alert('Errore durante il refresh token Strava: ' + e.message);
+  }
+}
+// Per aggiornare il token: esegui refreshStravaAccessToken() da console o aggiungi un pulsante temporaneo
+// === STRAVA API: Importazione automatica attività ===
+let STRAVA_ACCESS_TOKEN = localStorage.getItem('stravaAccessToken') || '';
+
+async function fetchStravaActivities(retry = false) {
+  const importBtn = document.getElementById('importStravaBtn');
+  window.__stravaImportInProgress = true;
+  if (importBtn) {
+    importBtn.disabled = true;
+    importBtn.style.opacity = '0.6';
+    importBtn.textContent = '⏳ Import in corso...';
+  }
+  if (!STRAVA_ACCESS_TOKEN) {
+    window.__stravaImportInProgress = false;
+    if (importBtn) {
+      importBtn.disabled = false;
+      importBtn.style.opacity = '1';
+      importBtn.textContent = '⬇️ Importa Strava';
+    }
+    alert('Configura Strava prima di importare i dati.');
+    openStravaConfigModal();
+    return;
+  }
+  try {
+    const response = await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=50', {
+      headers: { 'Authorization': 'Bearer ' + STRAVA_ACCESS_TOKEN }
+    });
+    if (response.status === 401 && !retry) {
+      const newToken = await refreshStravaAccessToken();
+      if (newToken) {
+        STRAVA_ACCESS_TOKEN = newToken;
+        localStorage.setItem('stravaAccessToken', newToken);
+        return await fetchStravaActivities(true);
+      }
+    }
+    if (!response.ok) {
+      const errDetails = await response.text();
+      throw new Error('Errore Strava: ' + response.status + (errDetails ? ' - ' + errDetails : ''));
+    }
+    const activities = await response.json();
+    const table = document.getElementById('stravaActivitiesTable').querySelector('tbody');
+    table.innerHTML = '';
+    activities.forEach(act => {
+      const tr = document.createElement('tr');
+      const date = new Date(act.start_date_local || act.start_date).toLocaleDateString();
+      const name = act.name || '';
+      const distance = act.distance ? (act.distance/1000).toFixed(2) : '';
+      const duration = act.moving_time ? new Date(act.moving_time * 1000).toISOString().substr(11, 8) : '';
+      const type = act.type || '';
+      const hasHeartRate = typeof act.average_heartrate === 'number' && !isNaN(act.average_heartrate);
+      const heartRate = hasHeartRate ? Math.round(act.average_heartrate) + ' bpm' : '—';
+      tr.innerHTML = `<td>${date}</td><td>${name}</td><td>${distance}</td><td>${heartRate}</td><td>${duration}</td><td>${type}</td>`;
+      table.appendChild(tr);
+    });
+    document.getElementById('stravaTableContainer').style.display = activities.length ? '' : 'none';
+  } catch (e) {
+    console.error('Errore durante l\'importazione Strava:', e);
+    const msg = String(e && e.message ? e.message : e);
+    if (msg.includes('activity:read_permission')) {
+      alert('Import Strava fallito: manca il permesso activity:read sul token.\nRiautorizza l\'app con scope almeno "read,activity:read" (oppure activity:read_all).');
+    } else {
+      alert('Import Strava fallito: ' + msg);
+    }
+  } finally {
+    window.__stravaImportInProgress = false;
+    if (importBtn) {
+      importBtn.disabled = false;
+      importBtn.style.opacity = '1';
+      importBtn.textContent = '⬇️ Importa Strava';
+    }
+  }
+}
+
+function saveStravaConfig() {
+  localStorage.setItem('stravaClientId', document.getElementById('stravaClientId').value);
+  localStorage.setItem('stravaClientSecret', document.getElementById('stravaClientSecret').value);
+  localStorage.setItem('stravaRefreshToken', document.getElementById('stravaRefreshToken').value);
+  localStorage.setItem('stravaAccessToken', document.getElementById('stravaAccessToken').value);
+  STRAVA_CLIENT_ID = document.getElementById('stravaClientId').value;
+  STRAVA_CLIENT_SECRET = document.getElementById('stravaClientSecret').value;
+  STRAVA_REFRESH_TOKEN = document.getElementById('stravaRefreshToken').value;
+  STRAVA_ACCESS_TOKEN = document.getElementById('stravaAccessToken').value;
+  document.getElementById('stravaConfigModal').style.display = 'none';
+  alert('Configurazione Strava salvata!');
+}
+// Mobile filter modal logic
+function fillMobileAthletes() {
+  var sel = document.getElementById('mobileAthleteFilter');
+  if(!sel) return;
+  // Prova a prendere la lista atleti dalla select principale se non è ancora pronta
+  var mainSel = document.getElementById('athleteFilter');
+  let athleteList = [];
+  if(window.athletes && Array.isArray(window.athletes) && window.athletes.length > 0) {
+    athleteList = window.athletes;
+  } else if(mainSel && mainSel.options.length > 1) {
+    athleteList = Array.from(mainSel.options).map(o=>o.value).filter(v=>v && v!=='all');
+  }
+  if(athleteList.length > 0) {
+    sel.innerHTML = '<option value="all">Tutti</option>' + athleteList.map(a=>`<option value="${a}">${a}</option>`).join('');
+  } else {
+    sel.innerHTML = '<option value="all">Tutti</option>';
+  }
+}
+function openMobileFilterModal() {
+  document.getElementById('mobileFilterModal').style.display = 'flex';
+  fillMobileAthletes();
+  // Se la lista atleti non è ancora pronta, riprova ogni 300ms finché non è popolata
+  let tries = 0;
+  function tryFill() {
+    fillMobileAthletes();
+    let sel = document.getElementById('mobileAthleteFilter');
+    if(sel && sel.options.length <= 1 && tries < 10) {
+      tries++;
+      setTimeout(tryFill, 300);
+    }
+  }
+  tryFill();
+  // Sincronizza date
+  document.getElementById('mobileDateFrom').value = document.getElementById('dateFrom').value;
+  document.getElementById('mobileDateTo').value = document.getElementById('dateTo').value;
+}
+function applyMobileFilters() {
+  // Aggiorna i filtri principali e chiudi modale
+  document.getElementById('athleteFilter').value = document.getElementById('mobileAthleteFilter').value;
+  document.getElementById('dateFrom').value = document.getElementById('mobileDateFrom').value;
+  document.getElementById('dateTo').value = document.getElementById('mobileDateTo').value;
+  updateCharts();
+  document.getElementById('mobileFilterModal').style.display = 'none';
+}
+document.getElementById('openMobileFilterBtn').onclick = openMobileFilterModal;
+// Hamburger menu per filtri su mobile
+function toggleFiltersMenu() {
+  var menu = document.getElementById('filtersMenu');
+  menu.classList.toggle('open');
+}
+// Chiudi menu filtri se clicchi fuori (mobile)
+document.addEventListener('click', function(e) {
+  var menu = document.getElementById('filtersMenu');
+  var btn = document.getElementById('hamburgerBtn');
+  if (!menu || !btn) return;
+  if (!menu.contains(e.target) && !btn.contains(e.target)) {
+    menu.classList.remove('open');
+  }
+});
+// Migliora UX mobile: scroll to top su tab switch
+window.switchTab = function(tabName, ev) {
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+  const trigger = ev && (ev.currentTarget || ev.target);
+  if (trigger && trigger.classList) trigger.classList.add('active');
+  const el = document.getElementById('tab-' + tabName);
+  if (el) el.classList.add('active');
+  if (tabName === 'data') {
+    if (typeof sortTableByDate === 'function') sortTableByDate(false);
+  }
+  // Su mobile, scrolla in alto quando si cambia tab
+  if(window.innerWidth <= 900) window.scrollTo({top:0,behavior:'smooth'});
+  // Aggiorna anche il mobile menu per riflettere la tab attiva
+  if(window.innerWidth <= 900) {
+    document.querySelectorAll('#mobileMenu button').forEach(btn => btn.classList.remove('active'));
+    let btn = document.querySelector(`#mobileMenu button[onclick*="${tabName}"]`);
+    if(btn) btn.classList.add('active');
+  }
+};
+</script>
+<script>
+// Mobile Chart.js: aggiorna i grafici in base ai filtri REALI
+let mobileCharts = [];
+function updateMobileCharts() {
+    // Aggiorna i numerelli sotto i grafici mobile (dopo aver calcolato i dati)
+    // ...dopo la dichiarazione di kmSettimana, minSettimana, caricoSettimana, fcSettimana...
+    setTimeout(() => {
+      const totKm = kmSettimana.reduce((a,b)=>a+b,0).toFixed(2);
+      const totMin = minSettimana.reduce((a,b)=>a+b,0).toFixed(0);
+      const totCarico = caricoSettimana.reduce((a,b)=>a+b,0).toFixed(0);
+      const avgFc = fcSettimana.filter(x=>x>0).length ? Math.round(fcSettimana.reduce((a,b)=>a+b,0)/fcSettimana.filter(x=>x>0).length) : 0;
+      const el1 = document.querySelector('#chartMobile1 + .kpi-value');
+      const el2 = document.querySelector('#chartMobile2 + .kpi-value');
+      const el3 = document.querySelector('#chartMobile3 + .kpi-value');
+      const el4 = document.querySelector('#chartMobile4 + .kpi-value');
+      if(el1) el1.innerHTML = totKm + ' <span class="kpi-unit">km</span>';
+      if(el2) el2.innerHTML = totMin + ' <span class="kpi-unit">min</span>';
+      if(el3) el3.innerHTML = totCarico + ' <span class="kpi-unit">TRIMP</span>';
+      if(el4) el4.innerHTML = avgFc + ' <span class="kpi-unit">bpm</span>';
+    }, 0);
+  // Distruggi i vecchi grafici se esistono
+  if(mobileCharts && mobileCharts.length) {
+    mobileCharts.forEach(c=>c && c.destroy && c.destroy());
+  }
+  mobileCharts = [];
+  // Prendi i dati filtrati reali
+  let combinedData = (typeof getData === 'function') ? getData() : [];
+  let athlete = document.getElementById('athleteFilter').value;
+  let dateFrom = document.getElementById('dateFrom').value;
+  let dateTo = document.getElementById('dateTo').value;
+  // Filtro come in updateCharts
+  let filt = combinedData.filter(d =>
+    (athlete === 'all' || d.athlete === athlete) &&
+    (!dateFrom || d.date >= dateFrom) &&
+    (!dateTo || d.date <= dateTo)
+  );
+  // Raggruppa per giorno della settimana
+  let days = ['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
+  let weekData = [[],[],[],[],[],[],[]];
+  filt.forEach(d => {
+    let dayIdx = (new Date(d.date).getDay()+6)%7; // 0=Lun ... 6=Dom
+    weekData[dayIdx].push(d);
+  });
+  // Calcola valori per i 4 grafici
+  function sum(arr, key) { return arr.reduce((s,v)=>s+(parseFloat(v[key])||0),0); }
+  // 1. Distanza (km)
+  let kmSettimana = weekData.map(arr=>sum(arr,'km'));
+  // 2. Durata (min)
+  let minSettimana = weekData.map(arr=>sum(arr,'time'));
+  // 3. Carico (RPE x min)
+  let caricoSettimana = weekData.map(arr=>sum(arr,'rpe')*sum(arr,'time'));
+  // 4. Frequenza cardiaca media (bpm)
+  let fcSettimana = weekData.map(arr=>arr.length ? Math.round(sum(arr,'hr')/arr.length) : 0);
+  const chartColors = ['#60a5fa','#f472b6'];
+  function makeChart(id, data, type='bar') {
+    const ctx = document.getElementById(id).getContext('2d');
+    let chart = new Chart(ctx, {
+      type,
+      data: {
+        labels: days,
+        datasets: [{
+          data,
+          backgroundColor: chartColors,
+          borderRadius: 6,
+          borderWidth: 1,
+        }]
+      },
+      options: {
+        plugins: { legend: { display: false } },
+        scales: { x: { display: false }, y: { display: false } },
+        responsive: true,
+        maintainAspectRatio: false,
+      }
+    });
+    mobileCharts.push(chart);
+  }
+  makeChart('chartMobile1', kmSettimana);
+  makeChart('chartMobile2', minSettimana);
+  makeChart('chartMobile3', caricoSettimana);
+  makeChart('chartMobile4', fcSettimana, 'line');
+}
+if(window.innerWidth <= 900) setTimeout(updateMobileCharts, 500);
+document.getElementById('athleteFilter').addEventListener('change', updateMobileCharts);
+document.getElementById('dateFrom').addEventListener('change', updateMobileCharts);
+document.getElementById('dateTo').addEventListener('change', updateMobileCharts);
+// Aggiorna anche dopo applyMobileFilters
+function applyMobileFilters() {
+  document.getElementById('athleteFilter').value = document.getElementById('mobileAthleteFilter').value;
+  document.getElementById('dateFrom').value = document.getElementById('mobileDateFrom').value;
+  document.getElementById('dateTo').value = document.getElementById('mobileDateTo').value;
+  updateCharts();
+  updateMobileCharts();
+  document.getElementById('mobileFilterModal').style.display = 'none';
+}
+</script>
 
 <!-- MODAL SPIEGAZIONE KPI/ALGORITMI -->
 <div id="kpiInfoModal" class="modal" style="display:none;position:fixed;z-index:10000;left:0;top:0;width:100vw;height:100vh;background:rgba(30,41,59,0.55);backdrop-filter:blur(2px);justify-content:center;align-items:center;">
@@ -3811,9 +4543,39 @@ window.addEventListener('load', ()=>{
 function closeAthletes(){ $id('athletesModal')?.classList.remove('show'); }
 function closeSports(){ $id('sportsModal')?.classList.remove('show'); }
 function closeActivityTypes(){ $id('activityTypesModal')?.classList.remove('show'); }
-function closeComparison(){ $id('comparisonModal')?.classList.remove('show'); }
-function closePrediction(){ $id('predictionModal')?.classList.remove('show'); }
-function closeTrend(){ $id('trendModal')?.classList.remove('show'); }
+function closeComparison(){
+  $id('comparisonModal')?.classList.remove('show');
+  // Se siamo su mobile, torna alla dashboard
+  if(window.innerWidth <= 900) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    const dash = document.getElementById('tab-dashboard');
+    if(dash) dash.classList.add('active');
+  }
+}
+function closePrediction(){
+  $id('predictionModal')?.classList.remove('show');
+  // Se siamo su mobile, torna alla dashboard
+  if(window.innerWidth <= 900) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    const dash = document.getElementById('tab-dashboard');
+    if(dash) dash.classList.add('active');
+  }
+}
+  // Se siamo su mobile, torna alla dashboard
+  if(window.innerWidth <= 900) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    const dash = document.getElementById('tab-dashboard');
+    if(dash) dash.classList.add('active');
+  }
+function closeTrend(){
+  $id('trendModal')?.classList.remove('show');
+  // Se siamo su mobile, torna alla dashboard
+  if(window.innerWidth <= 900) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    const dash = document.getElementById('tab-dashboard');
+    if(dash) dash.classList.add('active');
+  }
+}
 
 // ...existing code...
 function openKpiModal() {
@@ -3821,11 +4583,15 @@ function openKpiModal() {
 }
 function closeKpiModal() {
   document.getElementById('kpiInfoModal').style.display = 'none';
+  // opzionale: torna a dashboard su mobile se vuoi anche qui
 }
 </script>
 <script>
 // Carica automaticamente i dati da Firebase all'apertura della pagina
 window.addEventListener('DOMContentLoaded', function() {
+  // Importa automaticamente le attività Strava (DISATTIVATO)
+  // fetchStravaActivities();
+  // Importa automaticamente da Firebase
   if (typeof importFromFirebase === 'function') {
     importFromFirebase();
   }
@@ -3844,13 +4610,88 @@ function updateSaveFirebaseBtn() {
 }
 // Aggiorna subito e ogni volta che cambiano i dati
 window.addEventListener('DOMContentLoaded', updateSaveFirebaseBtn);
+let autoFirebaseSaveTimer = null;
+function scheduleAutoFirebaseSave() {
+  clearTimeout(autoFirebaseSaveTimer);
+  autoFirebaseSaveTimer = setTimeout(() => {
+    if (typeof saveToFirebase === 'function') saveToFirebase();
+  }, 1200);
+}
 if (window.addDataRow || window.removeDataRow || window.importFromFirebase) {
   let origAdd = window.addDataRow, origRemove = window.removeDataRow, origImport = window.importFromFirebase;
-  window.addDataRow = function() { if(origAdd) origAdd.apply(this, arguments); updateSaveFirebaseBtn(); };
-  window.removeDataRow = function() { if(origRemove) origRemove.apply(this, arguments); updateSaveFirebaseBtn(); };
+  window.addDataRow = function() { if(origAdd) origAdd.apply(this, arguments); updateSaveFirebaseBtn(); scheduleAutoFirebaseSave(); };
+  window.removeDataRow = function() { if(origRemove) origRemove.apply(this, arguments); updateSaveFirebaseBtn(); scheduleAutoFirebaseSave(); };
   window.importFromFirebase = function() { if(origImport) origImport.apply(this, arguments); updateSaveFirebaseBtn(); };
 }
+window.addEventListener('DOMContentLoaded', function() {
+  const tableBody = document.querySelector('#dataTable tbody');
+  if (!tableBody) return;
+  tableBody.addEventListener('input', function() {
+    updateSaveFirebaseBtn();
+    scheduleAutoFirebaseSave();
+  });
+  tableBody.addEventListener('change', function() {
+    updateSaveFirebaseBtn();
+    scheduleAutoFirebaseSave();
+  });
+});
 // In caso di altre modifiche ai dati, puoi chiamare updateSaveFirebaseBtn() manualmente dopo ogni modifica.
+
+
+</script>
+<script>
+// Floating mobile menu logic
+function openMobileMenu() {
+  document.getElementById('mobileMenu').style.display = 'block';
+  document.getElementById('mobileMenuOverlay').style.display = 'block';
+}
+function closeMobileMenu() {
+  document.getElementById('mobileMenu').style.display = 'none';
+  document.getElementById('mobileMenuOverlay').style.display = 'none';
+}
+window.addEventListener('DOMContentLoaded', function() {
+  var btn = document.getElementById('mobileMenuBtn');
+  var overlay = document.getElementById('mobileMenuOverlay');
+  var menu = document.getElementById('mobileMenu');
+  if(btn) btn.onclick = openMobileMenu;
+  if(overlay) overlay.onclick = closeMobileMenu;
+  // Mostra il floating menu solo su mobile
+  if(window.innerWidth <= 900 && btn) btn.style.display = 'flex';
+  // Gestione click sulle voci del menu mobile
+  if(menu) {
+    menu.querySelectorAll('button[data-section]').forEach(function(button) {
+      button.onclick = function() {
+        selectMobileSection(this.getAttribute('data-section'));
+      };
+    });
+  }
+});
+function selectMobileSection(section) {
+  closeMobileMenu();
+  // Chiudi tutti i modali speciali
+  ['predictionModal','marathonModal','comparisonModal','trendModal'].forEach(id => {
+    var el = document.getElementById(id);
+    if(el) el.classList.remove('show');
+  });
+  // Mostra/nascondi le sezioni mobile
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  // Mostra la sezione tab-content corrispondente
+  if(document.getElementById('tab-' + section)) {
+    document.getElementById('tab-' + section).classList.add('active');
+  }
+  // Mostra modali/section speciali sezione mobile
+  if(section === 'predizione' && document.getElementById('predictionModal')) {
+    document.getElementById('predictionModal').classList.add('show');
+  }
+  if(section === 'maratona' && typeof openMarathon === 'function') {
+    openMarathon();
+  }
+  if(section === 'confronto' && typeof openComparison === 'function') {
+    openComparison();
+  }
+  // Su mobile, scrolla in alto quando si cambia tab
+  if(window.innerWidth <= 900) window.scrollTo({top:0,behavior:'smooth'});
+}
 </script>
 </body>
 </html>
