@@ -2509,14 +2509,12 @@ window.importFromFirebase = function() {
         }
         console.log('Dati importati da Firebase:', data);
         if(typeof updateCharts === 'function') {
-          window._importedData = data;
-          window.getData = () => Array.isArray(window._importedData) ? window._importedData : [];
           updateCharts();
         }
         // Forza il calcolo KPI dopo l'import usando i dati filtrati
         if(typeof updateCharts === 'function') {
           setTimeout(()=>{
-            const combinedData = window.getData ? window.getData() : [];
+            const combinedData = (typeof getData === 'function') ? getData() : [];
             const fA = $id('athleteFilter') ? $id('athleteFilter').value : 'all';
             const t = $id('typeFilter') ? $id('typeFilter').value : 'all';
             const da = $id('dateFrom') ? $id('dateFrom').value : '';
@@ -4062,6 +4060,7 @@ function updateCharts(){
     $id('kpiTopAthleteLoad').textContent='';
     $id('kpiRiskPercent').textContent='0%';
     $id('kpiRiskInfo').textContent='';
+    if (typeof updateMobileCharts === 'function' && window.innerWidth <= 900) updateMobileCharts();
     return;
   }
 
@@ -4192,6 +4191,7 @@ function updateCharts(){
 
   // KPI
   updateKPI(filt, acwr);
+  if (typeof updateMobileCharts === 'function' && window.innerWidth <= 900) updateMobileCharts();
 }
 
 /* -----------------------------
@@ -5097,10 +5097,18 @@ function scheduleAutoFirebaseSave() {
     if (typeof saveToFirebase === 'function') saveToFirebase();
   }, 1200);
 }
+let autoChartsRefreshTimer = null;
+function scheduleChartsRefresh() {
+  clearTimeout(autoChartsRefreshTimer);
+  autoChartsRefreshTimer = setTimeout(() => {
+    if (typeof updateCharts === 'function') updateCharts();
+    if (typeof updateMobileCharts === 'function' && window.innerWidth <= 900) updateMobileCharts();
+  }, 260);
+}
 if (window.addDataRow || window.removeDataRow || window.importFromFirebase) {
   let origAdd = window.addDataRow, origRemove = window.removeDataRow, origImport = window.importFromFirebase;
-  window.addDataRow = function() { if(origAdd) origAdd.apply(this, arguments); updateSaveFirebaseBtn(); scheduleAutoFirebaseSave(); };
-  window.removeDataRow = function() { if(origRemove) origRemove.apply(this, arguments); updateSaveFirebaseBtn(); scheduleAutoFirebaseSave(); };
+  window.addDataRow = function() { if(origAdd) origAdd.apply(this, arguments); updateSaveFirebaseBtn(); scheduleAutoFirebaseSave(); scheduleChartsRefresh(); };
+  window.removeDataRow = function() { if(origRemove) origRemove.apply(this, arguments); updateSaveFirebaseBtn(); scheduleAutoFirebaseSave(); scheduleChartsRefresh(); };
   window.importFromFirebase = function() { if(origImport) origImport.apply(this, arguments); updateSaveFirebaseBtn(); };
 }
 window.addEventListener('DOMContentLoaded', function() {
@@ -5109,10 +5117,12 @@ window.addEventListener('DOMContentLoaded', function() {
   tableBody.addEventListener('input', function() {
     updateSaveFirebaseBtn();
     scheduleAutoFirebaseSave();
+    scheduleChartsRefresh();
   });
   tableBody.addEventListener('change', function() {
     updateSaveFirebaseBtn();
     scheduleAutoFirebaseSave();
+    scheduleChartsRefresh();
   });
 });
 // In caso di altre modifiche ai dati, puoi chiamare updateSaveFirebaseBtn() manualmente dopo ogni modifica.
