@@ -55,7 +55,56 @@
   margin: 0 2px;
   font-size: 1.1em;
 }
+
+#mobileTopCenterIcon {
+  display: none;
+}
+
+#mobileIconPreview {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 100120;
+  background: rgba(15, 23, 42, 0.78);
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+}
+
+#mobileIconPreview img {
+  width: min(82vw, 420px);
+  max-height: 72vh;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 18px;
+  padding: 14px;
+  box-shadow: 0 12px 36px #0008;
+}
+
+#mobileIconPreviewClose {
+  position: absolute;
+  top: 16px;
+  right: 18px;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  border: none;
+  background: rgba(255,255,255,0.9);
+  color: #1e293b;
+  font-size: 1.35rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 @media (max-width: 900px) {
+  body {
+    background-image: url('icona.svg');
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    padding-top: 76px;
+  }
   .mobile-dashboard { display: grid; }
   #dashboardRoot { display: block !important; }
   /* Nascondi barra Firebase e notifiche su mobile */
@@ -73,6 +122,23 @@
     -webkit-tap-highlight-color: rgba(99,102,241,0.15);
   }
   #mobileMenuBtn { display: flex !important; }
+  #mobileTopCenterIcon {
+    display: block;
+    position: fixed;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 52px;
+    height: 52px;
+    z-index: 10005;
+    background: rgba(255,255,255,0.88);
+    border-radius: 50%;
+    padding: 6px;
+    box-shadow: 0 2px 12px #0003;
+    object-fit: contain;
+    pointer-events: auto;
+    cursor: zoom-in;
+  }
   /* Fullscreen su mobile */
   html, body {
     min-height: 100vh;
@@ -157,6 +223,49 @@
 @keyframes pulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.05); }
+}
+
+.app-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 100200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e22ce 100%);
+  transition: opacity 0.45s ease;
+}
+
+.app-splash.hide {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.app-splash img {
+  width: min(420px, 82vw);
+  max-height: 46vh;
+  object-fit: cover;
+  border-radius: 16px;
+  box-shadow: 0 10px 36px #0005;
+  border: 2px solid rgba(255,255,255,0.25);
+}
+
+.app-splash-fallback {
+  display: none;
+  color: #fff;
+  font-size: clamp(1.1rem, 3.8vw, 1.8rem);
+  font-weight: 800;
+  text-align: center;
+  letter-spacing: 0.3px;
+  text-shadow: 0 2px 10px rgba(0,0,0,.35);
+}
+
+.app-splash-tip {
+  color: rgba(255,255,255,0.9);
+  font-size: 0.95rem;
+  font-weight: 600;
 }
 
 body {
@@ -1428,6 +1537,16 @@ body.dark-mode .prediction-chart-container {
 </style>
 </head>
 <body ontouchstart="">
+<div id="appSplash" class="app-splash" role="dialog" aria-label="Schermata iniziale app">
+  <img id="appSplashImage" src="icona.svg" alt="Immagine iniziale app">
+  <div id="appSplashFallback" class="app-splash-fallback">🏃 Dashboard Squadra 5:50</div>
+  <div class="app-splash-tip">Tocca per continuare</div>
+</div>
+<img id="mobileTopCenterIcon" src="icona.svg" alt="Icona app mobile" onclick="openMobileIconPreview()">
+<div id="mobileIconPreview" onclick="closeMobileIconPreview()">
+  <button id="mobileIconPreviewClose" type="button" onclick="closeMobileIconPreview()">×</button>
+  <img src="icona.svg" alt="Anteprima icona app" onclick="event.stopPropagation()">
+</div>
   <!-- MENU MOBILE FISSO -->
 <div id="mobileMenuBtn" style="display:none;position:fixed;top:18px;left:18px;z-index:10001;background:#232946;border-radius:50%;width:56px;height:56px;box-shadow:0 2px 12px #0004;align-items:center;justify-content:center;cursor:pointer;">
   <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;">
@@ -2062,6 +2181,43 @@ function applyMobileFilters() {
     </table>
   </div>
 
+  <div id="mobileSessionModal" style="display:none;position:fixed;z-index:10030;left:0;top:0;width:100vw;height:100vh;background:rgba(30,41,59,0.55);backdrop-filter:blur(2px);justify-content:center;align-items:center;">
+    <div style="background:#fff;color:#222;max-width:380px;width:92vw;padding:22px 16px 16px 16px;border-radius:16px;box-shadow:0 8px 32px #0005;position:relative;animation:fadeIn 0.25s;">
+      <button type="button" onclick="closeMobileSessionModal()" style="position:absolute;top:8px;right:12px;font-size:1.5em;background:none;border:none;color:#6366f1;cursor:pointer;">&times;</button>
+      <h3 style="margin:0 0 12px 0;color:#6366f1;">Nuova sessione</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <label style="grid-column:1 / -1;">Data
+          <input id="mobileSessionDate" type="date" style="width:100%;">
+        </label>
+        <label style="grid-column:1 / -1;">Atleta
+          <select id="mobileSessionAthlete" style="width:100%;"></select>
+        </label>
+        <label>Km
+          <input id="mobileSessionKm" type="number" min="0" step="0.01" placeholder="0" style="width:100%;">
+        </label>
+        <label>Min
+          <input id="mobileSessionMin" type="number" min="0" step="1" placeholder="0" style="width:100%;">
+        </label>
+        <label>RPE
+          <input id="mobileSessionRpe" type="number" min="0" max="10" step="1" placeholder="0" style="width:100%;">
+        </label>
+        <label>FC
+          <input id="mobileSessionHr" type="number" min="0" step="1" placeholder="0" style="width:100%;">
+        </label>
+        <label style="grid-column:1 / -1;">Sport
+          <select id="mobileSessionSport" style="width:100%;"></select>
+        </label>
+        <label style="grid-column:1 / -1;">Tipo attività
+          <select id="mobileSessionActivityType" style="width:100%;"></select>
+        </label>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button type="button" onclick="closeMobileSessionModal()" style="flex:1;background:#64748b;">Annulla</button>
+        <button type="button" onclick="saveMobileSession()" style="flex:1;background:#6366f1;">Salva sessione</button>
+      </div>
+    </div>
+  </div>
+
   <!-- TAB RIPETUTE -->
   <div id="tab-ripetute" class="tab-content">
     <div class="table-filters" style="align-items:flex-start;">
@@ -2076,9 +2232,66 @@ function applyMobileFilters() {
       </select>
       <label>Warm-up (min):</label><input type="number" id="ripWarmup" value="20" style="width:80px;">
       <label>Cool-down (min):</label><input type="number" id="ripCooldown" value="15" style="width:80px;">
-      <button onclick="startNewRipSession()">➕ Nuova Sessione</button>
+      <button onclick="handleStartNewRipSession()">➕ Nuova Sessione</button>
       <!--<button onclick="saveRipSessionsToFile()">⬇️ Esporta</button>-->
       <!--<button onclick="loadRipSessionsFromFile()">📂 Importa</button>-->
+    </div>
+
+    <div id="mobileRipSessionModal" style="display:none;position:fixed;z-index:10031;left:0;top:0;width:100vw;height:100vh;background:rgba(30,41,59,0.55);backdrop-filter:blur(2px);justify-content:center;align-items:center;">
+      <div style="background:#fff;color:#222;max-width:380px;width:92vw;padding:22px 16px 16px 16px;border-radius:16px;box-shadow:0 8px 32px #0005;position:relative;animation:fadeIn 0.25s;">
+        <button type="button" onclick="closeMobileRipSessionModal()" style="position:absolute;top:8px;right:12px;font-size:1.5em;background:none;border:none;color:#6366f1;cursor:pointer;">&times;</button>
+        <h3 style="margin:0 0 12px 0;color:#6366f1;">Nuova sessione ripetute</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <label style="grid-column:1 / -1;">Data
+            <input id="mobileRipDate" type="date" style="width:100%;">
+          </label>
+          <label style="grid-column:1 / -1;">Atleta
+            <select id="mobileRipAthlete" style="width:100%;"></select>
+          </label>
+          <label style="grid-column:1 / -1;">Tipo
+            <select id="mobileRipType" style="width:100%;">
+              <option value="Ripetute">Ripetute</option>
+              <option value="Fartlek">Fartlek</option>
+            </select>
+          </label>
+          <label>Warm-up (min)
+            <input id="mobileRipWarmup" type="number" min="0" step="1" value="20" style="width:100%;">
+          </label>
+          <label>Cool-down (min)
+            <input id="mobileRipCooldown" type="number" min="0" step="1" value="15" style="width:100%;">
+          </label>
+          <div style="grid-column:1 / -1;height:1px;background:#e2e8f0;margin:4px 0;"></div>
+          <label style="grid-column:1 / -1;font-weight:700;color:#334155;">Ripetute (inserimento rapido)</label>
+          <label>Numero rip
+            <input id="mobileRipCount" type="number" min="1" step="1" value="2" style="width:100%;">
+          </label>
+          <label>Tipo rip
+            <input id="mobileRipLabel" type="text" placeholder="es. 400m" style="width:100%;">
+          </label>
+          <label>Distanza (m)
+            <input id="mobileRipDistance" type="number" min="0" step="10" value="400" style="width:100%;">
+          </label>
+          <label>Tempo (s)
+            <input id="mobileRipTime" type="number" min="0" step="1" value="90" style="width:100%;">
+          </label>
+          <label>Recupero (s)
+            <input id="mobileRipRest" type="number" min="0" step="1" value="60" style="width:100%;">
+          </label>
+          <label>RPE
+            <input id="mobileRipRpe" type="number" min="0" max="10" step="1" value="7" style="width:100%;">
+          </label>
+          <label>FC
+            <input id="mobileRipHr" type="number" min="0" step="1" value="170" style="width:100%;">
+          </label>
+          <label>Lattato (mmol)
+            <input id="mobileRipLactate" type="number" min="0" step="0.1" placeholder="opzionale" style="width:100%;">
+          </label>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <button type="button" onclick="closeMobileRipSessionModal()" style="flex:1;background:#64748b;">Annulla</button>
+          <button type="button" onclick="saveMobileRipSession()" style="flex:1;background:#6366f1;">Crea sessione</button>
+        </div>
+      </div>
     </div>
 
     <div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap;">
@@ -2738,12 +2951,102 @@ function renderRipSessionsList(){
 
 function saveRipetuteToStorage(){ localStorage.setItem('ripetuteSessions', JSON.stringify(ripetuteSessions)); renderRipSessionsList(); }
 
-function startNewRipSession(){
-  if($id('ripDate')) $id('ripDate').value = new Date().toISOString().slice(0,10);
+function startNewRipSession(config = {}){
+  if($id('ripDate')) $id('ripDate').value = config.date || new Date().toISOString().slice(0,10);
   const ripSel = $id('ripAthlete');
-  if(ripSel) ripSel.innerHTML = athletes.map(a=>`<option value="${a}">${a}</option>`).join('');
+  if(ripSel) {
+    const selectedAthlete = config.athlete || '';
+    ripSel.innerHTML = athletes.map(a=>`<option value="${a}" ${a===selectedAthlete?'selected':''}>${a}</option>`).join('');
+  }
+  if($id('ripType') && config.type) $id('ripType').value = config.type;
+  if($id('ripWarmup') && config.warmup_min !== undefined) $id('ripWarmup').value = config.warmup_min;
+  if($id('ripCooldown') && config.cooldown_min !== undefined) $id('ripCooldown').value = config.cooldown_min;
   if($id('ripRowsContainer')) $id('ripRowsContainer').innerHTML = '';
   for(let i=0;i<2;i++) addRipRow();
+}
+
+function handleStartNewRipSession(){
+  if(window.innerWidth <= 900) {
+    openMobileRipSessionModal();
+    return;
+  }
+  startNewRipSession();
+}
+
+function openMobileRipSessionModal(){
+  const modal = document.getElementById('mobileRipSessionModal');
+  if(!modal) return;
+  const athleteSel = document.getElementById('mobileRipAthlete');
+  if(athleteSel) athleteSel.innerHTML = '<option value="">-- Seleziona Atleta --</option>' + athletes.map(a=>`<option value="${a}">${a}</option>`).join('');
+  const dateInput = document.getElementById('mobileRipDate');
+  if(dateInput) dateInput.value = new Date().toISOString().slice(0,10);
+  const typeSel = document.getElementById('mobileRipType');
+  if(typeSel) typeSel.value = 'Ripetute';
+  const warmupInput = document.getElementById('mobileRipWarmup');
+  if(warmupInput) warmupInput.value = '20';
+  const cooldownInput = document.getElementById('mobileRipCooldown');
+  if(cooldownInput) cooldownInput.value = '15';
+  const countInput = document.getElementById('mobileRipCount');
+  if(countInput) countInput.value = '2';
+  const labelInput = document.getElementById('mobileRipLabel');
+  if(labelInput) labelInput.value = '';
+  const distanceInput = document.getElementById('mobileRipDistance');
+  if(distanceInput) distanceInput.value = '400';
+  const timeInput = document.getElementById('mobileRipTime');
+  if(timeInput) timeInput.value = '90';
+  const restInput = document.getElementById('mobileRipRest');
+  if(restInput) restInput.value = '60';
+  const rpeInput = document.getElementById('mobileRipRpe');
+  if(rpeInput) rpeInput.value = '7';
+  const hrInput = document.getElementById('mobileRipHr');
+  if(hrInput) hrInput.value = '170';
+  const lactateInput = document.getElementById('mobileRipLactate');
+  if(lactateInput) lactateInput.value = '';
+  modal.style.display = 'flex';
+}
+
+function closeMobileRipSessionModal(){
+  const modal = document.getElementById('mobileRipSessionModal');
+  if(modal) modal.style.display = 'none';
+}
+
+function saveMobileRipSession(){
+  const date = document.getElementById('mobileRipDate')?.value || '';
+  const athlete = document.getElementById('mobileRipAthlete')?.value || '';
+  if(!date || !athlete){
+    alert('Compila almeno Data e Atleta.');
+    return;
+  }
+  startNewRipSession({
+    date,
+    athlete,
+    type: document.getElementById('mobileRipType')?.value || 'Ripetute',
+    warmup_min: +(document.getElementById('mobileRipWarmup')?.value || 20),
+    cooldown_min: +(document.getElementById('mobileRipCooldown')?.value || 15)
+  });
+  const ripCount = Math.max(1, +(document.getElementById('mobileRipCount')?.value || 1));
+  const ripLabel = (document.getElementById('mobileRipLabel')?.value || '').trim();
+  const ripDistance = +(document.getElementById('mobileRipDistance')?.value || 0);
+  const ripTime = +(document.getElementById('mobileRipTime')?.value || 0);
+  const ripRest = +(document.getElementById('mobileRipRest')?.value || 0);
+  const ripRpe = +(document.getElementById('mobileRipRpe')?.value || 0);
+  const ripHr = +(document.getElementById('mobileRipHr')?.value || 0);
+  const lactateRaw = document.getElementById('mobileRipLactate')?.value;
+  const ripLactate = lactateRaw === '' || lactateRaw === undefined ? '' : +lactateRaw;
+  const rowsContainer = $id('ripRowsContainer');
+  if(rowsContainer) rowsContainer.innerHTML = '';
+  for(let i=0;i<ripCount;i++) {
+    addRipRow({
+      label: ripLabel || (ripDistance ? `${ripDistance}m` : ''),
+      distance: ripDistance || '',
+      time_s: ripTime || '',
+      rest_s: ripRest || '',
+      rpe: ripRpe || '',
+      hr: ripHr || '',
+      lactate: ripLactate
+    });
+  }
+  closeMobileRipSessionModal();
 }
 
 function addRipRow(data = {}){
@@ -3086,6 +3389,8 @@ function explodeRipToMainTable(){
   updateTableFilters();
   sortTableByDate(false);
   updateCharts();
+  if(typeof updateSaveFirebaseBtn === 'function') updateSaveFirebaseBtn();
+  if(typeof saveToFirebase === 'function') saveToFirebase();
   alert('Sessione esplosa in dati storici (ogni ripetuta è stata aggiunta come riga).');
 }
 
@@ -3892,23 +4197,82 @@ function updateCharts(){
    TABLE: add/delete/sort/filter
    ----------------------------- */
 function addRow(){
+  const preset = arguments[0] || {};
+  const dateVal = preset.date || '';
+  const athleteVal = preset.athlete || '';
+  const kmVal = preset.km ?? '';
+  const minVal = preset.minutes ?? '';
+  const rpeVal = preset.rpe ?? '';
+  const hrVal = preset.hr ?? '';
+  const sportVal = preset.type || (sports[0] || 'Corsa');
+  const activityTypeVal = preset.activityType || '';
+  const noteVal = preset.note || '';
   const tb=document.querySelector('#dataTable tbody');
   const tr=document.createElement('tr');
   tr.innerHTML=`
-    <td><input type="date"></td>
-    <td><select class="athlete-select"><option value="">-- Seleziona Atleta --</option>${athletes.map(a=>`<option value="${a}">${a}</option>`).join('')}</select></td>
-    <td><input type="number" placeholder="0"></td>
-    <td><input type="number" placeholder="0"></td>
-    <td><input type="number" placeholder="0"></td>
-    <td><input type="number" placeholder="0"></td>
-    <td><select class="sport-select">${sports.map(s=>`<option value="${s}">${s}</option>`).join('')}</select></td>
-    <td><select class="activity-type-select"><option value="">-- Tipo --</option>${activityTypes.map(t=>`<option value="${t}">${t}</option>`).join('')}</select></td>
-    <td><input type="text"></td>
+    <td><input type="date" value="${dateVal}"></td>
+    <td><select class="athlete-select"><option value="">-- Seleziona Atleta --</option>${athletes.map(a=>`<option value="${a}" ${a===athleteVal?'selected':''}>${a}</option>`).join('')}</select></td>
+    <td><input type="number" placeholder="0" value="${kmVal}"></td>
+    <td><input type="number" placeholder="0" value="${minVal}"></td>
+    <td><input type="number" placeholder="0" value="${rpeVal}"></td>
+    <td><input type="number" placeholder="0" value="${hrVal}"></td>
+    <td><select class="sport-select">${sports.map(s=>`<option value="${s}" ${s===sportVal?'selected':''}>${s}</option>`).join('')}</select></td>
+    <td><select class="activity-type-select"><option value="">-- Tipo --</option>${activityTypes.map(t=>`<option value="${t}" ${t===activityTypeVal?'selected':''}>${t}</option>`).join('')}</select></td>
+    <td><input type="text" value="${noteVal}"></td>
     <td><button onclick="deleteRow(this)" style="padding:4px 8px;font-size:0.75rem;background:#ef4444;">🗑️</button></td>
   `;
   tb.insertBefore(tr, tb.firstChild);
 }
 function deleteRow(btn){ if(confirm('Vuoi eliminare questa sessione?')) btn.closest('tr').remove(); }
+
+function openMobileSessionModal(){
+  const modal = document.getElementById('mobileSessionModal');
+  if(!modal) return;
+  const athleteSel = document.getElementById('mobileSessionAthlete');
+  const sportSel = document.getElementById('mobileSessionSport');
+  const typeSel = document.getElementById('mobileSessionActivityType');
+  if(athleteSel) athleteSel.innerHTML = '<option value="">-- Seleziona Atleta --</option>' + athletes.map(a=>`<option value="${a}">${a}</option>`).join('');
+  if(sportSel) sportSel.innerHTML = sports.map(s=>`<option value="${s}">${s}</option>`).join('');
+  if(typeSel) typeSel.innerHTML = '<option value="">-- Tipo --</option>' + activityTypes.map(t=>`<option value="${t}">${t}</option>`).join('');
+  const dateInput = document.getElementById('mobileSessionDate');
+  if(dateInput) dateInput.value = new Date().toISOString().slice(0,10);
+  ['mobileSessionKm','mobileSessionMin','mobileSessionRpe','mobileSessionHr'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+  modal.style.display = 'flex';
+}
+
+function closeMobileSessionModal(){
+  const modal = document.getElementById('mobileSessionModal');
+  if(modal) modal.style.display = 'none';
+}
+
+function saveMobileSession(){
+  const date = document.getElementById('mobileSessionDate')?.value || '';
+  const athlete = document.getElementById('mobileSessionAthlete')?.value || '';
+  if(!date || !athlete){
+    alert('Compila almeno Data e Atleta.');
+    return;
+  }
+  const data = {
+    date,
+    athlete,
+    km: document.getElementById('mobileSessionKm')?.value || '',
+    minutes: document.getElementById('mobileSessionMin')?.value || '',
+    rpe: document.getElementById('mobileSessionRpe')?.value || '',
+    hr: document.getElementById('mobileSessionHr')?.value || '',
+    type: document.getElementById('mobileSessionSport')?.value || (sports[0] || 'Corsa'),
+    activityType: document.getElementById('mobileSessionActivityType')?.value || '',
+    note: 'Inserimento rapido mobile'
+  };
+  addRow(data);
+  closeMobileSessionModal();
+  updateTableFilters();
+  updateCharts();
+  if(typeof updateSaveFirebaseBtn === 'function') updateSaveFirebaseBtn();
+  if(typeof scheduleAutoFirebaseSave === 'function') scheduleAutoFirebaseSave();
+}
 
 function sortTableByDate(ascending = false){
   const tbody = document.querySelector('#dataTable tbody');
@@ -4493,7 +4857,13 @@ $id('toggleThemeBtn')?.addEventListener('click', ()=>{
   updateCharts();
 });
 
-$id('addRowBtn')?.addEventListener('click', addRow);
+$id('addRowBtn')?.addEventListener('click', ()=>{
+  if(window.innerWidth <= 900) {
+    openMobileSessionModal();
+    return;
+  }
+  addRow();
+});
 $id('manageSportsBtn')?.addEventListener('click', ()=> $id('sportsModal')?.classList.add('show'));
 $id('manageAthletesBtn')?.addEventListener('click', ()=> $id('athletesModal')?.classList.add('show'));
 $id('manageActivityTypesBtn')?.addEventListener('click', ()=> $id('activityTypesModal')?.classList.add('show'));
@@ -4504,6 +4874,38 @@ $id('trendBtn')?.addEventListener('click', ()=>{ $id('trendModal')?.classList.ad
 $id('predictionBtn')?.addEventListener('click', ()=> $id('predictionModal')?.classList.add('show'));
 
 document.addEventListener('click', (e)=>{ if(e.target.classList && e.target.classList.contains('modal')) e.target.classList.remove('show'); });
+
+function hideAppSplash(){
+  const splash = document.getElementById('appSplash');
+  if(!splash || splash.classList.contains('hide')) return;
+  splash.classList.add('hide');
+  setTimeout(()=>{ if(splash && splash.parentNode) splash.remove(); }, 520);
+}
+
+function openMobileIconPreview(){
+  if(window.innerWidth > 900) return;
+  const preview = document.getElementById('mobileIconPreview');
+  if(preview) preview.style.display = 'flex';
+}
+
+function closeMobileIconPreview(){
+  const preview = document.getElementById('mobileIconPreview');
+  if(preview) preview.style.display = 'none';
+}
+
+window.addEventListener('DOMContentLoaded', ()=>{
+  const splash = document.getElementById('appSplash');
+  const splashImg = document.getElementById('appSplashImage');
+  const fallback = document.getElementById('appSplashFallback');
+  if(splash) splash.addEventListener('click', hideAppSplash);
+  if(splashImg){
+    splashImg.addEventListener('error', ()=>{
+      splashImg.style.display = 'none';
+      if(fallback) fallback.style.display = 'block';
+    });
+  }
+  setTimeout(hideAppSplash, 3200);
+});
 
 /* -----------------------------
    Onload init
@@ -4535,6 +4937,7 @@ window.addEventListener('load', ()=>{
   if(ta2) ta2.innerHTML=athletes.map((n,i)=>`<option value="${n}" ${i===1?'selected':''}>${n}</option>`).join('');
   if(pa) pa.innerHTML=athletes.map((n,i)=>`<option value="${n}" ${i===0?'selected':''}>${n}</option>`).join('');
   if(ma) ma.innerHTML=athletes.map((n,i)=>`<option value="${n}" ${i===0?'selected':''}>${n}</option>`).join('');
+  setTimeout(hideAppSplash, 1300);
 });
 
 /* -----------------------------
