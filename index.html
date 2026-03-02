@@ -9,6 +9,7 @@
 <meta name="format-detection" content="telephone=no">
 <title>Dashboard Squadra 5:50</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <style>
@@ -2268,7 +2269,7 @@ function applyMobileFilters() {
     </div>
 
     <div class="grid">
-      <div class="card"><h3>📈 Km cumulativi (totale per atleta)</h3><canvas id="kmChart"></canvas></div>
+      <div class="card"><h3>🏃‍♂️ Classifica 3D atleti (avanzamento=km, dimensione=carico)</h3><canvas id="kmChart"></canvas></div>
       <div class="card"><h3>📊 Velocità (radar)</h3><canvas id="speedChart"></canvas></div>
       <div class="card"><h3>📊 Km/settimana</h3><canvas id="weeklyChart"></canvas></div>
       <div class="card"><h3>⚡ Carico interno</h3><canvas id="loadChart"></canvas></div>
@@ -4168,6 +4169,392 @@ function createChart(id,type,labels,sets,opt={}){
   }catch(e){ console.error('createChart', e); }
 }
 
+function disposeRunner3DChart(canvasId){
+  if(!window.__runner3DCharts) window.__runner3DCharts = {};
+  const state = window.__runner3DCharts[canvasId];
+  if(!state) return;
+  if(state.rafId) cancelAnimationFrame(state.rafId);
+  if(state.resizeHandler) window.removeEventListener('resize', state.resizeHandler);
+  if(state.scene){
+    state.scene.traverse((obj)=>{
+      if(obj && obj.geometry && obj.geometry.dispose) obj.geometry.dispose();
+      if(obj && obj.material){
+        if(Array.isArray(obj.material)) obj.material.forEach(m=>m && m.dispose && m.dispose());
+        else if(obj.material.dispose) obj.material.dispose();
+      }
+      if(obj && obj.material && obj.material.map && obj.material.map.dispose) obj.material.map.dispose();
+    });
+  }
+  if(state.renderer){
+    try { state.renderer.dispose(); } catch(e){}
+    try { state.renderer.forceContextLoss(); } catch(e){}
+  }
+  if(state.host && state.renderer && state.renderer.domElement && state.host.contains(state.renderer.domElement)){
+    try { state.host.removeChild(state.renderer.domElement); } catch(e){}
+  }
+  if(state.host) state.host.innerHTML = '';
+  delete window.__runner3DCharts[canvasId];
+}
+
+function ensureRunner3DHost(canvasId){
+  const canvas = document.getElementById(canvasId);
+  if(!canvas || !canvas.parentNode) return null;
+  const hostId = `${canvasId}3DHost`;
+  let host = document.getElementById(hostId);
+  if(!host){
+    host = document.createElement('div');
+    host.id = hostId;
+    host.style.width = '100%';
+    host.style.height = '320px';
+    host.style.minHeight = '260px';
+    host.style.borderRadius = '12px';
+    host.style.overflow = 'hidden';
+    host.style.position = 'relative';
+    host.style.background = 'linear-gradient(180deg, rgba(226,232,240,0.35) 0%, rgba(148,163,184,0.18) 100%)';
+    canvas.parentNode.insertBefore(host, canvas);
+  }
+  canvas.style.display = 'none';
+  return host;
+}
+
+function createRunnerLabelSprite(text){
+  const cnv = document.createElement('canvas');
+  cnv.width = 512;
+  cnv.height = 128;
+  const c = cnv.getContext('2d');
+  c.clearRect(0,0,cnv.width,cnv.height);
+  c.fillStyle = 'rgba(15,23,42,0.82)';
+  const x=8, y=18, w=496, h=92, r=18;
+  c.beginPath();
+  c.moveTo(x+r, y);
+  c.arcTo(x+w, y, x+w, y+h, r);
+  c.arcTo(x+w, y+h, x, y+h, r);
+  c.arcTo(x, y+h, x, y, r);
+  c.arcTo(x, y, x+w, y, r);
+  c.closePath();
+  c.fill();
+  c.fillStyle = '#ffffff';
+  c.font = '700 40px Segoe UI';
+  c.textAlign = 'center';
+  c.textBaseline = 'middle';
+  c.fillText(text, 256, 64);
+  const tex = new THREE.CanvasTexture(cnv);
+  tex.needsUpdate = true;
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
+  const spr = new THREE.Sprite(mat);
+  spr.scale.set(2.8, 0.7, 1);
+  return spr;
+}
+
+function buildRunnerModel(hexColor, isWoman){
+  const group = new THREE.Group();
+  const bodyMat = new THREE.MeshStandardMaterial({ color: hexColor, roughness: 0.55, metalness: 0.12 });
+  const skinMat = new THREE.MeshStandardMaterial({ color: 0xf5d0a5, roughness: 0.8, metalness: 0.02 });
+
+  const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.22, 0.9, 6, 12), bodyMat);
+  torso.position.y = 1.15;
+  group.add(torso);
+
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 18, 18), skinMat);
+  head.position.y = 1.95;
+  group.add(head);
+
+  const hip = new THREE.Group();
+  hip.position.y = 0.68;
+  group.add(hip);
+
+  const legGeo = new THREE.CapsuleGeometry(0.095, 0.72, 4, 10);
+  const armGeo = new THREE.CapsuleGeometry(0.075, 0.62, 4, 10);
+
+  const leftLeg = new THREE.Mesh(legGeo, bodyMat);
+  leftLeg.position.set(-0.12, -0.45, 0.02);
+  hip.add(leftLeg);
+  const rightLeg = new THREE.Mesh(legGeo, bodyMat);
+  rightLeg.position.set(0.12, -0.45, 0.02);
+  hip.add(rightLeg);
+
+  const shoulder = new THREE.Group();
+  shoulder.position.y = 1.45;
+  group.add(shoulder);
+  const leftArm = new THREE.Mesh(armGeo, bodyMat);
+  leftArm.position.set(-0.33, -0.2, 0.02);
+  shoulder.add(leftArm);
+  const rightArm = new THREE.Mesh(armGeo, bodyMat);
+  rightArm.position.set(0.33, -0.2, 0.02);
+  shoulder.add(rightArm);
+
+  if(isWoman){
+    const skirt = new THREE.Mesh(new THREE.ConeGeometry(0.35, 0.45, 18), bodyMat);
+    skirt.position.y = 0.9;
+    group.add(skirt);
+  }
+
+  return { group, leftLeg, rightLeg, leftArm, rightArm };
+}
+
+function ensureThreeJsLoaded(){
+  if(typeof THREE !== 'undefined') return Promise.resolve(true);
+  if(window.__threeLoadPromise) return window.__threeLoadPromise;
+  const urls = [
+    'https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js',
+    'https://unpkg.com/three@0.152.2/build/three.min.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/three.min.js'
+  ];
+  const loadOne = (src, timeoutMs = 4000) => new Promise((resolve) => {
+    if(typeof THREE !== 'undefined') { resolve(true); return; }
+    const existing = Array.from(document.scripts || []).find(s => s.src === src);
+    const done = (ok) => {
+      clearTimeout(timer);
+      resolve(!!ok);
+    };
+    const timer = setTimeout(() => done(false), timeoutMs);
+
+    if(existing){
+      if(existing.dataset && existing.dataset.threeState === 'loaded') { done(true); return; }
+      if(existing.dataset && existing.dataset.threeState === 'failed') { done(false); return; }
+      const onLoad = () => { if(existing.dataset) existing.dataset.threeState = 'loaded'; done(true); };
+      const onErr = () => { if(existing.dataset) existing.dataset.threeState = 'failed'; done(false); };
+      existing.addEventListener('load', onLoad, { once: true });
+      existing.addEventListener('error', onErr, { once: true });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = src;
+    script.async = true;
+    script.crossOrigin = 'anonymous';
+    script.dataset.threeState = 'loading';
+    script.onload = () => {
+      script.dataset.threeState = 'loaded';
+      done(typeof THREE !== 'undefined');
+    };
+    script.onerror = () => {
+      script.dataset.threeState = 'failed';
+      done(false);
+    };
+    document.head.appendChild(script);
+  });
+
+  window.__threeLoadPromise = (async () => {
+    for (const src of urls) {
+      const ok = await loadOne(src);
+      if(ok && typeof THREE !== 'undefined') return true;
+    }
+    return typeof THREE !== 'undefined';
+  })().catch(() => false).finally(() => {
+    if(typeof THREE === 'undefined') window.__threeLoadPromise = null;
+  });
+  return window.__threeLoadPromise;
+}
+
+function isWebGLUsable(){
+  if(window.__webglUsableCache !== undefined) return window.__webglUsableCache;
+  try{
+    const c = document.createElement('canvas');
+    const gl = c.getContext('webgl') || c.getContext('experimental-webgl');
+    window.__webglUsableCache = !!gl;
+  }catch(e){
+    window.__webglUsableCache = false;
+  }
+  return window.__webglUsableCache;
+}
+
+function renderRunner2DFallback(host, athletes, kmValues, loadValues, reason){
+  const kmMin = Math.min(...kmValues);
+  const kmMax = Math.max(...kmValues);
+  const loadMin = Math.min(...loadValues);
+  const loadMax = Math.max(...loadValues);
+  const rows = (athletes || []).map((ath, i) => {
+    const km = Number(kmValues[i] || 0);
+    const load = Number(loadValues[i] || 0);
+    const kmNorm = (kmMax - kmMin) > 0 ? (km - kmMin)/(kmMax - kmMin) : 0.5;
+    const loadNorm = (loadMax - loadMin) > 0 ? (load - loadMin)/(loadMax - loadMin) : 0.5;
+    const leftPct = 84 - kmNorm * 78;
+    const sizePx = 22 + loadNorm * 14;
+    const icon = (i % 2 === 0) ? '🏃‍♂️' : '🏃‍♀️';
+    return `
+      <div style="position:relative;height:44px;border-bottom:1px dashed #cbd5e1;">
+        <div style="position:absolute;left:${leftPct}%;top:50%;transform:translate(-50%,-50%);font-size:${sizePx}px;line-height:1;">${icon}</div>
+        <div style="position:absolute;left:8px;top:6px;font:700 12px Segoe UI;color:#0f172a;max-width:46%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${ath}</div>
+        <div style="position:absolute;right:8px;top:6px;font:600 11px Segoe UI;color:#334155;">${km.toFixed(1)} km • C ${Math.round(load)}</div>
+      </div>`;
+  }).join('');
+
+  host.innerHTML = `
+    <div style="height:100%;display:flex;flex-direction:column;padding:8px 10px;background:linear-gradient(180deg, rgba(226,232,240,0.45) 0%, rgba(148,163,184,0.2) 100%);">
+      <div style="font:700 12px Segoe UI;color:#334155;margin-bottom:6px;">Vista alternativa (WebGL non disponibile${reason ? ' • ' + reason : ''})</div>
+      <div style="position:relative;height:16px;margin:0 6px 6px 6px;border-radius:8px;background:#dbeafe;overflow:hidden;">
+        <div style="position:absolute;left:0;top:0;bottom:0;width:1px;background:#64748b;"></div>
+        <div style="position:absolute;right:0;top:0;bottom:0;width:1px;background:#1e3a8a;"></div>
+      </div>
+      <div style="flex:1;min-height:0;overflow:auto;border:1px solid #cbd5e1;border-radius:10px;background:#ffffffb3;">${rows || '<div style="padding:12px;color:#64748b;">Nessun atleta da mostrare</div>'}</div>
+    </div>`;
+}
+
+function renderRunner3DChart(canvasId, athletes, kmValues, loadValues){
+  const canvas = document.getElementById(canvasId);
+  if(!canvas) return;
+  const host = ensureRunner3DHost(canvasId);
+  if(!host) return;
+
+  disposeRunner3DChart(canvasId);
+
+  if(typeof THREE === 'undefined'){
+    const token = String(Date.now()) + Math.random().toString(16).slice(2);
+    host.dataset.loadingToken = token;
+    host.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-weight:700;color:#334155;">Caricamento motore 3D...</div>';
+    ensureThreeJsLoaded().then((ok) => {
+      if(host.dataset.loadingToken !== token) return;
+      if(ok && typeof THREE !== 'undefined'){
+        renderRunner3DChart(canvasId, athletes, kmValues, loadValues);
+      } else {
+        host.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-weight:700;color:#334155;">3D non disponibile (connessione/CDN bloccata)</div>';
+      }
+    });
+    return;
+  }
+
+  if(window.__disable3DForSession || !isWebGLUsable()){
+    window.__disable3DForSession = true;
+    renderRunner2DFallback(host, athletes, kmValues, loadValues, 'sandbox/browser');
+    return;
+  }
+
+  if(!window.__runner3DCharts) window.__runner3DCharts = {};
+  host.innerHTML = '';
+  const width = Math.max(320, Math.floor(host.clientWidth || canvas.parentElement?.clientWidth || 520));
+  const height = Math.max(260, Math.floor(host.clientHeight || 320));
+
+  let renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+  } catch (e) {
+    window.__disable3DForSession = true;
+    renderRunner2DFallback(host, athletes, kmValues, loadValues, 'WebGL disabilitato');
+    return;
+  }
+  renderer.domElement.style.width = '100%';
+  renderer.domElement.style.height = '100%';
+  renderer.domElement.style.display = 'block';
+  host.appendChild(renderer.domElement);
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  renderer.setSize(width, height, false);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+  const scene = new THREE.Scene();
+  scene.background = null;
+  scene.fog = new THREE.Fog(0xe2e8f0, 8, 34);
+
+  const camera = new THREE.PerspectiveCamera(46, width/height, 0.1, 100);
+  camera.position.set(0, 6.2, 13.6);
+  camera.lookAt(0, 1.2, -5.8);
+
+  const hemi = new THREE.HemisphereLight(0xffffff, 0xbcd2ff, 0.95);
+  scene.add(hemi);
+  const dir = new THREE.DirectionalLight(0xffffff, 0.82);
+  dir.position.set(6, 11, 4);
+  scene.add(dir);
+
+  const track = new THREE.Mesh(
+    new THREE.PlaneGeometry(11, 24),
+    new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.95, metalness: 0 })
+  );
+  track.rotation.x = -Math.PI/2;
+  track.position.set(0, 0, -8);
+  scene.add(track);
+
+  for(let i=0;i<6;i++){
+    const line = new THREE.Mesh(
+      new THREE.BoxGeometry(0.05, 0.002, 24),
+      new THREE.MeshBasicMaterial({ color: 0x94a3b8 })
+    );
+    line.position.set(-5 + i*2, 0.01, -8);
+    scene.add(line);
+  }
+
+  const kmMin = Math.min(...kmValues);
+  const kmMax = Math.max(...kmValues);
+  const loadMin = Math.min(...loadValues);
+  const loadMax = Math.max(...loadValues);
+
+  const runnerStates = [];
+  const lanes = Math.max(1, athletes.length);
+
+  athletes.forEach((ath, i) => {
+    const km = Number(kmValues[i] || 0);
+    const load = Number(loadValues[i] || 0);
+    const kmNorm = (kmMax - kmMin) > 0 ? (km - kmMin) / (kmMax - kmMin) : 0.5;
+    const loadNorm = (loadMax - loadMin) > 0 ? (load - loadMin) / (loadMax - loadMin) : 0.5;
+    const z = -14.2 + kmNorm * 12.8;
+    const x = ((i + 1) - (lanes + 1)/2) * (8.4 / Math.max(2, lanes));
+    const scale = 0.82 + loadNorm * 0.78;
+
+    const color = colors[i % colors.length];
+    const isWoman = (i % 2) === 1;
+    const model = buildRunnerModel(color, isWoman);
+    model.group.position.set(x, 0.02, z);
+    model.group.scale.set(scale, scale, scale);
+    scene.add(model.group);
+
+    const label = createRunnerLabelSprite(`${ath} • ${km.toFixed(1)}km • C ${Math.round(load)}`);
+    label.position.set(x, 2.9*scale, z);
+    scene.add(label);
+
+    runnerStates.push({
+      model,
+      label,
+      baseY: 0.02,
+      phase: i * 0.75
+    });
+  });
+
+  const finish = new THREE.Mesh(
+    new THREE.PlaneGeometry(9.6, 0.45),
+    new THREE.MeshBasicMaterial({ color: 0x1e3a8a, side: THREE.DoubleSide })
+  );
+  finish.rotation.x = -Math.PI/2;
+  finish.position.set(0, 0.012, -1.25);
+  scene.add(finish);
+
+  const state = {
+    renderer,
+    scene,
+    camera,
+    rafId: 0,
+    host,
+    resizeHandler: null
+  };
+
+  const clock = new THREE.Clock();
+  const animate = () => {
+    const t = clock.getElapsedTime();
+    runnerStates.forEach((r) => {
+      const swing = Math.sin(t*5 + r.phase) * 0.55;
+      const bob = Math.abs(Math.sin(t*5 + r.phase)) * 0.07;
+      r.model.leftLeg.rotation.x = swing;
+      r.model.rightLeg.rotation.x = -swing;
+      r.model.leftArm.rotation.x = -swing * 0.9;
+      r.model.rightArm.rotation.x = swing * 0.9;
+      r.model.group.position.y = r.baseY + bob;
+      r.label.position.y = (r.model.group.scale.y * 2.9) + bob;
+    });
+    renderer.render(scene, camera);
+    state.rafId = requestAnimationFrame(animate);
+  };
+
+  state.resizeHandler = () => {
+    const w = Math.max(320, Math.floor(host.clientWidth || canvas.parentElement?.clientWidth || 520));
+    const h = Math.max(260, Math.floor(host.clientHeight || 320));
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  };
+  window.addEventListener('resize', state.resizeHandler);
+
+  window.__runner3DCharts[canvasId] = state;
+  animate();
+}
+
 /* -----------------------------
    Update charts (main)
    - kmChart: horizontal totals per athlete
@@ -4329,10 +4716,27 @@ function updateCharts(){
   const byA = {};
   filt.forEach(d => { if(!byA[d.athlete]) byA[d.athlete] = []; byA[d.athlete].push(d); });
 
+  const loadWeightedByKm = rows => {
+    const weightedMinutes = rows.reduce((s,v)=>{
+      const km = parseFloat(v.km) || 0;
+      const minutes = (parseFloat(v.minutes) || ((parseFloat(v.time)||0) * 60));
+      return s + (minutes * km);
+    },0);
+    if(!weightedMinutes) return 0;
+    const weighted = rows.reduce((s,v)=>{
+      const km = parseFloat(v.km) || 0;
+      const minutes = (parseFloat(v.minutes) || ((parseFloat(v.time)||0) * 60));
+      const rpe = parseFloat(v.rpe) || 0;
+      return s + ((rpe * minutes) * km);
+    },0);
+    return weighted / weightedMinutes;
+  };
+
   const acwr = computeACWR(combinedData);
   aggiornaFiltroAtleti(combinedData, acwr);
 
   if(filt.length === 0){
+    disposeRunner3DChart('kmChart');
     Object.keys(charts).forEach(k=>{ if(charts[k]){ charts[k].destroy(); charts[k] = null; }});
     $id('kpiKmWeek').textContent='0';
     $id('kpiLoadWeek').textContent='0';
@@ -4355,47 +4759,11 @@ function updateCharts(){
   });
 
   if (charts['kmChart']) { charts['kmChart'].destroy(); charts['kmChart'] = null; }
-
   if (athletesForKm.length) {
-    const ctxKm = document.getElementById('kmChart').getContext('2d', { willReadFrequently: true, preserveDrawingBuffer: true });
-    charts['kmChart'] = new Chart(ctxKm, {
-      type: 'bar',
-      data: {
-        labels: athletesForKm,
-        datasets: [{
-          label: 'Km cumulativi totali',
-          data: totalKmPerAthlete,
-          backgroundColor: athletesForKm.map((_,i) => colors[i % colors.length]),
-          borderColor: athletesForKm.map((_,i) => colors[i % colors.length]),
-          borderWidth: 1
-        }]
-      },
-      options: {
-        indexAxis: 'y', // horizontal bars
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              label: function(context) {
-                const v = context.parsed.x !== undefined ? context.parsed.x : context.parsed.y;
-                return `${context.dataset.label}: ${Number(v).toFixed(2)} km`;
-              }
-            }
-          }
-        },
-        scales: {
-          x: {
-            title: { display: true, text: 'Km cumulativi', color: document.body.classList.contains('dark-mode') ? '#cbd5e1' : '#1e3c72' },
-            ticks: { color: document.body.classList.contains('dark-mode') ? '#cbd5e1' : '#334155' }
-          },
-          y: {
-            ticks: { color: document.body.classList.contains('dark-mode') ? '#cbd5e1' : '#334155' }
-          }
-        }
-      }
-    });
+    const loadPerAthlete = athletesForKm.map(ath => loadWeightedByKm(byA[ath] || []));
+    renderRunner3DChart('kmChart', athletesForKm, totalKmPerAthlete, loadPerAthlete);
+  } else {
+    disposeRunner3DChart('kmChart');
   }
 
   // Speed radar
@@ -4465,21 +4833,6 @@ function updateCharts(){
 
   // Carico e TRIMP
   const athletesList = Object.keys(byA);
-  const loadWeightedByKm = rows => {
-    const weightedMinutes = rows.reduce((s,v)=>{
-      const km = parseFloat(v.km) || 0;
-      const minutes = (parseFloat(v.minutes) || ((parseFloat(v.time)||0) * 60));
-      return s + (minutes * km);
-    },0);
-    if(!weightedMinutes) return 0;
-    const weighted = rows.reduce((s,v)=>{
-      const km = parseFloat(v.km) || 0;
-      const minutes = (parseFloat(v.minutes) || ((parseFloat(v.time)||0) * 60));
-      const rpe = parseFloat(v.rpe) || 0;
-      return s + ((rpe * minutes) * km);
-    },0);
-    return weighted / weightedMinutes;
-  };
   const loadData = athletesList.map(aName => loadWeightedByKm(byA[aName]));
   const trimpData = athletesList.map(aName => byA[aName].reduce((s, v) => s + (v.hr||0) * (v.time||0) * 0.1, 0));
   createChart('loadChart','bar',athletesList,[{ label:'Carico', data:loadData, backgroundColor:'#f59e0b' }]);
