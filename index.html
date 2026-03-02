@@ -1706,7 +1706,7 @@ body.dark-mode .prediction-chart-container {
   </div>
   <div class="mini-card">
     <canvas id="chartMobile3"></canvas>
-    <div class="kpi-value">216 <span class="kpi-unit">TRIMP</span></div>
+    <div class="kpi-value">0 <span class="kpi-unit">/10</span></div>
     <div class="kpi-label">Carico</div>
     <div class="kpi-icons"><span>⚡</span><span>📊</span></div>
   </div>
@@ -1999,12 +1999,27 @@ window.switchTab = function(tabName, ev) {
 // Mobile Chart.js: aggiorna i grafici in base ai filtri REALI
 let mobileCharts = [];
 function updateMobileCharts() {
+  function loadWeightedByKm(rows){
+    const weightedMinutes = rows.reduce((s,v)=>{
+      const km = parseFloat(v.km) || 0;
+      const minutes = (parseFloat(v.minutes) || ((parseFloat(v.time)||0) * 60));
+      return s + (minutes * km);
+    },0);
+    if(!weightedMinutes) return 0;
+    const weighted = rows.reduce((s,v)=>{
+      const km = parseFloat(v.km) || 0;
+      const minutes = (parseFloat(v.minutes) || ((parseFloat(v.time)||0) * 60));
+      const rpe = parseFloat(v.rpe) || 0;
+      return s + ((rpe * minutes) * km);
+    },0);
+    return weighted / weightedMinutes;
+  }
     // Aggiorna i numerelli sotto i grafici mobile (dopo aver calcolato i dati)
     // ...dopo la dichiarazione di kmSettimana, minSettimana, caricoSettimana, fcSettimana...
     setTimeout(() => {
       const totKm = kmSettimana.reduce((a,b)=>a+b,0).toFixed(2);
       const totMin = minSettimana.reduce((a,b)=>a+b,0).toFixed(0);
-      const totCarico = caricoSettimana.reduce((a,b)=>a+b,0).toFixed(0);
+      const totCarico = loadWeightedByKm(filt).toFixed(1);
       const avgFc = fcSettimana.filter(x=>x>0).length ? Math.round(fcSettimana.reduce((a,b)=>a+b,0)/fcSettimana.filter(x=>x>0).length) : 0;
       const el1 = document.querySelector('#chartMobile1 + .kpi-value');
       const el2 = document.querySelector('#chartMobile2 + .kpi-value');
@@ -2012,7 +2027,7 @@ function updateMobileCharts() {
       const el4 = document.querySelector('#chartMobile4 + .kpi-value');
       if(el1) el1.innerHTML = totKm + ' <span class="kpi-unit">km</span>';
       if(el2) el2.innerHTML = totMin + ' <span class="kpi-unit">min</span>';
-      if(el3) el3.innerHTML = totCarico + ' <span class="kpi-unit">TRIMP</span>';
+      if(el3) el3.innerHTML = totCarico + ' <span class="kpi-unit">/10</span>';
       if(el4) el4.innerHTML = avgFc + ' <span class="kpi-unit">bpm</span>';
     }, 0);
   // Distruggi i vecchi grafici se esistono
@@ -2043,9 +2058,9 @@ function updateMobileCharts() {
   // 1. Distanza (km)
   let kmSettimana = weekData.map(arr=>sum(arr,'km'));
   // 2. Durata (min)
-  let minSettimana = weekData.map(arr=>sum(arr,'time'));
-  // 3. Carico (RPE x min)
-  let caricoSettimana = weekData.map(arr=>sum(arr,'rpe')*sum(arr,'time'));
+  let minSettimana = weekData.map(arr=>sum(arr,'minutes'));
+  // 3. Carico (RPE×min) come media pesata sui km
+  let caricoSettimana = weekData.map(arr=>loadWeightedByKm(arr));
   // 4. Frequenza cardiaca media (bpm)
   let fcSettimana = weekData.map(arr=>arr.length ? Math.round(sum(arr,'hr')/arr.length) : 0);
   const chartColors = ['#60a5fa','#f472b6'];
@@ -4028,18 +4043,37 @@ function createChart(id,type,labels,sets,opt={}){
   return window.charts[chartId];
 }
 function updateKPI(data, acwr){
+  function loadWeightedByKm(rows){
+    const weightedMinutes = rows.reduce((s,v)=>{
+      const km = parseFloat(v.km) || 0;
+      const minutes = (parseFloat(v.minutes) || ((parseFloat(v.time)||0) * 60));
+      return s + (minutes * km);
+    },0);
+    if(!weightedMinutes) return 0;
+    const weighted = rows.reduce((s,v)=>{
+      const km = parseFloat(v.km) || 0;
+      const minutes = (parseFloat(v.minutes) || ((parseFloat(v.time)||0) * 60));
+      const rpe = parseFloat(v.rpe) || 0;
+      return s + ((rpe * minutes) * km);
+    },0);
+    return weighted / weightedMinutes;
+  }
   const now=new Date();
   const week=(d)=>Math.floor((now-new Date(d))/(7*86400000));
-  let kmC=0, kmP=0, loadC=0, loadP=0, trC=0, trP=0;
+  let kmC=0, kmP=0, trC=0, trP=0;
+  const currentRows=[];
+  const prevRows=[];
   const loadA={};
   (data||[]).forEach(d=>{
     const w = week(d.date);
-    const l = (d.rpe||0)*(d.time||0);
     const tr = (d.hr||0)*(d.time||0)*0.1;
-    loadA[d.athlete] = (loadA[d.athlete]||0) + l;
-    if(w < 1){ kmC += d.km||0; loadC += l; trC += tr; }
-    else if(w < 2){ kmP += d.km||0; loadP += l; trP += tr; }
+    if(!loadA[d.athlete]) loadA[d.athlete] = [];
+    loadA[d.athlete].push(d);
+    if(w < 1){ kmC += d.km||0; trC += tr; currentRows.push(d); }
+    else if(w < 2){ kmP += d.km||0; trP += tr; prevRows.push(d); }
   });
+  const loadC = loadWeightedByKm(currentRows);
+  const loadP = loadWeightedByKm(prevRows);
   const deltaText = (a,b) => (b ? `${((a-b)/b*100).toFixed(1)}%` : '');
   if($id('kpiKmWeek')) $id('kpiKmWeek').textContent = (kmC).toFixed(1);
   if($id('kpiLoadWeek')) $id('kpiLoadWeek').textContent = Math.round(loadC);
@@ -4047,7 +4081,9 @@ function updateKPI(data, acwr){
   if($id('kpiKmWeekDelta')) $id('kpiKmWeekDelta').textContent = deltaText(kmC, kmP);
   if($id('kpiLoadWeekDelta')) $id('kpiLoadWeekDelta').textContent = deltaText(loadC, loadP);
   if($id('kpiTrimpWeekDelta')) $id('kpiTrimpWeekDelta').textContent = deltaText(trC, trP);
-  const top = Object.entries(loadA).sort((a,b)=>b[1]-a[1])[0] || ["-",0];
+  const top = Object.entries(loadA)
+    .map(([ath,rows])=>[ath, loadWeightedByKm(rows)])
+    .sort((a,b)=>b[1]-a[1])[0] || ["-",0];
   if($id('kpiTopAthlete')) $id('kpiTopAthlete').textContent = top[0];
   if($id('kpiTopAthleteLoad')) $id('kpiTopAthleteLoad').textContent = `${top[1].toFixed(0)}`;
   const risky = Object.values(acwr || {}).filter(v=>v>1.5).length || 0;
@@ -4210,7 +4246,22 @@ function updateCharts(){
 
   // Carico e TRIMP
   const athletesList = Object.keys(byA);
-  const loadData = athletesList.map(aName => byA[aName].reduce((s, v) => s + (v.rpe||0) * (v.time||0), 0));
+  const loadWeightedByKm = rows => {
+    const weightedMinutes = rows.reduce((s,v)=>{
+      const km = parseFloat(v.km) || 0;
+      const minutes = (parseFloat(v.minutes) || ((parseFloat(v.time)||0) * 60));
+      return s + (minutes * km);
+    },0);
+    if(!weightedMinutes) return 0;
+    const weighted = rows.reduce((s,v)=>{
+      const km = parseFloat(v.km) || 0;
+      const minutes = (parseFloat(v.minutes) || ((parseFloat(v.time)||0) * 60));
+      const rpe = parseFloat(v.rpe) || 0;
+      return s + ((rpe * minutes) * km);
+    },0);
+    return weighted / weightedMinutes;
+  };
+  const loadData = athletesList.map(aName => loadWeightedByKm(byA[aName]));
   const trimpData = athletesList.map(aName => byA[aName].reduce((s, v) => s + (v.hr||0) * (v.time||0) * 0.1, 0));
   createChart('loadChart','bar',athletesList,[{ label:'Carico', data:loadData, backgroundColor:'#f59e0b' }]);
   createChart('trimpChart','bar',athletesList,[{ label:'TRIMP', data:trimpData, backgroundColor:'#10b981' }]);
