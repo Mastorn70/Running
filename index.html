@@ -60,6 +60,10 @@
   display: none;
 }
 
+#mobileQuickActions {
+  display: none;
+}
+
 #mobileIconPreview {
   display: none;
   position: fixed;
@@ -123,13 +127,8 @@
   #mobileMenuBtn { display: flex !important; }
   #mobileTopCenterIcon {
     display: block;
-    position: fixed;
-    top: 12px;
-    left: 50%;
-    transform: translateX(-50%);
     width: 52px;
     height: 52px;
-    z-index: 10005;
     background: rgba(255,255,255,0.88);
     border-radius: 50%;
     padding: 6px;
@@ -137,6 +136,29 @@
     object-fit: contain;
     pointer-events: auto;
     cursor: zoom-in;
+  }
+  #mobileQuickActions {
+    display: flex;
+    position: fixed;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10005;
+    align-items: center;
+    gap: 8px;
+    max-width: calc(100vw - 82px);
+  }
+  #mobileQuickActions .quick-btn {
+    height: 38px;
+    padding: 0 10px;
+    border: none;
+    border-radius: 999px;
+    background: rgba(99,102,241,0.95);
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 700;
+    box-shadow: 0 2px 8px #0003;
+    white-space: nowrap;
   }
   #dataTable tbody input,
   #dataTable tbody select {
@@ -1570,7 +1592,11 @@ body.dark-mode .prediction-chart-container {
   <div id="appSplashFallback" class="app-splash-fallback">🏃 Dashboard Squadra 5:50</div>
   <div class="app-splash-tip">Tocca per continuare</div>
 </div>
-<img id="mobileTopCenterIcon" src="./icona.svg" alt="Icona app mobile" onclick="openMobileIconPreview()">
+<div id="mobileQuickActions">
+  <button type="button" class="quick-btn" onclick="openMobileSessionModal()">Aggiungi sessione</button>
+  <img id="mobileTopCenterIcon" src="./icona.svg" alt="Icona app mobile" onclick="openMobileIconPreview()">
+  <button type="button" class="quick-btn" onclick="openQuickRipSession()">Aggiungi ripetute</button>
+</div>
 <div id="mobileIconPreview" onclick="closeMobileIconPreview()">
   <button id="mobileIconPreviewClose" type="button" onclick="closeMobileIconPreview()">×</button>
   <img src="./icona.svg" alt="Anteprima icona app" onclick="event.stopPropagation()">
@@ -2223,7 +2249,7 @@ function applyMobileFilters() {
     </table>
   </div>
 
-  <div id="mobileSessionModal" style="display:none;position:fixed;z-index:10030;left:0;top:0;width:100vw;height:100vh;background:rgba(30,41,59,0.55);backdrop-filter:blur(2px);justify-content:center;align-items:center;">
+  <div id="mobileSessionModal" style="display:none;position:fixed;z-index:10030;left:0;top:0;width:100vw;height:100vh;background:rgba(15,23,42,0.9);backdrop-filter:blur(6px);justify-content:center;align-items:center;">
     <div style="background:#fff;color:#222;max-width:380px;width:92vw;padding:22px 16px 16px 16px;border-radius:16px;box-shadow:0 8px 32px #0005;position:relative;animation:fadeIn 0.25s;">
       <button type="button" onclick="closeMobileSessionModal()" style="position:absolute;top:8px;right:12px;font-size:1.5em;background:none;border:none;color:#6366f1;cursor:pointer;">&times;</button>
       <h3 id="mobileSessionModalTitle" style="margin:0 0 12px 0;color:#6366f1;">Nuova sessione</h3>
@@ -2388,8 +2414,15 @@ function applyMobileFilters() {
     <div class="athlete-manager">
       <h3 style="color:#ec4899;font-weight:800;">Atleti della squadra</h3>
       <div class="athlete-list" id="athletesList"></div>
-      <div style="margin-top:15px;display:flex;gap:8px;">
-        <input type="text" id="newAthleteInput" placeholder="Nome e cognome atleta" style="flex:1;height:36px;padding:8px;font-size:0.9rem;font-weight:600;">
+      <div style="margin-top:15px;display:grid;grid-template-columns:1fr 120px 120px auto;gap:8px;align-items:center;">
+        <input type="text" id="newAthleteInput" placeholder="Nome e cognome atleta" style="height:36px;padding:8px;font-size:0.9rem;font-weight:600;">
+        <input type="number" id="newAthleteBirthYear" placeholder="Anno" min="1900" max="2100" style="height:36px;padding:8px;font-size:0.9rem;font-weight:600;">
+        <select id="newAthleteSex" style="height:36px;padding:8px;font-size:0.9rem;font-weight:600;">
+          <option value="">Sesso</option>
+          <option value="M">M</option>
+          <option value="F">F</option>
+          <option value="Altro">Altro</option>
+        </select>
         <button onclick="addNewAthlete()" style="padding:10px 20px;">➕ Aggiungi Atleta</button>
       </div>
     </div>
@@ -2642,9 +2675,9 @@ function calculateMarathonProbability(){
   // Modello fisiologico (Riegel): T2 = T1 * (D2/D1)^1.06
   let predictedTimeH_riegel = null;
   if(bestHalf) {
-    predictedTimeH_riegel = (bestHalf.time * Math.pow(distance / bestHalf.km, 1.06)) / 3600;
+    predictedTimeH_riegel = bestHalf.time * Math.pow(distance / bestHalf.km, 1.06);
   } else if(best10k) {
-    predictedTimeH_riegel = (best10k.time * Math.pow(distance / best10k.km, 1.08)) / 3600;
+    predictedTimeH_riegel = best10k.time * Math.pow(distance / best10k.km, 1.08);
   }
   // Media pesata: se entrambi disponibili, 60% storico, 40% Riegel
   let predictedTimeH = predictedTimeH_hist;
@@ -2660,7 +2693,6 @@ function calculateMarathonProbability(){
     targetSeconds = (+parts[0])*3600 + (+parts[1])*60 + (+parts[2]||0);
   }
   let predictedSeconds = predictedTimeH * 3600;
-  let diff = Math.abs(predictedSeconds - targetSeconds);
   let prob = 0.5;
   // Effetto preparazione: se <60 giorni, penalizza; se >120 giorni, premia
   let prepEffect = 1;
@@ -2668,10 +2700,13 @@ function calculateMarathonProbability(){
   else if(prepDays > 120) prepEffect = 1.1;
   // Modifica tempo previsto
   predictedSeconds = predictedSeconds / prepEffect;
+  let diff = targetSeconds > 0 ? Math.abs(predictedSeconds - targetSeconds) : null;
   timeMin = new Date(predictedSeconds * 1000).toISOString().substr(11, 8);
   timeMax = new Date((predictedSeconds+900) * 1000).toISOString().substr(11, 8);
   // Modifica probabilità
-  if(diff < 900) prob = 0.85 * prepEffect;
+  if(diff === null) {
+    prob = 0.5 * prepEffect;
+  } else if(diff < 900) prob = 0.85 * prepEffect;
   else if(diff < 1800) prob = 0.7 * prepEffect;
   else if(diff < 3600) prob = 0.5 * prepEffect;
   else prob = 0.2 * prepEffect;
@@ -2782,6 +2817,7 @@ let fileHandle = null;
 
 let sports=['corsa','bici','palestra','nuoto','sci'];
 let athletes=['Max'];
+let athleteDetails = {};
 let activityTypes=['Allenamento','Gara','Test','Recupero','Tecnica','Ripetute'];
 
 // ripetute storage
@@ -2817,11 +2853,85 @@ function updateSportsUI(){
 function addNewSport(){ const i=$id('newSportInput'); if(!i) return; const s=i.value.trim().toLowerCase(); if(s && !sports.includes(s)){ sports.push(s); saveSports(); updateSportsUI(); i.value=''; } }
 function removeSport(i){ sports.splice(i,1); saveSports(); updateSportsUI(); }
 
-function loadAthletes(){ const s = localStorage.getItem('athletes'); if(s) athletes = JSON.parse(s); updateAthletesUI(); }
-function saveAthletes(){ localStorage.setItem('athletes', JSON.stringify(athletes)); }
+function loadAthletes(){
+  const s = localStorage.getItem('athletes');
+  if(s) {
+    const parsed = JSON.parse(s);
+    if(Array.isArray(parsed) && parsed.length && typeof parsed[0] === 'object') {
+      athletes = parsed.map(a => (a && a.name ? a.name : '')).filter(Boolean);
+      parsed.forEach(a => {
+        if(a && a.name) {
+          athleteDetails[a.name] = {
+            birthYear: a.birthYear || '',
+            sex: a.sex || ''
+          };
+        }
+      });
+    } else if(Array.isArray(parsed)) {
+      athletes = parsed;
+    }
+  }
+  const d = localStorage.getItem('athleteDetails');
+  if(d) {
+    try { athleteDetails = JSON.parse(d) || {}; } catch(e) { athleteDetails = {}; }
+  }
+  updateAthletesUI();
+}
+function saveAthletes(){
+  localStorage.setItem('athletes', JSON.stringify(athletes));
+  localStorage.setItem('athleteDetails', JSON.stringify(athleteDetails));
+}
+function updateAthleteDetail(index, field, value){
+  const name = athletes[index];
+  if(!name) return;
+  if(!athleteDetails[name]) athleteDetails[name] = { birthYear:'', sex:'' };
+  if(field === 'birthYear') {
+    const y = parseInt(value, 10);
+    athleteDetails[name].birthYear = Number.isFinite(y) ? y : '';
+  }
+  if(field === 'sex') {
+    athleteDetails[name].sex = value || '';
+  }
+  saveAthletes();
+}
 function updateAthletesUI(){
   const listEl = $id('athletesList');
-  if(listEl) listEl.innerHTML = athletes.map((a,i)=>`<div class="athlete-tag">👤 ${a}<span class="remove" onclick="removeAthlete(${i})">×</span></div>`).join('');
+  if(listEl) listEl.innerHTML = `
+    <div style="overflow:auto;max-width:100%;">
+      <table style="width:100%;border-collapse:collapse;min-width:420px;">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding:6px;">Atleta</th>
+            <th style="text-align:left;padding:6px;">Anno nascita</th>
+            <th style="text-align:left;padding:6px;">Sesso</th>
+            <th style="text-align:left;padding:6px;">Azioni</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${athletes.map((a,i)=>{
+            const detail = athleteDetails[a] || {};
+            const birthYear = detail.birthYear || '';
+            const sex = detail.sex || '';
+            return `
+              <tr>
+                <td style="padding:6px;">👤 ${a}</td>
+                <td style="padding:6px;"><input type="number" min="1900" max="2100" value="${birthYear}" onchange="updateAthleteDetail(${i},'birthYear',this.value)" style="width:110px;"></td>
+                <td style="padding:6px;">
+                  <select onchange="updateAthleteDetail(${i},'sex',this.value)" style="width:90px;">
+                    <option value="" ${sex===''?'selected':''}>-</option>
+                    <option value="M" ${sex==='M'?'selected':''}>M</option>
+                    <option value="F" ${sex==='F'?'selected':''}>F</option>
+                    <option value="Altro" ${sex==='Altro'?'selected':''}>Altro</option>
+                  </select>
+                </td>
+                <td style="padding:6px;"><button onclick="removeAthlete(${i})" style="background:#ef4444;color:#fff;padding:4px 10px;">Elimina</button></td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
   document.querySelectorAll('.athlete-select').forEach(sel=>{
     const val = sel.value;
     sel.innerHTML = '<option value="">-- Seleziona Atleta --</option>' + athletes.map(a=>`<option value="${a}" ${a===val?'selected':''}>${a}</option>`).join('');
@@ -2834,8 +2944,38 @@ function updateAthletesUI(){
   if(pa) pa.innerHTML = athletes.map((n,i)=>`<option value="${n}" ${i===0?'selected':''}>${n}</option>`).join('');
   updateTableFilters();
 }
-function addNewAthlete(){ const i=$id('newAthleteInput'); if(!i) return; const a=i.value.trim(); if(a && !athletes.includes(a)){ athletes.push(a); saveAthletes(); updateAthletesUI(); i.value=''; updateCharts(); } }
-function removeAthlete(i){ if(confirm(`Vuoi davvero rimuovere ${athletes[i]}?`)){ athletes.splice(i,1); saveAthletes(); updateAthletesUI(); updateCharts(); } }
+function addNewAthlete(){
+  const i=$id('newAthleteInput');
+  if(!i) return;
+  const a=i.value.trim();
+  if(a && !athletes.includes(a)){
+    athletes.push(a);
+    const birthYearInput = $id('newAthleteBirthYear');
+    const sexInput = $id('newAthleteSex');
+    const birthYear = birthYearInput ? parseInt(birthYearInput.value, 10) : NaN;
+    const sex = sexInput ? sexInput.value : '';
+    athleteDetails[a] = {
+      birthYear: Number.isFinite(birthYear) ? birthYear : '',
+      sex: sex || ''
+    };
+    saveAthletes();
+    updateAthletesUI();
+    i.value='';
+    if(birthYearInput) birthYearInput.value='';
+    if(sexInput) sexInput.value='';
+    updateCharts();
+  }
+}
+function removeAthlete(i){
+  if(confirm(`Vuoi davvero rimuovere ${athletes[i]}?`)){
+    const name = athletes[i];
+    athletes.splice(i,1);
+    if(name && athleteDetails[name]) delete athleteDetails[name];
+    saveAthletes();
+    updateAthletesUI();
+    updateCharts();
+  }
+}
 
 function loadActivityTypes(){ const s=localStorage.getItem('activityTypes'); if(s) activityTypes = JSON.parse(s); updateActivityTypesUI(); }
 function saveActivityTypes(){ localStorage.setItem('activityTypes', JSON.stringify(activityTypes)); }
@@ -4324,6 +4464,9 @@ function setMobileModalSelectValue(selectEl, value){
 function openMobileSessionModal(row = null){
   const modal = document.getElementById('mobileSessionModal');
   if(!modal) return;
+  if(window.innerWidth <= 900 && !row && typeof switchTab === 'function') {
+    switchTab('dashboard');
+  }
   mobileSessionEditRow = row || null;
   const athleteSel = document.getElementById('mobileSessionAthlete');
   const sportSel = document.getElementById('mobileSessionSport');
@@ -4519,7 +4662,14 @@ function openComparison() {
       const dat = data.filter(d => (d.athlete || '').toString().trim() === nome);
 
       const km = dat.reduce((s, v) => s + (Number(v.km) || 0), 0);
-      const tempo = dat.reduce((s, v) => s + (Number(v.time) || 0), 0);
+      const tempoMin = dat.reduce((s, v) => {
+        const m = Number(v.minutes);
+        if (Number.isFinite(m) && m > 0) return s + m;
+        const h = Number(v.time);
+        return s + (Number.isFinite(h) && h > 0 ? h * 60 : 0);
+      }, 0);
+      const tempo = tempoMin / 60;
+      const tempoLabel = formatDurationFromMinutes(tempoMin);
       const carico = dat.reduce((s, v) => s + ((Number(v.rpe) || 0) * (Number(v.time) || 0)), 0);
       const trimp = dat.reduce((s, v) => s + ((Number(v.hr) || 0) * (Number(v.time) || 0) * 0.1), 0);
       const velMedia = tempo ? (km / tempo) : 0;
@@ -4531,7 +4681,7 @@ function openComparison() {
         <div class="athlete-card" style="border-left-color:${colors[idx % colors.length]}">
           <h3>${nome}</h3>
           <div class="stat-row"><span class="stat-label">Km totali:</span><span class="stat-value">${km.toFixed(1)}</span></div>
-          <div class="stat-row"><span class="stat-label">Tempo (h):</span><span class="stat-value">${tempo.toFixed(2)}</span></div>
+          <div class="stat-row"><span class="stat-label">Tempo totale:</span><span class="stat-value">${tempoLabel} (${tempo.toFixed(2)} h)</span></div>
           <div class="stat-row"><span class="stat-label">Velocità media:</span><span class="stat-value">${velMedia.toFixed(2)} km/h</span></div>
           <div class="stat-row"><span class="stat-label">Carico totale:</span><span class="stat-value">${Math.round(carico)}</span></div>
           <div class="stat-row"><span class="stat-label">TRIMP:</span><span class="stat-value">${Math.round(trimp)}</span></div>
@@ -4553,6 +4703,13 @@ function openComparison() {
 
 
 function closeComparison(){ $id('comparisonModal').classList.remove('show'); }
+
+function formatDurationFromMinutes(totalMinutes){
+  const safeMinutes = Math.max(0, Number(totalMinutes) || 0);
+  const h = Math.floor(safeMinutes / 60);
+  const m = Math.round(safeMinutes % 60);
+  return `${h}h ${String(m).padStart(2,'0')}m`;
+}
 
 function getWeekStartKey(dateStr){
   const d = new Date(dateStr);
@@ -4624,8 +4781,12 @@ function generateTrendChart(){
     const max2 = vals2.length ? Math.max(...vals2) : 0;
     const total1 = vals1.reduce((s,v)=>s+v,0);
     const total2 = vals2.reduce((s,v)=>s+v,0);
-    $id('trendStats1').innerHTML = `<strong>${a1}</strong><br>Media: ${avg1.toFixed(2)}<br>Max: ${max1.toFixed(2)}<br>Totale: ${total1.toFixed(2)}<br>Sessioni: ${dat1_all.length}`;
-    $id('trendStats2').innerHTML = `<strong>${a2}</strong><br>Media: ${avg2.toFixed(2)}<br>Max: ${max2.toFixed(2)}<br>Totale: ${total2.toFixed(2)}<br>Sessioni: ${dat2_all.length}`;
+    const time1Min = dat1_all.reduce((s,v)=> s + ((Number(v.minutes) || 0) || ((Number(v.time) || 0) * 60)), 0);
+    const time2Min = dat2_all.reduce((s,v)=> s + ((Number(v.minutes) || 0) || ((Number(v.time) || 0) * 60)), 0);
+    const time1Label = `${formatDurationFromMinutes(time1Min)} (${(time1Min/60).toFixed(2)} h)`;
+    const time2Label = `${formatDurationFromMinutes(time2Min)} (${(time2Min/60).toFixed(2)} h)`;
+    $id('trendStats1').innerHTML = `<strong>${a1}</strong><br>Media: ${avg1.toFixed(2)}<br>Max: ${max1.toFixed(2)}<br>Totale: ${total1.toFixed(2)}<br>Tempo totale: ${time1Label}<br>Sessioni: ${dat1_all.length}`;
+    $id('trendStats2').innerHTML = `<strong>${a2}</strong><br>Media: ${avg2.toFixed(2)}<br>Max: ${max2.toFixed(2)}<br>Totale: ${total2.toFixed(2)}<br>Tempo totale: ${time2Label}<br>Sessioni: ${dat2_all.length}`;
   }catch(e){ console.error('generateTrendChart', e); alert('Errore generazione trend (vedi console)'); }
 }
 
@@ -5036,6 +5197,13 @@ function openMobileIconPreview(){
 function closeMobileIconPreview(){
   const preview = document.getElementById('mobileIconPreview');
   if(preview) preview.style.display = 'none';
+}
+
+function openQuickRipSession(){
+  if(window.innerWidth <= 900 && typeof switchTab === 'function') {
+    switchTab('ripetute');
+  }
+  handleStartNewRipSession();
 }
 
 window.addEventListener('DOMContentLoaded', ()=>{
