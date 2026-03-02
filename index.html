@@ -127,12 +127,17 @@
   #mobileMenuBtn { display: flex !important; }
   #mobileTopCenterIcon {
     display: block;
-    width: 52px;
-    height: 52px;
+    position: fixed;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10005;
+    width: 56px;
+    height: 56px;
     background: rgba(255,255,255,0.88);
     border-radius: 50%;
     padding: 6px;
-    box-shadow: 0 2px 12px #0003;
+    box-shadow: 0 2px 12px #0004;
     object-fit: contain;
     pointer-events: auto;
     cursor: zoom-in;
@@ -140,29 +145,60 @@
   #mobileQuickActions {
     display: flex;
     position: fixed;
-    top: 12px;
-    left: 50%;
-    transform: translateX(-50%);
+    top: 14px;
+    left: calc(50% + 26px);
+    transform: none;
     z-index: 10005;
-    align-items: center;
-    gap: 6px;
-    max-width: calc(100vw - 74px);
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+    max-width: 94px;
   }
   #mobileQuickActions .quick-btn {
-    height: 30px;
+    height: 26px;
+    width: 92px;
     padding: 0 8px;
     border: none;
-    border-radius: 999px;
+    border-radius: 0 12px 12px 0;
     background: rgba(99,102,241,0.95);
     color: #fff;
-    font-size: 0.68rem;
+    font-size: 0.64rem;
     font-weight: 700;
     box-shadow: 0 2px 8px #0003;
     white-space: nowrap;
-    max-width: 118px;
+    max-width: 92px;
     overflow: hidden;
     text-overflow: ellipsis;
     line-height: 1;
+    text-align: left;
+    padding-left: 10px;
+  }
+  #mobileQuickActions .quick-btn.quick-top {
+    border-top-left-radius: 22px;
+  }
+  #mobileQuickActions .quick-btn.quick-bottom {
+    border-bottom-left-radius: 22px;
+  }
+  #mobileMenuBtn {
+    top: 14px !important;
+    left: calc(50% - 64px) !important;
+    width: 34px !important;
+    height: 56px !important;
+    border-radius: 28px 0 0 28px !important;
+    background: rgba(35,41,70,0.95) !important;
+    z-index: 10005 !important;
+    box-shadow: 0 2px 12px #0004 !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+  #mobileMenuBtn > div {
+    gap: 2px !important;
+    transform: scale(0.82);
+  }
+  #mobileMenuBtn span {
+    width: 18px !important;
+    height: 3px !important;
+    margin: 2px 0 !important;
   }
   #dataTable tbody input,
   #dataTable tbody select {
@@ -1597,10 +1633,10 @@ body.dark-mode .prediction-chart-container {
   <div class="app-splash-tip">Tocca per continuare</div>
 </div>
 <div id="mobileQuickActions">
-  <button type="button" class="quick-btn" onclick="openMobileSessionModal()">Aggiungi sessione</button>
-  <img id="mobileTopCenterIcon" src="./icona.svg" alt="Icona app mobile" onclick="openMobileIconPreview()">
-  <button type="button" class="quick-btn" onclick="openQuickRipSession()">Aggiungi ripetute</button>
+  <button type="button" class="quick-btn quick-top" onclick="openMobileSessionModal()">Aggiungi sessione</button>
+  <button type="button" class="quick-btn quick-bottom" onclick="openQuickRipSession()">Aggiungi ripetute</button>
 </div>
+<img id="mobileTopCenterIcon" src="./icona.svg" alt="Icona app mobile" onclick="openMobileIconPreview()">
 <div id="mobileIconPreview" onclick="closeMobileIconPreview()">
   <button id="mobileIconPreviewClose" type="button" onclick="closeMobileIconPreview()">×</button>
   <img src="./icona.svg" alt="Anteprima icona app" onclick="event.stopPropagation()">
