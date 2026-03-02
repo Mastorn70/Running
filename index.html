@@ -145,20 +145,24 @@
     transform: translateX(-50%);
     z-index: 10005;
     align-items: center;
-    gap: 8px;
-    max-width: calc(100vw - 82px);
+    gap: 6px;
+    max-width: calc(100vw - 74px);
   }
   #mobileQuickActions .quick-btn {
-    height: 38px;
-    padding: 0 10px;
+    height: 30px;
+    padding: 0 8px;
     border: none;
     border-radius: 999px;
     background: rgba(99,102,241,0.95);
     color: #fff;
-    font-size: 0.8rem;
+    font-size: 0.68rem;
     font-weight: 700;
     box-shadow: 0 2px 8px #0003;
     white-space: nowrap;
+    max-width: 118px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1;
   }
   #dataTable tbody input,
   #dataTable tbody select {
