@@ -1739,7 +1739,7 @@ body.dark-mode .prediction-chart-container {
   <!-- MODALE FILTRI MOBILE -->
   <div id="mobileFilterModal" style="display:none;position:fixed;z-index:10010;left:0;top:0;width:100vw;height:100vh;background:rgba(30,41,59,0.55);backdrop-filter:blur(2px);justify-content:center;align-items:center;">
     <div style="background:#fff;color:#222;max-width:350px;width:90vw;padding:24px 18px 18px 18px;border-radius:18px;box-shadow:0 8px 32px #0005;position:relative;animation:fadeIn 0.3s;">
-      <button onclick="document.getElementById('mobileFilterModal').style.display='none'" style="position:absolute;top:10px;right:14px;font-size:1.5em;background:none;border:none;color:#6366f1;cursor:pointer;">&times;</button>
+      <button onclick="closeMobileFilterModal()" style="position:absolute;top:10px;right:14px;font-size:1.5em;background:none;border:none;color:#6366f1;cursor:pointer;">&times;</button>
       <h3 style="margin-top:0;font-size:1.1em;color:#6366f1;">Filtra dati</h3>
       <div style="display:flex;flex-direction:column;gap:10px;">
         <label>Atleta:
@@ -1756,7 +1756,7 @@ body.dark-mode .prediction-chart-container {
     </div>
   </div>
   <!-- /MODALE FILTRI MOBILE -->
-    <button id="openMobileFilterBtn" style="position:absolute;top:8px;right:10px;padding:6px 10px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:0.95em;font-weight:600;z-index:10011;box-shadow:0 2px 8px #0002;">🔍 Filtra</button>
+    <button id="openMobileFilterBtn" style="position:absolute;top:8px;right:10px;padding:6px 10px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:0.95em;font-weight:600;z-index:900;box-shadow:0 2px 8px #0002;">🔍 Filtra</button>
   <style>@media (max-width:900px){.mobile-dashboard{position:relative;}}</style>
   <div class="mini-card">
     <canvas id="chartMobile1"></canvas>
@@ -2001,6 +2001,7 @@ function fillMobileAthletes() {
 }
 function openMobileFilterModal() {
   document.getElementById('mobileFilterModal').style.display = 'flex';
+  updateMobileFilterButtonVisibility();
   fillMobileAthletes();
   // Se la lista atleti non è ancora pronta, riprova ogni 300ms finché non è popolata
   let tries = 0;
@@ -2017,15 +2018,53 @@ function openMobileFilterModal() {
   document.getElementById('mobileDateFrom').value = document.getElementById('dateFrom').value;
   document.getElementById('mobileDateTo').value = document.getElementById('dateTo').value;
 }
+function closeMobileFilterModal() {
+  document.getElementById('mobileFilterModal').style.display = 'none';
+  updateMobileFilterButtonVisibility();
+}
 function applyMobileFilters() {
   // Aggiorna i filtri principali e chiudi modale
   document.getElementById('athleteFilter').value = document.getElementById('mobileAthleteFilter').value;
   document.getElementById('dateFrom').value = document.getElementById('mobileDateFrom').value;
   document.getElementById('dateTo').value = document.getElementById('mobileDateTo').value;
   updateCharts();
-  document.getElementById('mobileFilterModal').style.display = 'none';
+  closeMobileFilterModal();
 }
 document.getElementById('openMobileFilterBtn').onclick = openMobileFilterModal;
+function updateMobileFilterButtonVisibility() {
+  const btn = document.getElementById('openMobileFilterBtn');
+  if (!btn) return;
+  const isMobile = window.matchMedia('(max-width: 900px)').matches;
+  if (!isMobile) {
+    btn.style.visibility = '';
+    btn.style.pointerEvents = '';
+    btn.style.opacity = '';
+    return;
+  }
+  const modals = document.querySelectorAll('[id$="Modal"], .modal');
+  let hasOpenModal = false;
+  modals.forEach((modalEl) => {
+    if (hasOpenModal || !modalEl) return;
+    const hasShowClass = modalEl.classList && modalEl.classList.contains('show');
+    const style = window.getComputedStyle(modalEl);
+    const isDisplayed = style.display !== 'none' && style.visibility !== 'hidden' && parseFloat(style.opacity || '1') > 0;
+    if (hasShowClass || isDisplayed) hasOpenModal = true;
+  });
+  btn.style.visibility = hasOpenModal ? 'hidden' : 'visible';
+  btn.style.pointerEvents = hasOpenModal ? 'none' : 'auto';
+  btn.style.opacity = hasOpenModal ? '0' : '1';
+}
+
+const mobileFilterModalObserver = new MutationObserver(() => {
+  updateMobileFilterButtonVisibility();
+});
+mobileFilterModalObserver.observe(document.body, {
+  subtree: true,
+  attributes: true,
+  attributeFilter: ['class', 'style']
+});
+window.addEventListener('resize', updateMobileFilterButtonVisibility);
+setTimeout(updateMobileFilterButtonVisibility, 0);
 // Hamburger menu per filtri su mobile
 function toggleFiltersMenu() {
   var menu = document.getElementById('filtersMenu');
