@@ -230,6 +230,22 @@
   #dataTable tbody tr {
     cursor: pointer;
   }
+  #kmRunnerCard {
+    display: none !important;
+  }
+  #mobileRunner3DSlot {
+    grid-column: 1 / -1;
+    margin-top: 2px;
+  }
+  #mobileRunner3DSlot .runner-3d-host {
+    width: 100%;
+    height: 300px;
+    min-height: 260px;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    background: linear-gradient(180deg, rgba(226,232,240,0.35) 0%, rgba(148,163,184,0.18) 100%);
+  }
   /* Fullscreen su mobile */
   html, body {
     min-height: 100vh;
@@ -1783,6 +1799,7 @@ body.dark-mode .prediction-chart-container {
     <div class="kpi-label">Frequenza</div>
     <div class="kpi-icons"><span>💓</span><span>⬆️</span></div>
   </div>
+  <div id="mobileRunner3DSlot"></div>
 </div>
 <script>
 // Modal Config Strava - funzioni globali
@@ -2269,7 +2286,7 @@ function applyMobileFilters() {
     </div>
 
     <div class="grid">
-      <div class="card"><h3>🏃‍♂️ Classifica 3D atleti (avanzamento=km, dimensione=carico)</h3><canvas id="kmChart"></canvas></div>
+      <div class="card" id="kmRunnerCard"><h3>🏃‍♂️ Classifica 3D atleti (avanzamento=km, dimensione=carico)</h3><canvas id="kmChart"></canvas></div>
       <div class="card"><h3>📊 Velocità (radar)</h3><canvas id="speedChart"></canvas></div>
       <div class="card"><h3>📊 Km/settimana</h3><canvas id="weeklyChart"></canvas></div>
       <div class="card"><h3>⚡ Carico interno</h3><canvas id="loadChart"></canvas></div>
@@ -4201,16 +4218,29 @@ function ensureRunner3DHost(canvasId){
   if(!canvas || !canvas.parentNode) return null;
   const hostId = `${canvasId}3DHost`;
   let host = document.getElementById(hostId);
+  const isMobile = window.matchMedia('(max-width: 900px)').matches;
   if(!host){
     host = document.createElement('div');
     host.id = hostId;
-    host.style.width = '100%';
-    host.style.height = '320px';
-    host.style.minHeight = '260px';
-    host.style.borderRadius = '12px';
-    host.style.overflow = 'hidden';
-    host.style.position = 'relative';
-    host.style.background = 'linear-gradient(180deg, rgba(226,232,240,0.35) 0%, rgba(148,163,184,0.18) 100%)';
+    host.className = 'runner-3d-host';
+    if(!isMobile){
+      host.style.width = '100%';
+      host.style.height = '320px';
+      host.style.minHeight = '260px';
+      host.style.borderRadius = '12px';
+      host.style.overflow = 'hidden';
+      host.style.position = 'relative';
+      host.style.background = 'linear-gradient(180deg, rgba(226,232,240,0.35) 0%, rgba(148,163,184,0.18) 100%)';
+      canvas.parentNode.insertBefore(host, canvas);
+    }
+  }
+  if(isMobile){
+    const mobileSlot = document.getElementById('mobileRunner3DSlot');
+    if(mobileSlot && host.parentNode !== mobileSlot){
+      mobileSlot.innerHTML = '';
+      mobileSlot.appendChild(host);
+    }
+  } else if(host.parentNode !== canvas.parentNode){
     canvas.parentNode.insertBefore(host, canvas);
   }
   canvas.style.display = 'none';
