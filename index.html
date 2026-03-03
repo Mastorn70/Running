@@ -239,8 +239,8 @@
   }
   #mobileRunner3DSlot .runner-3d-host {
     width: 100%;
-    height: 300px;
-    min-height: 260px;
+    height: 74vh;
+    min-height: 420px;
     border-radius: 12px;
     overflow: hidden;
     position: relative;
@@ -4247,13 +4247,87 @@ function ensureRunner3DHost(canvasId){
   return host;
 }
 
-function createRunnerLabelSprite(text){
+function getRunnerTheme(rank){
+  if(rank === 0) return { name: 'Flash', icon: '⚡', colorHex: '#ef4444', labelBg: '#7f1d1d', labelFg: '#fde68a' };
+  if(rank === 1) return { name: 'Superman', icon: '🦸', colorHex: '#2563eb', labelBg: '#1e3a8a', labelFg: '#fef08a' };
+  if(rank === 2) return { name: 'Thor', icon: '🔨', colorHex: '#0f766e', labelBg: '#134e4a', labelFg: '#f1f5f9' };
+  if(rank === 3) return { name: 'Ironman', icon: '🤖', colorHex: '#f59e0b', labelBg: '#7c2d12', labelFg: '#fff7ed' };
+  return { name: 'Coniglio Bianco', icon: '🐇', colorHex: '#e5e7eb', labelBg: '#334155', labelFg: '#ffffff' };
+}
+
+function getRunnerImageSrc(themeName){
+  if(themeName === 'Flash') return 'images/flash.png';
+  if(themeName === 'Superman') return 'images/superman.png';
+  if(themeName === 'Thor') return 'images/thor.png';
+  if(themeName === 'Ironman') return 'images/ironman.png';
+  return 'images/coniglio-bianco.png';
+}
+
+function getDefaultSoldatinoSvg(){
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='120' height='180' viewBox='0 0 120 180'>
+    <defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#f8fafc'/><stop offset='1' stop-color='#cbd5e1'/></linearGradient></defs>
+    <circle cx='60' cy='28' r='18' fill='url(#g)' stroke='#334155' stroke-width='4'/>
+    <rect x='44' y='48' width='32' height='52' rx='12' fill='url(#g)' stroke='#334155' stroke-width='4'/>
+    <rect x='26' y='58' width='18' height='46' rx='8' fill='url(#g)' stroke='#334155' stroke-width='4'/>
+    <rect x='76' y='58' width='18' height='46' rx='8' fill='url(#g)' stroke='#334155' stroke-width='4'/>
+    <rect x='44' y='100' width='14' height='52' rx='8' fill='url(#g)' stroke='#334155' stroke-width='4'/>
+    <rect x='62' y='100' width='14' height='52' rx='8' fill='url(#g)' stroke='#334155' stroke-width='4'/>
+    <rect x='40' y='150' width='20' height='10' rx='4' fill='#334155'/>
+    <rect x='60' y='150' width='20' height='10' rx='4' fill='#334155'/>
+  </svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+function createRunnerBillboard(theme){
+  const group = new THREE.Group();
+  const geo = new THREE.PlaneGeometry(1.12, 2.02);
+  const mat = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    transparent: true,
+    alphaTest: 0.15,
+    roughness: 0.7,
+    metalness: 0.05,
+    side: THREE.DoubleSide
+  });
+  const plane = new THREE.Mesh(geo, mat);
+  plane.position.y = 1.0;
+  group.add(plane);
+
+  const shadow = new THREE.Mesh(
+    new THREE.CircleGeometry(0.33, 18),
+    new THREE.MeshBasicMaterial({ color: 0x0f172a, transparent: true, opacity: 0.22 })
+  );
+  shadow.rotation.x = -Math.PI/2;
+  shadow.position.y = 0.01;
+  group.add(shadow);
+
+  const src = getRunnerImageSrc(theme.name);
+  const fallback = getDefaultSoldatinoSvg();
+  const loader = new THREE.TextureLoader();
+  loader.load(src, (tex) => {
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.needsUpdate = true;
+    mat.map = tex;
+    mat.needsUpdate = true;
+  }, undefined, () => {
+    loader.load(fallback, (tex2) => {
+      tex2.colorSpace = THREE.SRGBColorSpace;
+      tex2.needsUpdate = true;
+      mat.map = tex2;
+      mat.needsUpdate = true;
+    });
+  });
+
+  return { group, plane, shadow };
+}
+
+function createRunnerLabelSprite(text, bg = '#f8fafcf0', fg = '#0f172a'){
   const cnv = document.createElement('canvas');
   cnv.width = 512;
   cnv.height = 128;
   const c = cnv.getContext('2d');
   c.clearRect(0,0,cnv.width,cnv.height);
-  c.fillStyle = 'rgba(15,23,42,0.82)';
+  c.fillStyle = bg;
   const x=8, y=18, w=496, h=92, r=18;
   c.beginPath();
   c.moveTo(x+r, y);
@@ -4263,23 +4337,33 @@ function createRunnerLabelSprite(text){
   c.arcTo(x, y, x+w, y, r);
   c.closePath();
   c.fill();
-  c.fillStyle = '#ffffff';
-  c.font = '700 40px Segoe UI';
+  c.lineWidth = 3;
+  c.strokeStyle = 'rgba(15,23,42,0.22)';
+  c.stroke();
+  c.fillStyle = fg;
+  c.font = '800 44px Segoe UI';
   c.textAlign = 'center';
   c.textBaseline = 'middle';
+  c.shadowColor = 'rgba(255,255,255,0.35)';
+  c.shadowBlur = 2;
   c.fillText(text, 256, 64);
   const tex = new THREE.CanvasTexture(cnv);
   tex.needsUpdate = true;
   const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
   const spr = new THREE.Sprite(mat);
-  spr.scale.set(2.8, 0.7, 1);
+  spr.scale.set(3.8, 0.95, 1);
   return spr;
 }
 
-function buildRunnerModel(hexColor, isWoman){
+function buildRunnerModel(theme, isWoman){
   const group = new THREE.Group();
-  const bodyMat = new THREE.MeshStandardMaterial({ color: hexColor, roughness: 0.55, metalness: 0.12 });
+  const bodyMat = new THREE.MeshStandardMaterial({ color: theme.colorHex, roughness: 0.55, metalness: 0.12 });
   const skinMat = new THREE.MeshStandardMaterial({ color: 0xf5d0a5, roughness: 0.8, metalness: 0.02 });
+  const accentRed = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.5, metalness: 0.08 });
+  const accentBlue = new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.5, metalness: 0.08 });
+  const accentGold = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.45, metalness: 0.35 });
+  const accentSilver = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.35, metalness: 0.45 });
+  const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6, metalness: 0.02 });
 
   const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.22, 0.9, 6, 12), bodyMat);
   torso.position.y = 1.15;
@@ -4288,6 +4372,35 @@ function buildRunnerModel(hexColor, isWoman){
   const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 18, 18), skinMat);
   head.position.y = 1.95;
   group.add(head);
+
+  const eyeBand = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.035, 10, 22), accentBlue);
+  eyeBand.position.set(0, 1.95, 0.0);
+  eyeBand.rotation.x = Math.PI / 2;
+  eyeBand.visible = false;
+  group.add(eyeBand);
+
+  const chest = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.22, 0.05), accentGold);
+  chest.position.set(0, 1.22, 0.23);
+  chest.visible = false;
+  group.add(chest);
+
+  const flashRing = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.018, 10, 22), new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.3, metalness: 0.25 }));
+  flashRing.position.set(0, 1.22, 0.245);
+  flashRing.rotation.x = Math.PI / 2;
+  flashRing.visible = false;
+  group.add(flashRing);
+
+  const flashBolt = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.12, 0.02), accentGold);
+  flashBolt.position.set(0, 1.22, 0.255);
+  flashBolt.rotation.z = 0.55;
+  flashBolt.visible = false;
+  group.add(flashBolt);
+
+  const belt = new THREE.Mesh(new THREE.TorusGeometry(0.24, 0.03, 8, 24), accentGold);
+  belt.position.set(0, 0.82, 0);
+  belt.rotation.x = Math.PI / 2;
+  belt.visible = false;
+  group.add(belt);
 
   const hip = new THREE.Group();
   hip.position.y = 0.68;
@@ -4303,6 +4416,13 @@ function buildRunnerModel(hexColor, isWoman){
   rightLeg.position.set(0.12, -0.45, 0.02);
   hip.add(rightLeg);
 
+  const leftBoot = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.12, 0.28), accentRed);
+  leftBoot.position.set(-0.12, -0.95, 0.12);
+  hip.add(leftBoot);
+  const rightBoot = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.12, 0.28), accentRed);
+  rightBoot.position.set(0.12, -0.95, 0.12);
+  hip.add(rightBoot);
+
   const shoulder = new THREE.Group();
   shoulder.position.y = 1.45;
   group.add(shoulder);
@@ -4313,10 +4433,131 @@ function buildRunnerModel(hexColor, isWoman){
   rightArm.position.set(0.33, -0.2, 0.02);
   shoulder.add(rightArm);
 
+  const cape = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.95, 0.03), accentRed);
+  cape.position.set(0, 1.22, -0.16);
+  cape.rotation.x = 0.15;
+  cape.visible = false;
+  group.add(cape);
+
+  const hammerHandle = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.36, 12), accentSilver);
+  hammerHandle.rotation.z = Math.PI / 2;
+  hammerHandle.position.set(0.54, 1.08, 0.02);
+  hammerHandle.visible = false;
+  group.add(hammerHandle);
+
+  const hammerHead = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.11, 0.11), accentSilver);
+  hammerHead.position.set(0.68, 1.08, 0.02);
+  hammerHead.visible = false;
+  group.add(hammerHead);
+
+  const rabbitEarL = new THREE.Mesh(new THREE.CapsuleGeometry(0.035, 0.22, 4, 8), whiteMat);
+  rabbitEarL.position.set(-0.08, 2.24, 0.02);
+  rabbitEarL.rotation.z = -0.15;
+  rabbitEarL.visible = false;
+  group.add(rabbitEarL);
+
+  const rabbitEarR = new THREE.Mesh(new THREE.CapsuleGeometry(0.035, 0.22, 4, 8), whiteMat);
+  rabbitEarR.position.set(0.08, 2.24, 0.02);
+  rabbitEarR.rotation.z = 0.15;
+  rabbitEarR.visible = false;
+  group.add(rabbitEarR);
+
+  const rabbitTail = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 10), whiteMat);
+  rabbitTail.position.set(0, 0.74, -0.2);
+  rabbitTail.visible = false;
+  group.add(rabbitTail);
+
+  const rabbitNose = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 8), new THREE.MeshStandardMaterial({ color: 0xfda4af, roughness: 0.7, metalness: 0 }));
+  rabbitNose.position.set(0, 1.92, 0.19);
+  rabbitNose.visible = false;
+  group.add(rabbitNose);
+
+  const hornL = new THREE.Mesh(new THREE.ConeGeometry(0.03, 0.14, 10), accentSilver);
+  hornL.position.set(-0.09, 2.12, 0.02);
+  hornL.rotation.z = 0.35;
+  hornL.visible = false;
+  group.add(hornL);
+  const hornR = new THREE.Mesh(new THREE.ConeGeometry(0.03, 0.14, 10), accentSilver);
+  hornR.position.set(0.09, 2.12, 0.02);
+  hornR.rotation.z = -0.35;
+  hornR.visible = false;
+  group.add(hornR);
+
+  const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.205, 16, 16), accentGold);
+  helmet.position.set(0, 1.96, 0);
+  helmet.visible = false;
+  group.add(helmet);
+
+  const visor = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.06, 0.03), new THREE.MeshStandardMaterial({ color: 0x67e8f9, emissive: 0x22d3ee, emissiveIntensity: 0.45, roughness: 0.25, metalness: 0.25 }));
+  visor.position.set(0, 1.95, 0.18);
+  visor.visible = false;
+  group.add(visor);
+
   if(isWoman){
     const skirt = new THREE.Mesh(new THREE.ConeGeometry(0.35, 0.45, 18), bodyMat);
     skirt.position.y = 0.9;
     group.add(skirt);
+  }
+
+  if(theme.name === 'Flash'){
+    torso.material = accentRed;
+    leftArm.material = accentRed;
+    rightArm.material = accentRed;
+    leftLeg.material = accentRed;
+    rightLeg.material = accentRed;
+    chest.visible = false;
+    flashRing.visible = true;
+    flashBolt.visible = true;
+    eyeBand.visible = true;
+    belt.visible = true;
+    leftBoot.material = accentGold;
+    rightBoot.material = accentGold;
+  }
+  if(theme.name === 'Superman'){
+    cape.visible = true;
+    chest.visible = true;
+    chest.material = accentGold;
+    torso.material = accentBlue;
+    belt.visible = true;
+    leftBoot.material = accentRed;
+    rightBoot.material = accentRed;
+  }
+  if(theme.name === 'Thor'){
+    cape.visible = true;
+    hammerHandle.visible = true;
+    hammerHead.visible = true;
+    hornL.visible = true;
+    hornR.visible = true;
+    torso.material = accentBlue;
+    leftBoot.material = accentSilver;
+    rightBoot.material = accentSilver;
+  }
+  if(theme.name === 'Ironman'){
+    torso.material = accentRed;
+    leftArm.material = accentRed;
+    rightArm.material = accentRed;
+    leftLeg.material = accentRed;
+    rightLeg.material = accentRed;
+    chest.visible = true;
+    chest.material = new THREE.MeshStandardMaterial({ color: 0x67e8f9, emissive: 0x22d3ee, emissiveIntensity: 0.45, roughness: 0.35, metalness: 0.35 });
+    head.material = accentGold;
+    helmet.visible = true;
+    visor.visible = true;
+    leftBoot.material = accentGold;
+    rightBoot.material = accentGold;
+  }
+  if(theme.name === 'Coniglio Bianco'){
+    torso.material = whiteMat;
+    leftArm.material = whiteMat;
+    rightArm.material = whiteMat;
+    leftLeg.material = whiteMat;
+    rightLeg.material = whiteMat;
+    rabbitEarL.visible = true;
+    rabbitEarR.visible = true;
+    rabbitTail.visible = true;
+    rabbitNose.visible = true;
+    leftBoot.material = whiteMat;
+    rightBoot.material = whiteMat;
   }
 
   return { group, leftLeg, rightLeg, leftArm, rightArm };
@@ -4390,23 +4631,34 @@ function isWebGLUsable(){
 }
 
 function renderRunner2DFallback(host, athletes, kmValues, loadValues, reason){
-  const kmMin = Math.min(...kmValues);
-  const kmMax = Math.max(...kmValues);
-  const loadMin = Math.min(...loadValues);
-  const loadMax = Math.max(...loadValues);
-  const rows = (athletes || []).map((ath, i) => {
-    const km = Number(kmValues[i] || 0);
-    const load = Number(loadValues[i] || 0);
+  const list = (athletes || []).map((ath, i) => ({
+    athlete: ath,
+    km: Number(kmValues[i] || 0),
+    load: Number(loadValues[i] || 0)
+  })).sort((a,b)=> b.km - a.km);
+
+  const rankedAthletes = list.map(x => x.athlete);
+  const rankedKmValues = list.map(x => x.km);
+  const rankedLoadValues = list.map(x => x.load);
+
+  const kmMin = Math.min(...rankedKmValues);
+  const kmMax = Math.max(...rankedKmValues);
+  const loadMin = Math.min(...rankedLoadValues);
+  const loadMax = Math.max(...rankedLoadValues);
+  const rows = (rankedAthletes || []).map((ath, i) => {
+    const km = Number(rankedKmValues[i] || 0);
+    const load = Number(rankedLoadValues[i] || 0);
+    const theme = getRunnerTheme(i);
     const kmNorm = (kmMax - kmMin) > 0 ? (km - kmMin)/(kmMax - kmMin) : 0.5;
     const loadNorm = (loadMax - loadMin) > 0 ? (load - loadMin)/(loadMax - loadMin) : 0.5;
     const leftPct = 84 - kmNorm * 78;
-    const sizePx = 22 + loadNorm * 14;
-    const icon = (i % 2 === 0) ? '🏃‍♂️' : '🏃‍♀️';
+    const sizePx = 62 + loadNorm * 30;
+    const imgSrc = getRunnerImageSrc(theme.name);
+    const fallback = getDefaultSoldatinoSvg();
     return `
-      <div style="position:relative;height:44px;border-bottom:1px dashed #cbd5e1;">
-        <div style="position:absolute;left:${leftPct}%;top:50%;transform:translate(-50%,-50%);font-size:${sizePx}px;line-height:1;">${icon}</div>
-        <div style="position:absolute;left:8px;top:6px;font:700 12px Segoe UI;color:#0f172a;max-width:46%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${ath}</div>
-        <div style="position:absolute;right:8px;top:6px;font:600 11px Segoe UI;color:#334155;">${km.toFixed(1)} km • C ${Math.round(load)}</div>
+      <div style="position:relative;height:128px;border-bottom:1px dashed #cbd5e1;">
+        <img src="${imgSrc}" onerror="this.onerror=null;this.src='${fallback}'" alt="${theme.name}" style="position:absolute;left:${leftPct}%;top:56%;transform:translate(-50%,-50%);width:${sizePx}px;height:${Math.round(sizePx*1.45)}px;object-fit:contain;filter:drop-shadow(0 2px 4px #0007);" />
+        <div style="position:absolute;left:${leftPct}%;top:8px;transform:translateX(-50%);font:800 13px Segoe UI;color:#0f172a;background:#f8fafcf2;padding:5px 12px;border-radius:999px;white-space:nowrap;max-width:90%;overflow:hidden;text-overflow:ellipsis;box-shadow:0 2px 8px #0003;border:1px solid #94a3b8;">${ath} • ${km.toFixed(1)} km • Carico ${Math.round(load)}</div>
       </div>`;
   }).join('');
 
@@ -4508,33 +4760,45 @@ function renderRunner3DChart(canvasId, athletes, kmValues, loadValues){
   const loadMax = Math.max(...loadValues);
 
   const runnerStates = [];
+  const usePhotoBillboards = window.matchMedia('(max-width: 900px)').matches;
   const lanes = Math.max(1, athletes.length);
 
   athletes.forEach((ath, i) => {
     const km = Number(kmValues[i] || 0);
     const load = Number(loadValues[i] || 0);
+    const theme = getRunnerTheme(i);
     const kmNorm = (kmMax - kmMin) > 0 ? (km - kmMin) / (kmMax - kmMin) : 0.5;
     const loadNorm = (loadMax - loadMin) > 0 ? (load - loadMin) / (loadMax - loadMin) : 0.5;
     const z = -14.2 + kmNorm * 12.8;
     const x = ((i + 1) - (lanes + 1)/2) * (8.4 / Math.max(2, lanes));
     const scale = 0.82 + loadNorm * 0.78;
 
-    const color = colors[i % colors.length];
-    const isWoman = (i % 2) === 1;
-    const model = buildRunnerModel(color, isWoman);
-    model.group.position.set(x, 0.02, z);
-    model.group.scale.set(scale, scale, scale);
-    scene.add(model.group);
+    let model;
+    if(usePhotoBillboards){
+      model = createRunnerBillboard(theme);
+      model.group.position.set(x, 0.02, z);
+      model.group.scale.set(scale*1.58, scale*1.58, scale*1.58);
+      scene.add(model.group);
+    }else{
+      const isWoman = false;
+      model = buildRunnerModel(theme, isWoman);
+      model.group.position.set(x, 0.02, z);
+      model.group.scale.set(scale, scale, scale);
+      scene.add(model.group);
+    }
 
-    const label = createRunnerLabelSprite(`${ath} • ${km.toFixed(1)}km • C ${Math.round(load)}`);
-    label.position.set(x, 2.9*scale, z);
+    const label = createRunnerLabelSprite(`${ath} • ${km.toFixed(1)} km • Carico ${Math.round(load)}`, '#f8fafcf2', '#0f172a');
+    label.position.set(x, (usePhotoBillboards ? 3.6 : 2.9) * scale, z);
     scene.add(label);
 
     runnerStates.push({
       model,
       label,
       baseY: 0.02,
-      phase: i * 0.75
+      phase: i * 0.75,
+      animated: true,
+      mode: usePhotoBillboards ? 'billboard' : 'mesh',
+      baseScale: scale
     });
   });
 
@@ -4559,14 +4823,33 @@ function renderRunner3DChart(canvasId, athletes, kmValues, loadValues){
   const animate = () => {
     const t = clock.getElapsedTime();
     runnerStates.forEach((r) => {
-      const swing = Math.sin(t*5 + r.phase) * 0.55;
-      const bob = Math.abs(Math.sin(t*5 + r.phase)) * 0.07;
-      r.model.leftLeg.rotation.x = swing;
-      r.model.rightLeg.rotation.x = -swing;
-      r.model.leftArm.rotation.x = -swing * 0.9;
-      r.model.rightArm.rotation.x = swing * 0.9;
-      r.model.group.position.y = r.baseY + bob;
-      r.label.position.y = (r.model.group.scale.y * 2.9) + bob;
+      if(!r.animated) return;
+      if(r.mode === 'billboard'){
+        const sway = Math.sin(t*1.6 + r.phase) * 0.08;
+        const bob = Math.sin(t*2.4 + r.phase) * 0.05;
+        const pulse = 1 + (Math.sin(t*2.0 + r.phase) * 0.03);
+        r.model.group.position.y = r.baseY + bob;
+        r.model.group.rotation.y = sway;
+        r.model.group.rotation.z = sway * 0.18;
+        const s = (r.baseScale * 1.02) * pulse;
+        r.model.group.scale.set(s, s, s);
+        if(r.model.shadow){
+          const op = 0.22 - Math.abs(bob) * 0.9;
+          r.model.shadow.material.opacity = Math.max(0.1, op);
+          const sh = 1 - Math.abs(bob) * 1.2;
+          r.model.shadow.scale.set(sh, sh, sh);
+        }
+        r.label.position.y = (r.model.group.scale.y * 3.0) + bob;
+      } else {
+        const swing = Math.sin(t*5 + r.phase) * 0.55;
+        const bob = Math.abs(Math.sin(t*5 + r.phase)) * 0.07;
+        r.model.leftLeg.rotation.x = swing;
+        r.model.rightLeg.rotation.x = -swing;
+        r.model.leftArm.rotation.x = -swing * 0.9;
+        r.model.rightArm.rotation.x = swing * 0.9;
+        r.model.group.position.y = r.baseY + bob;
+        r.label.position.y = (r.model.group.scale.y * 2.9) + bob;
+      }
     });
     renderer.render(scene, camera);
     state.rafId = requestAnimationFrame(animate);
@@ -4782,15 +5065,18 @@ function updateCharts(){
     return;
   }
 
-  // Km cumulativi
-  const athletesForKm = Object.keys(byA);
-  const totalKmPerAthlete = athletesForKm.map(ath => {
-    return byA[ath].reduce((sum, s) => sum + (s.km || 0), 0);
-  });
+  // Km cumulativi (ordinati per classifica)
+  const kmRanking = Object.keys(byA).map((ath) => ({
+    athlete: ath,
+    km: byA[ath].reduce((sum, s) => sum + (s.km || 0), 0),
+    load: loadWeightedByKm(byA[ath] || [])
+  })).sort((a,b)=> b.km - a.km);
+  const athletesForKm = kmRanking.map(r => r.athlete);
+  const totalKmPerAthlete = kmRanking.map(r => r.km);
 
   if (charts['kmChart']) { charts['kmChart'].destroy(); charts['kmChart'] = null; }
   if (athletesForKm.length) {
-    const loadPerAthlete = athletesForKm.map(ath => loadWeightedByKm(byA[ath] || []));
+    const loadPerAthlete = kmRanking.map(r => r.load);
     renderRunner3DChart('kmChart', athletesForKm, totalKmPerAthlete, loadPerAthlete);
   } else {
     disposeRunner3DChart('kmChart');
