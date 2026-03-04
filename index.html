@@ -5408,13 +5408,15 @@ function renderRunner3DChart(canvasId, athletes, kmValues, progressValues, opts 
     });
   });
 
-  const finish = new THREE.Mesh(
-    new THREE.PlaneGeometry(9.6, 0.45),
-    new THREE.MeshBasicMaterial({ color: 0x1e3a8a, side: THREE.DoubleSide })
-  );
-  finish.rotation.x = -Math.PI/2;
-  finish.position.set(0, 0.012, -1.25);
-  scene.add(finish);
+  if(canvasId !== 'kmChart'){
+    const finish = new THREE.Mesh(
+      new THREE.PlaneGeometry(9.6, 0.45),
+      new THREE.MeshBasicMaterial({ color: 0x1e3a8a, side: THREE.DoubleSide })
+    );
+    finish.rotation.x = -Math.PI/2;
+    finish.position.set(0, 0.012, -1.25);
+    scene.add(finish);
+  }
 
   const state = {
     renderer,
