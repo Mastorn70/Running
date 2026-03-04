@@ -5335,7 +5335,7 @@ function renderRunner3DChart(canvasId, athletes, kmValues, progressValues, opts 
 
   const track = new THREE.Mesh(
     new THREE.PlaneGeometry(11, 24),
-    new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.95, metalness: 0, transparent: true, opacity: 0.14 })
+    new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.95, metalness: 0, transparent: true, opacity: 0 })
   );
   track.rotation.x = -Math.PI/2;
   track.position.set(0, 0, -8);
@@ -5344,7 +5344,7 @@ function renderRunner3DChart(canvasId, athletes, kmValues, progressValues, opts 
   for(let i=0;i<6;i++){
     const line = new THREE.Mesh(
       new THREE.BoxGeometry(0.05, 0.002, 24),
-      new THREE.MeshBasicMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.22 })
+      new THREE.MeshBasicMaterial({ color: 0x94a3b8, transparent: true, opacity: 0 })
     );
     line.position.set(-5 + i*2, 0.01, -8);
     scene.add(line);
@@ -6258,6 +6258,10 @@ function generatePredictions(){
       const n = String(row.note || '').toLowerCase();
       return t.includes('ripetute') || n.includes('rip:');
     };
+    const isRunRow = (row) => {
+      const sport = String(row.type || '').toLowerCase();
+      return sport.includes('corsa');
+    };
 
     const athleteKmData = athleteAllData.filter(d => !isRipetuteRow(d));
     if(athleteKmData.length < 2){
@@ -6265,18 +6269,27 @@ function generatePredictions(){
       return;
     }
 
+    const athleteRunData = athleteKmData.filter(d => isRunRow(d));
+    const kmBaseData = athleteRunData.length >= 2 ? athleteRunData : athleteKmData;
+
     const msDay = 24 * 60 * 60 * 1000;
-    const lastKmDateMs = athleteKmData.length
-      ? Math.max(...athleteKmData.map(d => new Date(d.date).getTime()).filter(v => isFinite(v)))
+    const lastKmDateMs = kmBaseData.length
+      ? Math.max(...kmBaseData.map(d => new Date(d.date).getTime()).filter(v => isFinite(v)))
       : NaN;
-    const kmRecentWindow = athleteKmData.filter(d => {
+    let kmRecentWindow = kmBaseData.filter(d => {
       const t = new Date(d.date).getTime();
       return isFinite(t) && isFinite(lastKmDateMs) && (lastKmDateMs - t) <= (15 * msDay);
     });
+    if(kmRecentWindow.length === 0){
+      kmRecentWindow = [...kmBaseData]
+        .filter(d => isFinite(new Date(d.date).getTime()))
+        .sort((a,b)=> String(b.date).localeCompare(String(a.date)))
+        .slice(0, 8);
+    }
 
     const yKm = kmRecentWindow.map(d => Number(d.km || 0)).filter(v => isFinite(v) && v > 0);
     if(yKm.length === 0){
-      alert('Nessun km valido nelle uscite non-ripetute degli ultimi 15 giorni per stimare la mediana.');
+      alert('Nessun km valido per stimare la mediana dell\'atleta selezionato.');
       return;
     }
     const sortedKm = [...yKm].sort((a,b)=>a-b);
@@ -6285,7 +6298,22 @@ function generatePredictions(){
       ? sortedKm[mid]
       : (sortedKm[mid - 1] + sortedKm[mid]) / 2;
 
-    const speedData = athleteAllData.filter(d => (Number(d.time || 0) > 0) || (Number(d.minutes || 0) > 0));
+    const lastAthleteDateMs = athleteAllData.length
+      ? Math.max(...athleteAllData.map(d => new Date(d.date).getTime()).filter(v => isFinite(v)))
+      : Date.now();
+    const speedWindowMs = 45 * msDay;
+    const speedRunCandidates = athleteRunData.filter(d => {
+      const dateMs = new Date(d.date).getTime();
+      const t = Number(d.time || 0) || ((Number(d.minutes || 0)) / 60);
+      return t > 0 && Number(d.km || 0) > 0 && isFinite(dateMs) && ((lastAthleteDateMs - dateMs) <= speedWindowMs);
+    });
+    const speedFallbackCandidates = athleteKmData.filter(d => {
+      const dateMs = new Date(d.date).getTime();
+      const t = Number(d.time || 0) || ((Number(d.minutes || 0)) / 60);
+      return t > 0 && Number(d.km || 0) > 0 && isFinite(dateMs) && ((lastAthleteDateMs - dateMs) <= speedWindowMs);
+    });
+    const speedData = (speedRunCandidates.length >= 2 ? speedRunCandidates : speedFallbackCandidates)
+      .sort((a,b)=> String(a.date).localeCompare(String(b.date)));
     if(speedData.length < 2){
       alert('Dati insufficienti per predire la velocità (servono almeno 2 uscite con tempo).');
       return;
@@ -6298,7 +6326,7 @@ function generatePredictions(){
       return t > 0 ? (Number(d.km || 0) / t) : 0;
     });
 
-    const nonRipSpeedValues = athleteKmData
+    const nonRipSpeedValues = (athleteRunData.length ? athleteRunData : athleteKmData)
       .map(d => {
         const t = Number(d.time || 0) || ((Number(d.minutes || 0)) / 60);
         return t > 0 ? (Number(d.km || 0) / t) : 0;
@@ -6325,9 +6353,6 @@ function generatePredictions(){
 
     const regressionSpeed = weightedLinearRegression(xSpeed, ySpeed, weightsSpeed);
 
-    const lastAthleteDateMs = athleteAllData.length
-      ? Math.max(...athleteAllData.map(d => new Date(d.date).getTime()).filter(v => isFinite(v)))
-      : Date.now();
     const marathonDistance = 42.2;
     const twoMonthsMs = 60 * msDay;
     const marathonBaseRows = athleteAllData.filter(d => {
@@ -6350,7 +6375,7 @@ function generatePredictions(){
       ? (marathonSpeedValues.reduce((s,v)=>s+v,0) / marathonSpeedValues.length)
       : Math.max(0, nonRipAvgSpeed * Math.pow(refDistance / marathonDistance, 0.10));
 
-    const standardDistances = [5, 10, 15, 20, 30, 40, 42.2];
+    const standardDistances = [5, 10, 15, 20, 21.1, 30, 40, 42.2];
     const buildMonotoneSpeedCurve = (rawSpeed, marathonSpeed) => {
       const curve = standardDistances.map((distKm) => {
         if(Math.abs(distKm - marathonDistance) < 0.001) return Math.max(0, marathonSpeed);
@@ -6368,6 +6393,28 @@ function generatePredictions(){
         const minFromMarathon = marathonSpeed * (1 + 0.012 * distanceGain);
         const minStrictStep = curve[i+1] + 0.03;
         curve[i] = Math.max(curve[i], minFromMarathon, minStrictStep);
+      }
+
+      const idx5 = standardDistances.indexOf(5);
+      const idx10 = standardDistances.indexOf(10);
+      const idxHalf = standardDistances.indexOf(21.1);
+      const idxMar = standardDistances.indexOf(42.2);
+      if(idx5 >= 0 && idx10 >= 0 && idxHalf >= 0 && idxMar >= 0){
+        const v10 = Math.max(0, Number(curve[idx10] || 0));
+        const vHalf = Math.max(0, Number(curve[idxHalf] || 0));
+        const vMar = Math.max(0, Number(curve[idxMar] || 0));
+        const minV5 = Math.max(v10 * 1.05, vHalf * 1.07, vMar * 1.10);
+        const maxV5 = Math.min(vHalf * 1.10, vMar * 1.15);
+
+        let v5 = Math.max(0, Number(curve[idx5] || 0));
+        if(isFinite(minV5) && isFinite(maxV5) && minV5 > 0 && maxV5 > 0){
+          if(minV5 <= maxV5){
+            v5 = Math.min(Math.max(v5, minV5), maxV5);
+          } else {
+            v5 = minV5;
+          }
+          curve[idx5] = v5;
+        }
       }
       return curve;
     };
@@ -6414,12 +6461,15 @@ function generatePredictions(){
       return { km, speed: v, pace: paceSecPerKm };
     });
 
-    displayPredictions(athlete, athleteKmData, speedData, futureDates, predictedKm, predictedSpeed, 1, regressionSpeed.r2, speedComparisonRows);
+    const kmMethodLabel = athleteRunData.length >= 2
+      ? 'Mediana uscite corsa non-ripetute (ultimi 15 gg, fallback ultime 8 uscite atleta selezionato)'
+      : 'Mediana uscite non-ripetute (ultimi 15 gg, fallback ultime 8 uscite atleta selezionato)';
+    displayPredictions(athlete, kmBaseData, speedData, futureDates, predictedKm, predictedSpeed, 1, regressionSpeed.r2, speedComparisonRows, kmMethodLabel);
 
   }catch(err){ console.error('generatePredictions', err); alert('Errore generazione predizioni (vedi console)'); }
 }
 
-function displayPredictions(athlete, historicalKmData, historicalSpeedData, futureDates, predictedKm, predictedSpeed, r2Km, r2Speed, speedComparisonRows = []){
+function displayPredictions(athlete, historicalKmData, historicalSpeedData, futureDates, predictedKm, predictedSpeed, r2Km, r2Speed, speedComparisonRows = [], kmMethodLabel = 'Mediana uscite non-ripetute (ultimi 15 gg)'){
   const resultsDiv = $id('predictionResults');
   if(!resultsDiv) return;
   const avgKm = predictedKm.reduce((a,b)=>a+b,0) / predictedKm.length;
@@ -6458,7 +6508,7 @@ function displayPredictions(athlete, historicalKmData, historicalSpeedData, futu
         <div class="prediction-info">
           <strong>Media prevista:</strong> ${avgKm.toFixed(2)} km/sessione<br>
           <strong>Totale ${futureDates.length} giorni:</strong> ${totalKm.toFixed(1)} km<br>
-          <strong>Metodo:</strong> Mediana uscite non-ripetute (ultimi 15 gg)<br>
+          <strong>Metodo:</strong> ${kmMethodLabel}<br>
           <strong>Confidenza:</strong> ${confidenceKm}
         </div>
         <div class="prediction-chart-container">
