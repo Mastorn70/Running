@@ -1549,6 +1549,12 @@ body.dark-mode .trend-chart-container {
   margin-top: 18px;
 }
 
+.plan-weekly-content {
+  max-height: 260px;
+  overflow: auto;
+  font-size: 1rem;
+}
+
 .prediction-card {
   background: linear-gradient(135deg, rgba(67, 233, 123, 0.15) 0%, rgba(56, 249, 215, 0.15) 100%);
   padding: 22px;
@@ -1568,6 +1574,21 @@ body.dark-mode .trend-chart-container {
 
 body.dark-mode .prediction-card h4 {
   color: #34d399;
+}
+
+@media (max-width: 900px) {
+  .plan-modal-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+  .plan-weekly-content {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  #planModal .modal-content {
+    max-height: 96vh;
+    padding: 16px;
+  }
 }
 
 .prediction-info {
@@ -1677,11 +1698,11 @@ body.dark-mode .prediction-chart-container {
 <div id="appSplash" class="app-splash" role="dialog" aria-label="Schermata iniziale app">
   <img id="appSplashImage" src="./icona.svg" alt="Immagine iniziale app">
   <div id="appSplashFallback" class="app-splash-fallback">🏃 Dashboard Squadra 5:50</div>
-  <div class="app-splash-tip">Tocca per continuare</div>
+  <div class="app-splash-tip">5:50 Tiratisù</div>
 </div>
 <div id="mobileQuickActions">
-  <button type="button" class="quick-btn quick-top" onclick="openMobileSessionModal()">Aggiungi sessione</button>
-  <button type="button" class="quick-btn quick-bottom" onclick="openQuickRipSession()">Aggiungi ripetute</button>
+  <button type="button" class="quick-btn quick-top" onclick="openMobileSessionModal()">Add sessione</button>
+  <button type="button" class="quick-btn quick-bottom" onclick="openQuickRipSession()">Add ripetute</button>
 </div>
 <img id="mobileTopCenterIcon" src="./icona.svg" alt="Icona app mobile" onclick="openMobileIconPreview()">
 <div id="mobileIconPreview" onclick="closeMobileIconPreview()">
@@ -2316,8 +2337,8 @@ function applyMobileFilters() {
     </div>
 
     <div class="grid">
-      <div class="card" id="kmRunnerCard"><h3>🏃‍♂️ Classifica 3D atleti (avanzamento=km, dimensione=carico)</h3><canvas id="kmChart"></canvas></div>
-      <div class="card"><h3>📊 Velocità (radar)</h3><canvas id="speedChart"></canvas></div>
+      <div class="card" id="kmRunnerCard"><h3>🏃‍♂️ Classifica 3D atleti (avanzamento=score top atleta, dimensione=km)</h3><canvas id="kmChart"></canvas></div>
+      <div class="card"><h3>📊 Velocità 3D (ripetute ultimi 10 gg)</h3><canvas id="speedChart"></canvas></div>
       <div class="card"><h3>📊 Km/settimana</h3><canvas id="weeklyChart"></canvas></div>
       <div class="card"><h3>⚡ Carico interno</h3><canvas id="loadChart"></canvas></div>
       <div class="card"><h3>💓 TRIMP</h3><canvas id="trimpChart"></canvas></div>
@@ -2463,11 +2484,11 @@ function applyMobileFilters() {
           <label>Numero rip
             <input id="mobileRipCount" type="number" min="1" step="1" value="2" style="width:100%;">
           </label>
-          <label>Tipo rip
-            <input id="mobileRipLabel" type="text" placeholder="es. 400m" style="width:100%;">
+          <label>Tipo ripetuta
+            <select id="mobileRipRepType" onchange="onMobileRipRepTypeChange()" style="width:100%;"></select>
           </label>
-          <label>Distanza (m)
-            <input id="mobileRipDistance" type="number" min="0" step="10" value="400" style="width:100%;">
+          <label>Distanza (km)
+            <input id="mobileRipDistanceKm" type="number" min="0" step="0.001" value="0.400" placeholder="0.200" style="width:100%;">
           </label>
           <label>Tempo (s)
             <input id="mobileRipTime" type="number" min="0" step="1" value="90" style="width:100%;">
@@ -2503,7 +2524,23 @@ function applyMobileFilters() {
               <button onclick="saveRipSession()">💾 Salva Sessione</button>
               <button onclick="explodeRipToMainTable()">➡️ Esporta in Dati Storici</button>
             </div>
-            <div id="ripRowsContainer"></div>
+            <div id="ripRowsContainer" style="overflow:auto;">
+              <table style="width:100%;border-collapse:collapse;min-width:760px;">
+                <thead>
+                  <tr>
+                    <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(0,0,0,.12);">Tipo ripetuta</th>
+                    <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(0,0,0,.12);">Distanza (km)</th>
+                    <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(0,0,0,.12);">Tempo (s)</th>
+                    <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(0,0,0,.12);">Recupero (s)</th>
+                    <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(0,0,0,.12);">RPE</th>
+                    <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(0,0,0,.12);">FC</th>
+                    <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(0,0,0,.12);">Lattato</th>
+                    <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(0,0,0,.12);"></th>
+                  </tr>
+                </thead>
+                <tbody id="ripRowsBody"></tbody>
+              </table>
+            </div>
           </div>
         </div>
 
@@ -2707,10 +2744,49 @@ window.importFromFirebase = function() {
       if (!data) { console.warn('Nessun dato trovato su Firebase!'); return; }
       try {
         localStorage.setItem('importedData', JSON.stringify(data));
-        if (typeof popolaTabellaDaJSON === 'function') {
-          if (Array.isArray(data)) popolaTabellaDaJSON(data);
-          else if (data && typeof data === 'object' && Array.isArray(data.data)) popolaTabellaDaJSON(data.data);
+        let tablePayload = null;
+        let hasRipPayload = false;
+        let ripPayload = [];
+
+        if (Array.isArray(data)) {
+          // formato legacy: solo tabella
+          tablePayload = data;
+        } else if (data && typeof data === 'object') {
+          if (Array.isArray(data.data)) tablePayload = data.data;
+          else if (Array.isArray(data.tableData)) tablePayload = data.tableData;
+          else if (Array.isArray(data.activities)) tablePayload = data.activities;
+
+          if (Object.prototype.hasOwnProperty.call(data, 'ripetuteSessions')) {
+            hasRipPayload = true;
+            ripPayload = Array.isArray(data.ripetuteSessions) ? data.ripetuteSessions : [];
+          }
         }
+
+        if (typeof popolaTabellaDaJSON === 'function' && Array.isArray(tablePayload)) {
+          popolaTabellaDaJSON(tablePayload);
+        }
+
+        if (hasRipPayload) {
+          const normalizedRip = ripPayload
+            .filter(s => s && typeof s === 'object')
+            .map((s, idx) => ({
+              id: s.id || ('fb_rip_' + Date.now() + '_' + idx),
+              date: s.date || (new Date()).toISOString().slice(0,10),
+              athlete: s.athlete || '',
+              type: s.type || 'Ripetute',
+              warmup_min: +(s.warmup_min || 0),
+              cooldown_min: +(s.cooldown_min || 0),
+              reps: Array.isArray(s.reps)
+                ? s.reps.filter(r => typeof _isMeaningfulRep === 'function' ? _isMeaningfulRep(r) : true)
+                : []
+            }))
+            .filter(s => s.athlete && Array.isArray(s.reps) && s.reps.length > 0);
+
+          ripetuteSessions = normalizedRip;
+          try { localStorage.setItem('ripetuteSessions', JSON.stringify(ripetuteSessions)); } catch(e) { console.warn('Errore salvataggio ripetute importate', e); }
+          if (typeof renderRipSessionsList === 'function') renderRipSessionsList();
+        }
+
         console.log('Dati importati da Firebase:', data);
         if(typeof updateCharts === 'function') {
           updateCharts();
@@ -2742,15 +2818,32 @@ function saveToFirebase() {
   try {
     dati = getDataRaw().map(x=>({ date:x.date, athlete:x.athlete, km:x.km, minutes:x.minutes, time:x.time, rpe:x.rpe, hr:x.hr, type:x.type, activityType:x.activityType, note:x.note }));
   } catch(e) {}
-  if (!dati || dati.length === 0) {
+  const ripPayload = Array.isArray(ripetuteSessions)
+    ? ripetuteSessions.map(s => ({
+        id: s.id,
+        date: s.date,
+        athlete: s.athlete,
+        type: s.type || 'Ripetute',
+        warmup_min: +(s.warmup_min || 0),
+        cooldown_min: +(s.cooldown_min || 0),
+        reps: Array.isArray(s.reps) ? s.reps : []
+      }))
+    : [];
+
+  if ((!dati || dati.length === 0) && (!ripPayload || ripPayload.length === 0)) {
     alert('Nessun dato da salvare!');
     return;
   }
-  console.log('Dati inviati a Firebase:', dati);
+  const payload = {
+    data: dati || [],
+    ripetuteSessions: ripPayload || [],
+    savedAt: new Date().toISOString()
+  };
+  console.log('Dati inviati a Firebase:', payload);
   fetch(FIREBASE_URL, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(dati)
+    body: JSON.stringify(payload)
   })
     .then(res => res.json())
     .then(() => {
@@ -2894,10 +2987,10 @@ function calculateMarathonProbability(){
           <span class='close-btn' onclick="document.getElementById('planModal').classList.remove('show')">&times;</span>
         </div>
         <div class='modal-body'>
-          <div class="prediction-grid">
+          <div class="prediction-grid plan-modal-grid">
             <div class="prediction-card">
               <h4>📋 Piano Settimanale</h4>
-              <div class="prediction-info" style="max-height:260px;overflow:auto;font-size:1rem;">${plan}</div>
+              <div class="prediction-info plan-weekly-content">${plan}</div>
             </div>
             <div class="prediction-card">
               <h4>📈 Km/Settimana</h4>
@@ -2935,6 +3028,9 @@ window.switchTab = function(tabName, ev) {
   if (tabName === 'data') {
     if (typeof sortTableByDate === 'function') sortTableByDate(false);
   }
+  if (tabName === 'ripetute') {
+    if (typeof renderRipSessionsList === 'function') renderRipSessionsList();
+  }
 };
 
 // palette & state
@@ -2949,6 +3045,75 @@ let activityTypes=['Allenamento','Gara','Test','Recupero','Tecnica','Ripetute'];
 
 // ripetute storage
 let ripetuteSessions = [];
+const RIP_PRESET_TYPES = ['100m','150m','200m','300m','400m','500m','600m','800m','1000m','1200m','1600m','2000m','3000m','5000m','Custom'];
+const RIP_PRESET_KM = {
+  '100m': 0.1,
+  '150m': 0.15,
+  '200m': 0.2,
+  '300m': 0.3,
+  '400m': 0.4,
+  '500m': 0.5,
+  '600m': 0.6,
+  '800m': 0.8,
+  '1000m': 1,
+  '1200m': 1.2,
+  '1600m': 1.6,
+  '2000m': 2,
+  '3000m': 3,
+  '5000m': 5
+};
+
+function getRipPresetKm(type){
+  return Object.prototype.hasOwnProperty.call(RIP_PRESET_KM, type) ? RIP_PRESET_KM[type] : null;
+}
+
+function normalizeKmValue(km){
+  const value = Number(km || 0);
+  if(!isFinite(value) || value <= 0) return '';
+  return Number(value.toFixed(3)).toString();
+}
+
+function inferRipTypeFromData(data){
+  const explicit = String(data.repType || '').trim();
+  if(RIP_PRESET_TYPES.includes(explicit)) return explicit;
+  const label = String(data.label || '').trim();
+  if(RIP_PRESET_TYPES.includes(label)) return label;
+  const distKm = Number(data.distance_km || 0) || ((Number(data.distance || 0) || 0) / 1000);
+  const byDistance = Object.entries(RIP_PRESET_KM).find(([,km]) => Math.abs(Number(km) - distKm) < 0.0005);
+  return byDistance ? byDistance[0] : 'Custom';
+}
+
+function onRipTypeChange(selectEl){
+  if(!selectEl) return;
+  const row = selectEl.closest('tr');
+  if(!row) return;
+  const kmInput = row.querySelector('.rip-distance-km');
+  if(!kmInput) return;
+  const presetKm = getRipPresetKm(selectEl.value);
+  if(presetKm !== null){
+    kmInput.value = normalizeKmValue(presetKm);
+    kmInput.readOnly = true;
+    kmInput.style.background = '#eef2ff';
+  } else {
+    kmInput.readOnly = false;
+    kmInput.style.background = '#ffffff';
+  }
+}
+
+function onMobileRipRepTypeChange(){
+  const repTypeSel = document.getElementById('mobileRipRepType');
+  const distInput = document.getElementById('mobileRipDistanceKm');
+  if(!repTypeSel || !distInput) return;
+  const presetKm = getRipPresetKm(repTypeSel.value);
+  if(presetKm !== null){
+    distInput.value = normalizeKmValue(presetKm);
+    distInput.readOnly = true;
+    distInput.style.background = '#eef2ff';
+  } else {
+    distInput.readOnly = false;
+    distInput.style.background = '#ffffff';
+  }
+}
 // --- Helpers per import pulito: determina se una "rep" contiene dati utili ---
 function _isMeaningfulRep(r) {
   if (!r || typeof r !== 'object') return false;
@@ -3271,7 +3436,7 @@ function startNewRipSession(config = {}){
   if($id('ripType') && config.type) $id('ripType').value = config.type;
   if($id('ripWarmup') && config.warmup_min !== undefined) $id('ripWarmup').value = config.warmup_min;
   if($id('ripCooldown') && config.cooldown_min !== undefined) $id('ripCooldown').value = config.cooldown_min;
-  if($id('ripRowsContainer')) $id('ripRowsContainer').innerHTML = '';
+  if($id('ripRowsBody')) $id('ripRowsBody').innerHTML = '';
   for(let i=0;i<2;i++) addRipRow();
 }
 
@@ -3298,10 +3463,14 @@ function openMobileRipSessionModal(){
   if(cooldownInput) cooldownInput.value = '15';
   const countInput = document.getElementById('mobileRipCount');
   if(countInput) countInput.value = '2';
-  const labelInput = document.getElementById('mobileRipLabel');
-  if(labelInput) labelInput.value = '';
-  const distanceInput = document.getElementById('mobileRipDistance');
-  if(distanceInput) distanceInput.value = '400';
+  const repTypeInput = document.getElementById('mobileRipRepType');
+  if(repTypeInput) {
+    repTypeInput.innerHTML = RIP_PRESET_TYPES.map(t=>`<option value="${t}">${t}</option>`).join('');
+    repTypeInput.value = '400m';
+  }
+  const distanceInput = document.getElementById('mobileRipDistanceKm');
+  if(distanceInput) distanceInput.value = '0.400';
+  onMobileRipRepTypeChange();
   const timeInput = document.getElementById('mobileRipTime');
   if(timeInput) timeInput.value = '90';
   const restInput = document.getElementById('mobileRipRest');
@@ -3335,20 +3504,20 @@ function saveMobileRipSession(){
     cooldown_min: +(document.getElementById('mobileRipCooldown')?.value || 15)
   });
   const ripCount = Math.max(1, +(document.getElementById('mobileRipCount')?.value || 1));
-  const ripLabel = (document.getElementById('mobileRipLabel')?.value || '').trim();
-  const ripDistance = +(document.getElementById('mobileRipDistance')?.value || 0);
+  const repType = (document.getElementById('mobileRipRepType')?.value || 'Custom').trim();
+  const ripDistanceKm = +(document.getElementById('mobileRipDistanceKm')?.value || 0);
   const ripTime = +(document.getElementById('mobileRipTime')?.value || 0);
   const ripRest = +(document.getElementById('mobileRipRest')?.value || 0);
   const ripRpe = +(document.getElementById('mobileRipRpe')?.value || 0);
   const ripHr = +(document.getElementById('mobileRipHr')?.value || 0);
   const lactateRaw = document.getElementById('mobileRipLactate')?.value;
   const ripLactate = lactateRaw === '' || lactateRaw === undefined ? '' : +lactateRaw;
-  const rowsContainer = $id('ripRowsContainer');
-  if(rowsContainer) rowsContainer.innerHTML = '';
+  const rowsBody = $id('ripRowsBody');
+  if(rowsBody) rowsBody.innerHTML = '';
   for(let i=0;i<ripCount;i++) {
     addRipRow({
-      label: ripLabel || (ripDistance ? `${ripDistance}m` : ''),
-      distance: ripDistance || '',
+      repType: repType,
+      distance_km: ripDistanceKm || '',
       time_s: ripTime || '',
       rest_s: ripRest || '',
       rpe: ripRpe || '',
@@ -3356,43 +3525,98 @@ function saveMobileRipSession(){
       lactate: ripLactate
     });
   }
+
+  const session = readRipSessionFromForm();
+  const reps = Array.isArray(session.reps) ? session.reps.filter(r => _isMeaningfulRep(r)) : [];
+  if(!reps.length){
+    alert('Inserisci almeno una ripetuta valida.');
+    return;
+  }
+
+  session.reps = reps;
+  session.id = 'rip_' + Date.now();
+  ripetuteSessions.unshift(session);
+  saveRipetuteToStorage();
+
+  const rowsToAppend = reps.map(r => {
+    const minutes = Math.round((Number(r.time_s || 0)) / 60);
+    const km = Number(r.distance_km || 0) || ((Number(r.distance || 0)) / 1000);
+    const repLabel = r.repType || r.label || 'Custom';
+    return {
+      date: session.date,
+      athlete: session.athlete,
+      km: Number(km.toFixed(3)),
+      minutes,
+      rpe: Number(r.rpe || 0),
+      hr: Number(r.hr || 0),
+      type: session.type || 'corsa',
+      activityType: 'Ripetute',
+      note: `Rip: ${repLabel} | rec ${Number(r.rest_s || 0)}s | latt:${r.lactate ?? ''}`
+    };
+  });
+  if(rowsToAppend.length) appendTableRowsFromObjects(rowsToAppend);
+
+  try {
+    const stats = computeRipMetrics(session);
+    renderRipAnalysis(session, stats);
+  } catch(e) {
+    console.warn('Mobile rip analysis render failed', e);
+  }
+
+  if(typeof updateSaveFirebaseBtn === 'function') updateSaveFirebaseBtn();
+  if(typeof saveToFirebase === 'function') saveToFirebase();
   closeMobileRipSessionModal();
 }
 
 function addRipRow(data = {}){
-  const container = $id('ripRowsContainer');
-  if(!container) return;
-  const id = 'ripRow' + Date.now() + Math.floor(Math.random()*1000);
-  const div = document.createElement('div');
-  div.id = id;
-  div.style = "display:flex;gap:8px;align-items:center;margin-bottom:6px;overflow:auto;padding:4px;border-radius:8px;background:#f7fafc;box-shadow:0 2px 8px rgba(0,0,0,0.07);";
-  div.innerHTML = `
-    <input placeholder="Tipo (es. 400m)" style="width:90px" value="${data.label||''}">
-    <input placeholder="distanza m" type="number" style="width:90px" value="${data.distance||''}">
-    <input placeholder="tempo s" type="number" style="width:90px" value="${data.time_s||data.time||''}">
-    <input placeholder="recupero s" type="number" style="width:90px" value="${data.rest_s||data.rest||''}">
-    <input placeholder="RPE" type="number" min="0" max="10" style="width:60px" value="${data.rpe||''}">
-    <input placeholder="FC" type="number" style="width:70px" value="${data.hr||''}">
-    <input placeholder="lattato (mmol)" type="number" step="0.1" style="width:100px" value="${data.lactate||''}">
-    <button onclick="this.closest('div').remove()" style="background:#ef4444;color:#fff;border:none;border-radius:6px;padding:6px 12px;min-width:32px;max-height:32px;align-self:center;box-shadow:0 1px 4px rgba(239,68,68,0.15);">✖</button>
+  const body = $id('ripRowsBody');
+  if(!body) return;
+  const repType = inferRipTypeFromData(data);
+  const distKmRaw = Number(data.distance_km || 0) || ((Number(data.distance || 0) || 0) / 1000);
+  const presetKm = getRipPresetKm(repType);
+  const distKm = presetKm !== null ? presetKm : distKmRaw;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td style="padding:6px;">
+      <select class="rip-rep-type" style="width:140px;" onchange="onRipTypeChange(this)">
+        ${RIP_PRESET_TYPES.map(t=>`<option value="${t}" ${t===repType?'selected':''}>${t}</option>`).join('')}
+      </select>
+    </td>
+    <td style="padding:6px;"><input class="rip-distance-km" placeholder="0.200" type="number" step="0.001" min="0" style="width:110px" value="${normalizeKmValue(distKm)}"></td>
+    <td style="padding:6px;"><input class="rip-time-s" placeholder="tempo s" type="number" min="0" step="1" style="width:100px" value="${data.time_s||data.time||''}"></td>
+    <td style="padding:6px;"><input class="rip-rest-s" placeholder="recupero s" type="number" min="0" step="1" style="width:110px" value="${data.rest_s||data.rest||''}"></td>
+    <td style="padding:6px;"><input class="rip-rpe" placeholder="RPE" type="number" min="0" max="10" style="width:70px" value="${data.rpe||''}"></td>
+    <td style="padding:6px;"><input class="rip-hr" placeholder="FC" type="number" min="0" style="width:80px" value="${data.hr||''}"></td>
+    <td style="padding:6px;"><input class="rip-lactate" placeholder="mmol" type="number" min="0" step="0.1" style="width:90px" value="${data.lactate||''}"></td>
+    <td style="padding:6px;"><button onclick="this.closest('tr').remove()" style="background:#ef4444;color:#fff;border:none;border-radius:6px;padding:6px 10px;">✖</button></td>
   `;
-  container.appendChild(div);
+  body.appendChild(tr);
+  const sel = tr.querySelector('.rip-rep-type');
+  if(sel) onRipTypeChange(sel);
 }
 
 function readRipSessionFromForm(){
-  const rows = Array.from(document.querySelectorAll('#ripRowsContainer > div'));
+  const rows = Array.from(document.querySelectorAll('#ripRowsBody tr'));
   const reps = rows.map(r=>{
-    const inputs = r.querySelectorAll('input');
+    const repType = r.querySelector('.rip-rep-type')?.value || 'Custom';
+    const distanceKm = Number(r.querySelector('.rip-distance-km')?.value || 0);
+    const timeS = Number(r.querySelector('.rip-time-s')?.value || 0);
+    const restS = Number(r.querySelector('.rip-rest-s')?.value || 0);
+    const rpe = Number(r.querySelector('.rip-rpe')?.value || 0);
+    const hr = Number(r.querySelector('.rip-hr')?.value || 0);
+    const lactateRaw = r.querySelector('.rip-lactate')?.value;
     return {
-      label: inputs[0].value || '',
-      distance: +inputs[1].value || 0,
-      time_s: +inputs[2].value || 0,
-      rest_s: +inputs[3].value || 0,
-      rpe: +inputs[4].value || 0,
-      hr: +inputs[5].value || 0,
-      lactate: inputs[6] && inputs[6].value ? +inputs[6].value : null
+      repType,
+      label: repType === 'Custom' ? `Custom ${normalizeKmValue(distanceKm) || '0'}km` : repType,
+      distance: Math.round(Math.max(0, distanceKm) * 1000),
+      distance_km: Number(distanceKm.toFixed(3)),
+      time_s: timeS,
+      rest_s: restS,
+      rpe,
+      hr,
+      lactate: lactateRaw === '' || lactateRaw === undefined ? null : +lactateRaw
     };
-  });
+  }).filter(rep => _isMeaningfulRep(rep));
   return {
     date: $id('ripDate') ? $id('ripDate').value : '',
     athlete: $id('ripAthlete') ? $id('ripAthlete').value : '',
@@ -3617,16 +3841,121 @@ function saveRipSession(){
   alert('Sessione ripetute salvata');
 }
 
+function _isRipetuteRowFromTable(row){
+  if(!row || typeof row !== 'object') return false;
+  const a = String(row.activityType || row.type || '').toLowerCase();
+  const n = String(row.note || '').toLowerCase();
+  return a.includes('ripetute') || n.includes('rip:');
+}
+
+function _extractRepFromTableRow(row){
+  const note = String(row.note || '');
+  const labelMatch = note.match(/rip\s*:\s*([^|]+)/i);
+  const restMatch = note.match(/rec\s*([0-9]+)\s*s/i);
+  const lactateMatch = note.match(/latt\s*:?\s*([0-9]+(?:[\.,][0-9]+)?)/i);
+  const km = Number(row.km || 0);
+  const minutes = Number(row.minutes || (Number(row.time || 0) * 60) || 0);
+  const inferredType = (labelMatch && labelMatch[1] ? labelMatch[1] : '').trim() || inferRipTypeFromData({ distance_km: km });
+  return {
+    repType: RIP_PRESET_TYPES.includes(inferredType) ? inferredType : 'Custom',
+    label: inferredType || 'ripetuta',
+    distance: Math.round(Math.max(0, km) * 1000),
+    distance_km: Number(Math.max(0, km).toFixed(3)),
+    time_s: Math.round(Math.max(0, minutes) * 60),
+    rest_s: restMatch ? Number(restMatch[1]) || 0 : 0,
+    rpe: Number(row.rpe || 0),
+    hr: Number(row.hr || 0),
+    lactate: lactateMatch ? Number(String(lactateMatch[1]).replace(',', '.')) : null
+  };
+}
+
+function _extractRepLabelFromNote(note){
+  const txt = String(note || '');
+  const m = txt.match(/rip\s*:\s*([^|]+)/i);
+  return (m && m[1] ? m[1] : '').trim();
+}
+
+function _removeRipetutaFromSessionsByRow(row){
+  if(!row || !Array.isArray(ripetuteSessions) || !ripetuteSessions.length) return false;
+  const rowDate = row.date || '';
+  const rowAthlete = row.athlete || '';
+  const rowKm = Number(row.km || 0).toFixed(3);
+  const rowMinutes = String(Math.round(Number(row.minutes || ((Number(row.time)||0) * 60) || 0)));
+  const rowRpe = String(Math.round(Number(row.rpe || 0)));
+  const rowHr = String(Math.round(Number(row.hr || 0)));
+  const rowLabel = _extractRepLabelFromNote(row.note || '');
+
+  const repKey = (session, rep) => {
+    const repKm = Number((Number(rep.distance_km || 0) || ((Number(rep.distance || 0)) / 1000)) || 0).toFixed(3);
+    const repMinutes = String(Math.round((Number(rep.time_s || 0)) / 60));
+    const repRpe = String(Math.round(Number(rep.rpe || 0)));
+    const repHr = String(Math.round(Number(rep.hr || 0)));
+    const repLabel = String(rep.repType || rep.label || '').trim();
+    return [session.date || '', session.athlete || '', repKm, repMinutes, repRpe, repHr, repLabel].join('|');
+  };
+
+  const rowKey = [rowDate, rowAthlete, rowKm, rowMinutes, rowRpe, rowHr, rowLabel].join('|');
+  let changed = false;
+
+  ripetuteSessions = ripetuteSessions
+    .map(session => {
+      if(!session || session.date !== rowDate || session.athlete !== rowAthlete || !Array.isArray(session.reps)) return session;
+      const before = session.reps.length;
+      session.reps = session.reps.filter(rep => repKey(session, rep) !== rowKey);
+      if(session.reps.length !== before) changed = true;
+      return session;
+    })
+    .filter(session => session && Array.isArray(session.reps) && session.reps.some(r => _isMeaningfulRep(r)));
+
+  if(changed) {
+    try { localStorage.setItem('ripetuteSessions', JSON.stringify(ripetuteSessions)); } catch(e){ console.warn('save ripetuteSessions after row delete failed', e); }
+    try { renderRipSessionsList(); } catch(e){ console.warn('renderRipSessionsList after row delete failed', e); }
+  }
+  return changed;
+}
+
+function _getRipetuteSessionsFromTable(){
+  const rows = getDataRaw().filter(_isRipetuteRowFromTable);
+  const grouped = new Map();
+  rows.forEach(row => {
+    const key = `${row.date || ''}__${row.athlete || ''}`;
+    if(!grouped.has(key)){
+      grouped.set(key, {
+        id: `tblrip_${encodeURIComponent(key)}`,
+        date: row.date || '',
+        athlete: row.athlete || '',
+        type: row.activityType || row.type || 'Ripetute',
+        warmup_min: 0,
+        cooldown_min: 0,
+        reps: [],
+        __fromTable: true
+      });
+    }
+    grouped.get(key).reps.push(_extractRepFromTableRow(row));
+  });
+  return Array.from(grouped.values()).filter(s => Array.isArray(s.reps) && s.reps.some(r => _isMeaningfulRep(r)));
+}
+
+function _getAllRipetuteSessionsForUI(){
+  const localSessions = Array.isArray(ripetuteSessions)
+    ? ripetuteSessions.filter(s => s && typeof s === 'object' && Array.isArray(s.reps) && s.reps.some(r => _isMeaningfulRep(r)))
+    : [];
+  const localKeys = new Set(localSessions.map(s => `${s.date || ''}__${s.athlete || ''}`));
+  const fromTable = _getRipetuteSessionsFromTable().filter(s => !localKeys.has(`${s.date || ''}__${s.athlete || ''}`));
+  return [...localSessions, ...fromTable];
+}
+
 function renderRipSessionsList(){
   const list = $id('ripSessionsList');
   if(!list) return;
-  if(!Array.isArray(ripetuteSessions) || ripetuteSessions.length === 0){
+  const allSessions = _getAllRipetuteSessionsForUI();
+  if(!allSessions.length){
     list.innerHTML = '<div style="padding:10px;font-weight:700;color:#334155;">Nessuna sessione di ripetute salvata.</div>';
     return;
   }
   const parts = [];
-  for (let i = 0; i < ripetuteSessions.length; i++) {
-    const s = ripetuteSessions[i];
+  for (let i = 0; i < allSessions.length; i++) {
+    const s = allSessions[i];
     if (!s || typeof s !== 'object') continue;
     const reps = Array.isArray(s.reps) ? s.reps.filter(r=>_isMeaningfulRep(r)) : [];
     if(reps.length === 0){
@@ -3640,19 +3969,22 @@ function renderRipSessionsList(){
     const date = s.date || '';
     const athlete = s.athlete || '—';
     const id = s.id || '';
-    parts.push(`<div style="padding:10px;border-radius:10px;border:1px solid rgba(0,0,0,.08);margin-bottom:6px;"><div style="display:flex;justify-content:space-between;align-items:center;"><div><strong>${date}</strong> — ${athlete} — ${repsCount} rep — ${totalKm} km</div><div style="display:flex;gap:6px;"><button onclick="viewRipSession('${id}')">Apri</button><button onclick="deleteRipSession('${id}')" style="background:#ef4444;color:#fff">Elimina</button></div></div></div>`);
+    const actions = s.__fromTable
+      ? `<button onclick="viewRipSession('${id}')">Apri</button>`
+      : `<button onclick="viewRipSession('${id}')">Apri</button><button onclick="deleteRipSession('${id}')" style="background:#ef4444;color:#fff">Elimina</button>`;
+    parts.push(`<div style="padding:10px;border-radius:10px;border:1px solid rgba(0,0,0,.08);margin-bottom:6px;"><div style="display:flex;justify-content:space-between;align-items:center;"><div><strong>${date}</strong> — ${athlete} — ${repsCount} rep — ${totalKm} km</div><div style="display:flex;gap:6px;">${actions}</div></div></div>`);
   }
   list.innerHTML = parts.join('') || '<div style="padding:10px;font-weight:700;color:#334155;">Nessuna sessione valida trovata.</div>';
 }
 
 function viewRipSession(id){
-  const s = ripetuteSessions.find(x=>x && x.id===id);
+  const s = _getAllRipetuteSessionsForUI().find(x=>x && x.id===id);
   if(!s) return;
   $id('ripDate').value = s.date || new Date().toISOString().slice(0,10);
   $id('ripAthlete').innerHTML = athletes.map(a=>`<option value="${a}" ${a===s.athlete?'selected':''}>${a}</option>`).join('');
   $id('ripWarmup').value = s.warmup_min || 0;
   $id('ripCooldown').value = s.cooldown_min || 0;
-  $id('ripRowsContainer').innerHTML = '';
+  if($id('ripRowsBody')) $id('ripRowsBody').innerHTML = '';
   s.reps.forEach(r => addRipRow(r));
   const stats = computeRipMetrics(s);
   renderRipAnalysis(s, stats);
@@ -3663,6 +3995,8 @@ function deleteRipSession(id){
   ripetuteSessions = ripetuteSessions.filter(x => x.id !== id);
   saveRipetuteToStorage();
   updateCharts();
+  if(typeof updateSaveFirebaseBtn === 'function') updateSaveFirebaseBtn();
+  if(typeof saveToFirebase === 'function') saveToFirebase();
 }
 
 /* convert ripetute into data entries (used for KPI/charts) */
@@ -4313,7 +4647,7 @@ function ensureRunner3DHost(canvasId){
       canvas.parentNode.insertBefore(host, canvas);
     }
   }
-  if(isMobile){
+  if(isMobile && canvasId === 'kmChart'){
     const mobileSlot = document.getElementById('mobileRunner3DSlot');
     if(mobileSlot && host.parentNode !== mobileSlot){
       mobileSlot.innerHTML = '';
@@ -4332,6 +4666,11 @@ function getRunnerTheme(rank){
   if(rank === 2) return { name: 'Thor', icon: '🔨', colorHex: '#0f766e', labelBg: '#134e4a', labelFg: '#f1f5f9' };
   if(rank === 3) return { name: 'Ironman', icon: '🤖', colorHex: '#f59e0b', labelBg: '#7c2d12', labelFg: '#fff7ed' };
   return { name: 'Coniglio Bianco', icon: '🐇', colorHex: '#e5e7eb', labelBg: '#334155', labelFg: '#ffffff' };
+}
+
+function isFemaleAthlete(athleteName){
+  const sex = String((athleteDetails && athleteDetails[athleteName] && athleteDetails[athleteName].sex) || '').trim().toUpperCase();
+  return sex === 'F' || sex === 'FEMMINA';
 }
 
 function getRunnerImageSrc(themeName){
@@ -4719,37 +5058,42 @@ function isWebGLUsable(){
   return window.__webglUsableCache;
 }
 
-function renderRunner2DFallback(host, athletes, kmValues, loadValues, reason){
+function renderRunner2DFallback(host, athletes, kmValues, progressValues, reason, opts = {}){
+  const valueUnit = String(opts.valueUnit || 'km');
   const list = (athletes || []).map((ath, i) => ({
     athlete: ath,
     km: Number(kmValues[i] || 0),
-    load: Number(loadValues[i] || 0)
+    progress: Number(progressValues[i] || 0)
   })).sort((a,b)=> b.km - a.km);
 
   const rankedAthletes = list.map(x => x.athlete);
   const rankedKmValues = list.map(x => x.km);
-  const rankedLoadValues = list.map(x => x.load);
+  const rankedProgressValues = list.map(x => x.progress);
 
   const kmMin = Math.min(...rankedKmValues);
   const kmMax = Math.max(...rankedKmValues);
-  const loadMin = Math.min(...rankedLoadValues);
-  const loadMax = Math.max(...rankedLoadValues);
+  const progressMin = Math.min(...rankedProgressValues);
+  const progressMax = Math.max(...rankedProgressValues);
+  let nonFemaleRank2D = 0;
   const rows = (rankedAthletes || []).map((ath, i) => {
     const km = Number(rankedKmValues[i] || 0);
-    const load = Number(rankedLoadValues[i] || 0);
-    const theme = getRunnerTheme(i);
+    const progress = Number(rankedProgressValues[i] || 0);
+    const theme = isFemaleAthlete(ath)
+      ? { name: 'Coniglio Bianco', icon: '🐇', colorHex: '#e5e7eb', labelBg: '#334155', labelFg: '#ffffff' }
+      : getRunnerTheme(nonFemaleRank2D++);
     const kmNorm = (kmMax - kmMin) > 0 ? (km - kmMin)/(kmMax - kmMin) : 0.5;
-    const loadNorm = (loadMax - loadMin) > 0 ? (load - loadMin)/(loadMax - loadMin) : 0.5;
-    const leftPct = 84 - kmNorm * 78;
+    const progressNorm = (progressMax - progressMin) > 0 ? (progress - progressMin)/(progressMax - progressMin) : 0.5;
+    const leftPct = 84 - progressNorm * 78;
     const adjust = getRunnerImageAdjust(theme.name);
-    const sizePx = (62 + loadNorm * 30) * (adjust.sizeMul || 1);
+    const sizePx = (62 + kmNorm * 30) * (adjust.sizeMul || 1);
     const topPct = adjust.yPct || 56;
     const imgSrc = getRunnerImageSrc(theme.name);
     const fallback = getDefaultSoldatinoSvg();
+    const valueLabel = Number(km).toFixed(1);
     return `
       <div style="position:relative;height:128px;border-bottom:1px dashed #cbd5e1;overflow:hidden;">
         <img src="${imgSrc}" onerror="this.onerror=null;this.src='${fallback}'" alt="${theme.name}" style="position:absolute;left:${leftPct}%;top:${topPct}%;transform:translate(-50%,-50%);width:${sizePx}px;height:${Math.round(sizePx*1.45)}px;object-fit:contain;object-position:center top;filter:brightness(0.62) contrast(1.32) saturate(1.45) drop-shadow(0 2px 5px #0009);" />
-        <div style="position:absolute;left:8px;right:8px;top:8px;font:800 13px Segoe UI;color:#000;background:#fffffff5;padding:5px 12px;border-radius:999px;white-space:nowrap;text-align:center;overflow:hidden;text-overflow:ellipsis;box-shadow:0 2px 8px #0003;border:1px solid #94a3b8;">${ath} • ${km.toFixed(1)} km</div>
+        <div style="position:absolute;left:8px;right:8px;top:8px;font:800 13px Segoe UI;color:#000;background:#fffffff5;padding:5px 12px;border-radius:999px;white-space:nowrap;text-align:center;overflow:hidden;text-overflow:ellipsis;box-shadow:0 2px 8px #0003;border:1px solid #94a3b8;">${ath} • ${valueLabel} ${valueUnit}</div>
       </div>`;
   }).join('');
 
@@ -4764,7 +5108,8 @@ function renderRunner2DFallback(host, athletes, kmValues, loadValues, reason){
     </div>`;
 }
 
-function renderRunner3DChart(canvasId, athletes, kmValues, loadValues){
+function renderRunner3DChart(canvasId, athletes, kmValues, progressValues, opts = {}){
+  const valueUnit = String(opts.valueUnit || 'km');
   const canvas = document.getElementById(canvasId);
   if(!canvas) return;
   const host = ensureRunner3DHost(canvasId);
@@ -4779,7 +5124,7 @@ function renderRunner3DChart(canvasId, athletes, kmValues, loadValues){
     ensureThreeJsLoaded().then((ok) => {
       if(host.dataset.loadingToken !== token) return;
       if(ok && typeof THREE !== 'undefined'){
-        renderRunner3DChart(canvasId, athletes, kmValues, loadValues);
+        renderRunner3DChart(canvasId, athletes, kmValues, progressValues, opts);
       } else {
         host.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-weight:700;color:#334155;">3D non disponibile (connessione/CDN bloccata)</div>';
       }
@@ -4789,7 +5134,7 @@ function renderRunner3DChart(canvasId, athletes, kmValues, loadValues){
 
   if(window.__disable3DForSession || !isWebGLUsable()){
     window.__disable3DForSession = true;
-    renderRunner2DFallback(host, athletes, kmValues, loadValues, 'sandbox/browser');
+    renderRunner2DFallback(host, athletes, kmValues, progressValues, 'sandbox/browser', opts);
     return;
   }
 
@@ -4803,7 +5148,7 @@ function renderRunner3DChart(canvasId, athletes, kmValues, loadValues){
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
   } catch (e) {
     window.__disable3DForSession = true;
-    renderRunner2DFallback(host, athletes, kmValues, loadValues, 'WebGL disabilitato');
+    renderRunner2DFallback(host, athletes, kmValues, progressValues, 'WebGL disabilitato', opts);
     return;
   }
   renderer.domElement.style.width = '100%';
@@ -4847,22 +5192,25 @@ function renderRunner3DChart(canvasId, athletes, kmValues, loadValues){
 
   const kmMin = Math.min(...kmValues);
   const kmMax = Math.max(...kmValues);
-  const loadMin = Math.min(...loadValues);
-  const loadMax = Math.max(...loadValues);
+  const progressMin = Math.min(...progressValues);
+  const progressMax = Math.max(...progressValues);
 
   const runnerStates = [];
   const usePhotoBillboards = window.matchMedia('(max-width: 900px)').matches;
   const lanes = Math.max(1, athletes.length);
 
+  let nonFemaleRank3D = 0;
   athletes.forEach((ath, i) => {
     const km = Number(kmValues[i] || 0);
-    const load = Number(loadValues[i] || 0);
-    const theme = getRunnerTheme(i);
+    const progress = Number(progressValues[i] || 0);
+    const theme = isFemaleAthlete(ath)
+      ? { name: 'Coniglio Bianco', icon: '🐇', colorHex: '#e5e7eb', labelBg: '#334155', labelFg: '#ffffff' }
+      : getRunnerTheme(nonFemaleRank3D++);
     const kmNorm = (kmMax - kmMin) > 0 ? (km - kmMin) / (kmMax - kmMin) : 0.5;
-    const loadNorm = (loadMax - loadMin) > 0 ? (load - loadMin) / (loadMax - loadMin) : 0.5;
-    const z = -14.2 + kmNorm * 12.8;
+    const progressNorm = (progressMax - progressMin) > 0 ? (progress - progressMin) / (progressMax - progressMin) : 0.5;
+    const z = -14.2 + progressNorm * 12.8;
     const x = ((i + 1) - (lanes + 1)/2) * (8.4 / Math.max(2, lanes));
-    const scale = 0.82 + loadNorm * 0.78;
+    const scale = 0.82 + kmNorm * 0.78;
 
     let model;
     if(usePhotoBillboards){
@@ -4882,7 +5230,7 @@ function renderRunner3DChart(canvasId, athletes, kmValues, loadValues){
       scene.add(model.group);
     }
 
-    const label = createRunnerLabelSprite(`${ath} • ${km.toFixed(1)} km`, '#f8fafcf2', '#0f172a');
+    const label = createRunnerLabelSprite(`${ath} • ${km.toFixed(1)} ${valueUnit}`, '#f8fafcf2', '#0f172a');
     label.position.set(x, (usePhotoBillboards ? 3.6 : 2.9) * scale, z);
     scene.add(label);
 
@@ -4966,7 +5314,7 @@ function renderRunner3DChart(canvasId, athletes, kmValues, loadValues){
 /* -----------------------------
    Update charts (main)
    - kmChart: horizontal totals per athlete
-   - speedChart: radar (avg,max,median,q3)
+  - speedChart: 3D figurine (velocità ripetute ultimi 10 gg)
    - weeklyChart: rendered via renderWeeklyChart (horizontal grouped bars)
    ----------------------------- */
    function renderWeeklyChart(byA, opts = {}) {
@@ -5072,6 +5420,19 @@ function updateKPI(data, acwr){
     },0);
     return weighted / weightedMinutes;
   }
+  function speedWeightedByKm(rows){
+    const agg = (rows || []).reduce((acc, v) => {
+      const km = Number(v.km || 0);
+      const timeH = Number(v.time || 0) || ((Number(v.minutes || 0)) / 60);
+      if(km > 0 && timeH > 0){
+        const speed = km / timeH;
+        acc.num += speed * km;
+        acc.den += km;
+      }
+      return acc;
+    }, { num: 0, den: 0 });
+    return agg.den > 0 ? (agg.num / agg.den) : 0;
+  }
   const now=new Date();
   const week=(d)=>Math.floor((now-new Date(d))/(7*86400000));
   let kmC=0, kmP=0, trC=0, trP=0;
@@ -5096,10 +5457,14 @@ function updateKPI(data, acwr){
   if($id('kpiLoadWeekDelta')) $id('kpiLoadWeekDelta').textContent = deltaText(loadC, loadP);
   if($id('kpiTrimpWeekDelta')) $id('kpiTrimpWeekDelta').textContent = deltaText(trC, trP);
   const top = Object.entries(loadA)
-    .map(([ath,rows])=>[ath, loadWeightedByKm(rows)])
-    .sort((a,b)=>b[1]-a[1])[0] || ["-",0];
-  if($id('kpiTopAthlete')) $id('kpiTopAthlete').textContent = top[0];
-  if($id('kpiTopAthleteLoad')) $id('kpiTopAthleteLoad').textContent = `${top[1].toFixed(0)}`;
+    .map(([ath,rows])=>{
+      const kmTot = (rows || []).reduce((s,v)=> s + (Number(v.km) || 0), 0);
+      const speedRef = speedWeightedByKm(rows);
+      return { athlete: ath, kmTot, speedRef, score: kmTot * speedRef };
+    })
+    .sort((a,b)=> (b.score - a.score) || (b.kmTot - a.kmTot) || (b.speedRef - a.speedRef))[0] || { athlete:'-', kmTot:0, speedRef:0 };
+  if($id('kpiTopAthlete')) $id('kpiTopAthlete').textContent = top.athlete;
+  if($id('kpiTopAthleteLoad')) $id('kpiTopAthleteLoad').textContent = `${top.kmTot.toFixed(1)} km • ${top.speedRef.toFixed(2)} km/h`;
   const risky = Object.values(acwr || {}).filter(v=>v>1.5).length || 0;
   const perc = (risky / (Object.keys(acwr || {}).length || 1) * 100).toFixed(0);
   const riskCard = $id('kpiRiskCard');
@@ -5139,9 +5504,23 @@ function updateCharts(){
     },0);
     return weighted / weightedMinutes;
   };
+  const speedWeightedByKm = rows => {
+    const agg = (rows || []).reduce((acc, v) => {
+      const km = Number(v.km || 0);
+      const timeH = Number(v.time || 0) || ((Number(v.minutes || 0)) / 60);
+      if(km > 0 && timeH > 0){
+        const speed = km / timeH;
+        acc.num += speed * km;
+        acc.den += km;
+      }
+      return acc;
+    }, { num: 0, den: 0 });
+    return agg.den > 0 ? (agg.num / agg.den) : 0;
+  };
 
   const acwr = computeACWR(combinedData);
   aggiornaFiltroAtleti(combinedData, acwr);
+  try{ if(typeof renderRipSessionsList === 'function') renderRipSessionsList(); }catch(e){ console.warn('renderRipSessionsList refresh failed', e); }
 
   if(filt.length === 0){
     disposeRunner3DChart('kmChart');
@@ -5164,79 +5543,49 @@ function updateCharts(){
   const kmRanking = Object.keys(byA).map((ath) => ({
     athlete: ath,
     km: byA[ath].reduce((sum, s) => sum + (s.km || 0), 0),
+    speedRef: speedWeightedByKm(byA[ath] || []),
+    topScore: 0,
     load: loadWeightedByKm(byA[ath] || [])
-  })).sort((a,b)=> b.km - a.km);
+  })).map(r => ({ ...r, topScore: r.km * r.speedRef }))
+    .sort((a,b)=> (b.km - a.km) || (b.speedRef - a.speedRef));
   const athletesForKm = kmRanking.map(r => r.athlete);
   const totalKmPerAthlete = kmRanking.map(r => r.km);
 
   if (charts['kmChart']) { charts['kmChart'].destroy(); charts['kmChart'] = null; }
   if (athletesForKm.length) {
-    const loadPerAthlete = kmRanking.map(r => r.load);
-    renderRunner3DChart('kmChart', athletesForKm, totalKmPerAthlete, loadPerAthlete);
+    const topScorePerAthlete = kmRanking.map(r => r.topScore);
+    renderRunner3DChart('kmChart', athletesForKm, totalKmPerAthlete, topScorePerAthlete);
   } else {
     disposeRunner3DChart('kmChart');
   }
 
-  // Speed radar
-  const speedMetricsLabels = ['Vel. media', 'Vel. max', 'Mediana', 'Q3'];
-  const speedStats = Object.keys(byA).map(aName => {
-    const speeds = byA[aName]
-      .map(v => v.time > 0 ? v.km / v.time : 0)
-      .filter(s => s > 0)
-      .sort((x, y) => x - y);
-
-    if (speeds.length === 0) return { avg: 0, max: 0, median: 0, q3: 0 };
-
-    const sum = speeds.reduce((s,v)=>s+v,0);
-    const avg = sum / speeds.length;
-    const max = speeds[speeds.length - 1];
-    const median = speeds[Math.floor(speeds.length / 2)];
-    const q3 = speeds[Math.floor(speeds.length * 3 / 4)];
-    return { avg, max, median, q3 };
-  });
-
+  // Speed 3D (weighted average speed of ripetute in last 10 days)
   if (charts['speedChart']) { charts['speedChart'].destroy(); charts['speedChart'] = null; }
-
-  const speedLabels = Object.keys(byA);
-  if (speedLabels.length) {
-    const allSpeedVals = speedStats.flatMap(s => [s.avg, s.max, s.median, s.q3]).filter(v => isFinite(v));
-    let radarMax = allSpeedVals.length ? Math.max(...allSpeedVals) : 5;
-    const radarPadding = Math.max(0.5, radarMax * 0.1);
-    radarMax = radarMax + radarPadding;
-
-    const ctx = document.getElementById('speedChart').getContext('2d', { willReadFrequently: true, preserveDrawingBuffer: true });
-    charts['speedChart'] = new Chart(ctx, {
-      type: 'radar',
-      data: {
-        labels: speedMetricsLabels,
-        datasets: speedStats.map((s, i) => ({
-          label: speedLabels[i],
-          data: [ Number(s.avg.toFixed(2)), Number(s.max.toFixed(2)), Number(s.median.toFixed(2)), Number(s.q3.toFixed(2)) ],
-          borderColor: colors[i % colors.length],
-          backgroundColor: colors[i % colors.length] + '44',
-          pointBackgroundColor: colors[i % colors.length],
-          fill: true,
-          tension: 0.3,
-          borderWidth: 2
-        }))
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { labels: { color: document.body.classList.contains('dark-mode') ? '#cbd5e1' : '#1e3c72' } },
-          tooltip: { enabled: true }
-        },
-        scales: {
-          r: {
-            suggestedMin: 0,
-            suggestedMax: radarMax,
-            ticks: { color: document.body.classList.contains('dark-mode') ? '#cbd5e1' : '#334155' },
-            pointLabels: { color: document.body.classList.contains('dark-mode') ? '#cbd5e1' : '#334155' }
-          }
-        }
-      }
+  const isRipetutaRow = (row) => {
+    const t = String(row.activityType || row.type || '').toLowerCase();
+    const n = String(row.note || '').toLowerCase();
+    return t.includes('ripetute') || n.includes('rip:');
+  };
+  const nowMs = Date.now();
+  const tenDaysMs = 10 * 24 * 60 * 60 * 1000;
+  const speed3DRanking = Object.keys(byA).map((ath) => {
+    const recentRip = (byA[ath] || []).filter(r => {
+      if(!isRipetutaRow(r)) return false;
+      const ts = new Date(r.date || '').getTime();
+      return Number.isFinite(ts) && (nowMs - ts) <= tenDaysMs;
     });
+    return {
+      athlete: ath,
+      speed: speedWeightedByKm(recentRip)
+    };
+  }).filter(x => Number(x.speed || 0) > 0).sort((a,b)=> b.speed - a.speed);
+
+  if (speed3DRanking.length) {
+    const speedAthletes = speed3DRanking.map(x => x.athlete);
+    const speedValues = speed3DRanking.map(x => x.speed);
+    renderRunner3DChart('speedChart', speedAthletes, speedValues, speedValues, { valueUnit: 'km/h' });
+  } else {
+    disposeRunner3DChart('speedChart');
   }
 
   // Weekly chart via renderWeeklyChart (defined above)
@@ -5287,7 +5636,31 @@ function addRow(){
   `;
   tb.insertBefore(tr, tb.firstChild);
 }
-function deleteRow(btn){ if(confirm('Vuoi eliminare questa sessione?')) btn.closest('tr').remove(); }
+function deleteRow(btn){
+  if(!confirm('Vuoi eliminare questa sessione?')) return;
+  const tr = btn && btn.closest ? btn.closest('tr') : null;
+  if(!tr) return;
+  const cells = tr.children || [];
+  const rowData = {
+    date: cells[0]?.querySelector('input')?.value || '',
+    athlete: cells[1]?.querySelector('select')?.value || '',
+    km: +(cells[2]?.querySelector('input')?.value || 0),
+    minutes: +(cells[3]?.querySelector('input')?.value || 0),
+    time: (+(cells[3]?.querySelector('input')?.value || 0)) / 60,
+    rpe: +(cells[4]?.querySelector('input')?.value || 0),
+    hr: +(cells[5]?.querySelector('input')?.value || 0),
+    type: cells[6]?.querySelector('select')?.value || '',
+    activityType: cells[7]?.querySelector('select')?.value || '',
+    note: cells[8]?.querySelector('input')?.value || ''
+  };
+  const wasRipetuta = _isRipetuteRowFromTable(rowData);
+  tr.remove();
+  if(wasRipetuta) _removeRipetutaFromSessionsByRow(rowData);
+  try { updateTableFilters(); } catch(e){}
+  try { updateCharts(); } catch(e){}
+  if(typeof updateSaveFirebaseBtn === 'function') updateSaveFirebaseBtn();
+  if(typeof saveToFirebase === 'function') saveToFirebase();
+}
 
 let mobileSessionEditRow = null;
 
@@ -5694,58 +6067,207 @@ function generatePredictions(){
     const futureDays = parseInt($id('predictionDays') ? $id('predictionDays').value : 7) || 7;
     const targetDistance = parseFloat($id('predictionTarget') ? $id('predictionTarget').value : 10) || 10;
     if(!athlete){ alert('Seleziona un atleta!'); return; }
-    const athleteData = data.filter(d => d.athlete === athlete).sort((a,b)=>a.date.localeCompare(b.date));
-    if(athleteData.length < 3){ alert('Dati insufficienti per generare predizioni (minimo 3 sessioni)'); return; }
+    const athleteAllData = data.filter(d => d.athlete === athlete).sort((a,b)=>a.date.localeCompare(b.date));
+    if(athleteAllData.length < 3){ alert('Dati insufficienti per generare predizioni (minimo 3 sessioni)'); return; }
 
-    const dates = athleteData.map(d => new Date(d.date).getTime());
-    const baseDate = dates[0];
-    const x = dates.map(d => (d - baseDate) / (1000 * 60 * 60 * 24));
-    const yKm = athleteData.map(d => d.km);
-    const ySpeed = athleteData.map(d => d.time > 0 ? d.km / d.time : 0);
+    const isRipetuteRow = (row) => {
+      const t = String(row.activityType || row.type || '').toLowerCase();
+      const n = String(row.note || '').toLowerCase();
+      return t.includes('ripetute') || n.includes('rip:');
+    };
+
+    const athleteKmData = athleteAllData.filter(d => !isRipetuteRow(d));
+    if(athleteKmData.length < 2){
+      alert('Dati non-ripetute insufficienti per predire l\'uscita media (servono almeno 2 uscite non ripetute).');
+      return;
+    }
+
+    const msDay = 24 * 60 * 60 * 1000;
+    const lastKmDateMs = athleteKmData.length
+      ? Math.max(...athleteKmData.map(d => new Date(d.date).getTime()).filter(v => isFinite(v)))
+      : NaN;
+    const kmRecentWindow = athleteKmData.filter(d => {
+      const t = new Date(d.date).getTime();
+      return isFinite(t) && isFinite(lastKmDateMs) && (lastKmDateMs - t) <= (15 * msDay);
+    });
+
+    const yKm = kmRecentWindow.map(d => Number(d.km || 0)).filter(v => isFinite(v) && v > 0);
+    if(yKm.length === 0){
+      alert('Nessun km valido nelle uscite non-ripetute degli ultimi 15 giorni per stimare la mediana.');
+      return;
+    }
+    const sortedKm = [...yKm].sort((a,b)=>a-b);
+    const mid = Math.floor(sortedKm.length / 2);
+    const medianKm = sortedKm.length % 2
+      ? sortedKm[mid]
+      : (sortedKm[mid - 1] + sortedKm[mid]) / 2;
+
+    const speedData = athleteAllData.filter(d => (Number(d.time || 0) > 0) || (Number(d.minutes || 0) > 0));
+    if(speedData.length < 2){
+      alert('Dati insufficienti per predire la velocità (servono almeno 2 uscite con tempo).');
+      return;
+    }
+    const datesSpeed = speedData.map(d => new Date(d.date).getTime());
+    const baseDateSpeed = datesSpeed[0];
+    const xSpeed = datesSpeed.map(d => (d - baseDateSpeed) / (1000 * 60 * 60 * 24));
+    const ySpeed = speedData.map(d => {
+      const t = Number(d.time || 0) || ((Number(d.minutes || 0)) / 60);
+      return t > 0 ? (Number(d.km || 0) / t) : 0;
+    });
+
+    const nonRipSpeedValues = athleteKmData
+      .map(d => {
+        const t = Number(d.time || 0) || ((Number(d.minutes || 0)) / 60);
+        return t > 0 ? (Number(d.km || 0) / t) : 0;
+      })
+      .filter(v => isFinite(v) && v > 0);
+    const nonRipAvgSpeed = nonRipSpeedValues.length
+      ? nonRipSpeedValues.reduce((s,v)=>s+v,0) / nonRipSpeedValues.length
+      : (ySpeed.length ? ySpeed.reduce((s,v)=>s+v,0)/ySpeed.length : 0);
 
     const refDistance = 10;    // km reference
+    const safeTargetDistance = Math.max(0.1, Number(targetDistance) || refDistance);
     const exponent = 1.6;      // >1 reduces small sessions more
     const damping = 0.45;      // global damping factor
     const epsilon = 1e-3;
 
-    const weights = athleteData.map(d=>{
+    const weightsSpeed = speedData.map(d=>{
       const dist = (d.km || 0);
       let base = dist > 0 ? Math.log(1 + dist) / Math.log(1 + refDistance) : epsilon;
-      const scale = targetDistance > refDistance ? (refDistance / targetDistance) : 1;
+      const scale = safeTargetDistance > refDistance ? (refDistance / safeTargetDistance) : 1;
       let w = damping * Math.pow(base, exponent) * scale;
       if(!isFinite(w) || w <= 0) w = epsilon;
       return w;
     });
 
-    const regressionKm = weightedLinearRegression(x, yKm, weights);
-    const regressionSpeed = weightedLinearRegression(x, ySpeed, weights);
+    const regressionSpeed = weightedLinearRegression(xSpeed, ySpeed, weightsSpeed);
 
-    const lastDate = new Date(athleteData[athleteData.length - 1].date);
-    const lastX = x[x.length - 1];
+    const lastAthleteDateMs = athleteAllData.length
+      ? Math.max(...athleteAllData.map(d => new Date(d.date).getTime()).filter(v => isFinite(v)))
+      : Date.now();
+    const marathonDistance = 42.2;
+    const twoMonthsMs = 60 * msDay;
+    const marathonBaseRows = athleteAllData.filter(d => {
+      const dateMs = new Date(d.date).getTime();
+      const t = Number(d.time || 0) || ((Number(d.minutes || 0)) / 60);
+      const sport = String(d.type || '').toLowerCase();
+      return !isRipetuteRow(d)
+        && sport.includes('corsa')
+        && t > 0
+        && isFinite(dateMs)
+        && (lastAthleteDateMs - dateMs) <= twoMonthsMs;
+    });
+    const marathonSpeedValues = marathonBaseRows
+      .map(d => {
+        const t = Number(d.time || 0) || ((Number(d.minutes || 0)) / 60);
+        return t > 0 ? (Number(d.km || 0) / t) : 0;
+      })
+      .filter(v => isFinite(v) && v > 0);
+    const marathonAnchorSpeed = marathonSpeedValues.length
+      ? (marathonSpeedValues.reduce((s,v)=>s+v,0) / marathonSpeedValues.length)
+      : Math.max(0, nonRipAvgSpeed * Math.pow(refDistance / marathonDistance, 0.10));
 
-    const futureDates = [], predictedKm = [], predictedSpeed = [];
+    const standardDistances = [5, 10, 15, 20, 30, 40, 42.2];
+    const buildMonotoneSpeedCurve = (rawSpeed, marathonSpeed) => {
+      const curve = standardDistances.map((distKm) => {
+        if(Math.abs(distKm - marathonDistance) < 0.001) return Math.max(0, marathonSpeed);
+        const safeDist = Math.max(1, Number(distKm) || refDistance);
+        const ratio = safeDist / refDistance;
+        const scaledSpeed = rawSpeed * Math.pow(refDistance / safeDist, 0.16);
+        const avgAnchor = nonRipAvgSpeed * Math.pow(refDistance / safeDist, 0.10);
+        const w = 1 - Math.exp(-Math.max(0, ratio - 1) * 0.45);
+        return Math.max(0, (scaledSpeed * (1 - w)) + (avgAnchor * w));
+      });
+      curve[curve.length - 1] = Math.max(0, marathonSpeed);
+      for(let i=curve.length - 2; i>=0; i--){
+        const distKm = standardDistances[i];
+        const distanceGain = Math.max(0, (marathonDistance - distKm) / 10);
+        const minFromMarathon = marathonSpeed * (1 + 0.012 * distanceGain);
+        const minStrictStep = curve[i+1] + 0.03;
+        curve[i] = Math.max(curve[i], minFromMarathon, minStrictStep);
+      }
+      return curve;
+    };
+
+    const speedAtDistanceFromCurve = (targetKm, distances, speeds) => {
+      const d = Math.max(1, Number(targetKm) || refDistance);
+      if(d <= distances[0]) return speeds[0];
+      if(d >= distances[distances.length - 1]) {
+        const tailD = distances[distances.length - 1];
+        const tailV = speeds[speeds.length - 1];
+        return Math.max(0, tailV * Math.pow(tailD / d, 0.08));
+      }
+      for(let i=0;i<distances.length-1;i++){
+        const d1 = distances[i], d2 = distances[i+1];
+        if(d >= d1 && d <= d2){
+          const t = (d - d1) / (d2 - d1 || 1);
+          return speeds[i] + (speeds[i+1] - speeds[i]) * t;
+        }
+      }
+      return speeds[speeds.length - 1];
+    };
+
+    const lastDate = new Date(athleteAllData[athleteAllData.length - 1].date);
+
+    const futureDates = [], predictedKm = [], predictedSpeed = [], rawFutureSpeed = [];
     for(let i=1;i<=futureDays;i++){
       const fd = new Date(lastDate);
       fd.setDate(fd.getDate() + i);
       futureDates.push(fd.toISOString().split('T')[0]);
-      const fx = lastX + i;
-      predictedKm.push(Math.max(0, regressionKm.slope * fx + regressionKm.intercept));
-      predictedSpeed.push(Math.max(0, regressionSpeed.slope * fx + regressionSpeed.intercept));
+      const fxSpeed = (fd.getTime() - baseDateSpeed) / (1000 * 60 * 60 * 24);
+      predictedKm.push(Math.max(0, medianKm));
+      const rawSpeed = regressionSpeed.slope * fxSpeed + regressionSpeed.intercept;
+      rawFutureSpeed.push(Math.max(0, rawSpeed));
+      const monoCurve = buildMonotoneSpeedCurve(Math.max(0, rawSpeed), marathonAnchorSpeed);
+      const distAdjusted = speedAtDistanceFromCurve(safeTargetDistance, standardDistances, monoCurve);
+      predictedSpeed.push(Math.max(0, distAdjusted));
     }
 
-    displayPredictions(athlete, athleteData, futureDates, predictedKm, predictedSpeed, regressionKm.r2, regressionSpeed.r2);
+    const rawAvgSpeed = rawFutureSpeed.length ? (rawFutureSpeed.reduce((s,v)=>s+v,0) / rawFutureSpeed.length) : 0;
+    const comparisonCurve = buildMonotoneSpeedCurve(rawAvgSpeed, marathonAnchorSpeed);
+    const speedComparisonRows = standardDistances.map((km, idx) => {
+      const v = comparisonCurve[idx] || 0;
+      const paceSecPerKm = v > 0 ? (3600 / v) : 0;
+      return { km, speed: v, pace: paceSecPerKm };
+    });
+
+    displayPredictions(athlete, athleteKmData, speedData, futureDates, predictedKm, predictedSpeed, 1, regressionSpeed.r2, speedComparisonRows);
 
   }catch(err){ console.error('generatePredictions', err); alert('Errore generazione predizioni (vedi console)'); }
 }
 
-function displayPredictions(athlete, historicalData, futureDates, predictedKm, predictedSpeed, r2Km, r2Speed){
+function displayPredictions(athlete, historicalKmData, historicalSpeedData, futureDates, predictedKm, predictedSpeed, r2Km, r2Speed, speedComparisonRows = []){
   const resultsDiv = $id('predictionResults');
   if(!resultsDiv) return;
   const avgKm = predictedKm.reduce((a,b)=>a+b,0) / predictedKm.length;
   const avgSpeed = predictedSpeed.reduce((a,b)=>a+b,0) / predictedSpeed.length;
   const totalKm = predictedKm.reduce((a,b)=>a+b,0);
-  const confidenceKm = r2Km > 0.7 ? 'Alta 🟢' : r2Km > 0.4 ? 'Media 🟡' : 'Bassa 🔴';
+  const confidenceKm = 'Robusta (mediana) 🟢';
   const confidenceSpeed = r2Speed > 0.7 ? 'Alta 🟢' : r2Speed > 0.4 ? 'Media 🟡' : 'Bassa 🔴';
+  const comparisonTableHtml = speedComparisonRows.length ? `
+    <div style="margin-top:10px;border:1px solid rgba(0,0,0,.12);border-radius:10px;overflow:hidden;">
+      <div style="padding:8px 10px;background:#f1f5f9;font-weight:700;color:#0f172a;">Tabella comparazione velocità (vincolo maratona: media ultimi 2 mesi corsa senza ripetute)</div>
+      <table style="width:100%;border-collapse:collapse;font-size:0.86rem;">
+        <thead>
+          <tr style="background:#f8fafc;">
+            <th style="text-align:left;padding:6px 8px;border-bottom:1px solid rgba(0,0,0,.1);">Distanza</th>
+            <th style="text-align:left;padding:6px 8px;border-bottom:1px solid rgba(0,0,0,.1);">Velocità</th>
+            <th style="text-align:left;padding:6px 8px;border-bottom:1px solid rgba(0,0,0,.1);">Passo</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${speedComparisonRows.map(r => {
+            const paceMin = Math.floor((r.pace || 0) / 60);
+            const paceSec = Math.round((r.pace || 0) % 60);
+            return `<tr>
+              <td style="padding:6px 8px;border-bottom:1px solid rgba(0,0,0,.06);">${r.km} km</td>
+              <td style="padding:6px 8px;border-bottom:1px solid rgba(0,0,0,.06);">${Number(r.speed || 0).toFixed(2)} km/h</td>
+              <td style="padding:6px 8px;border-bottom:1px solid rgba(0,0,0,.06);">${paceMin}:${String(paceSec).padStart(2,'0')} /km</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>` : '';
   resultsDiv.innerHTML = `
     <div class="prediction-grid">
       <div class="prediction-card">
@@ -5753,7 +6275,7 @@ function displayPredictions(athlete, historicalData, futureDates, predictedKm, p
         <div class="prediction-info">
           <strong>Media prevista:</strong> ${avgKm.toFixed(2)} km/sessione<br>
           <strong>Totale ${futureDates.length} giorni:</strong> ${totalKm.toFixed(1)} km<br>
-          <strong>R² (affidabilità):</strong> ${r2Km.toFixed(3)}<br>
+          <strong>Metodo:</strong> Mediana uscite non-ripetute (ultimi 15 gg)<br>
           <strong>Confidenza:</strong> ${confidenceKm}
         </div>
         <div class="prediction-chart-container">
@@ -5771,12 +6293,13 @@ function displayPredictions(athlete, historicalData, futureDates, predictedKm, p
         <div class="prediction-chart-container">
           <canvas id="predictionSpeedChart"></canvas>
         </div>
+        ${comparisonTableHtml}
       </div>
     </div>
   `;
 
-  const historicalDates = historicalData.map(d => d.date);
-  const historicalKm = historicalData.map(d => d.km);
+  const historicalDates = historicalKmData.map(d => d.date);
+  const historicalKm = historicalKmData.map(d => d.km);
   try{
     if(charts['predictionKmChart']) charts['predictionKmChart'].destroy();
     const ctxKm = document.getElementById('predictionKmChart').getContext('2d', { willReadFrequently: true, preserveDrawingBuffer: true });
@@ -5796,11 +6319,14 @@ function displayPredictions(athlete, historicalData, futureDates, predictedKm, p
   try{
     if(charts['predictionSpeedChart']) charts['predictionSpeedChart'].destroy();
     const ctxSp = document.getElementById('predictionSpeedChart').getContext('2d', { willReadFrequently: true, preserveDrawingBuffer: true });
-    const historicalSpeed = historicalData.map(d => d.time>0 ? d.km / d.time : 0);
+    const historicalSpeed = historicalSpeedData.map(d => {
+      const t = Number(d.time || 0) || ((Number(d.minutes || 0)) / 60);
+      return t > 0 ? (Number(d.km || 0) / t) : 0;
+    });
     charts['predictionSpeedChart'] = new Chart(ctxSp, {
       type: 'line',
       data: {
-        labels: [...historicalData.map(d=>d.date), ...futureDates],
+        labels: [...historicalSpeedData.map(d=>d.date), ...futureDates],
         datasets: [
           { label: 'Dati Storici', data: [...historicalSpeed, ...Array(futureDates.length).fill(null)], borderColor:'#ec4899', backgroundColor:'#ec489988', borderWidth:3, tension:0.3, pointRadius:5 },
           { label: 'Predizioni', data: [...Array(historicalSpeed.length).fill(null), ...predictedSpeed], borderColor:'#10b981', backgroundColor:'#10b98188', borderWidth:3, borderDash:[8,4], tension:0.3, pointRadius:5 }
