@@ -3563,6 +3563,22 @@ try {
 function saveRipSession(){
   const session = readRipSessionFromForm();
   if(!session.date || !session.athlete){ alert('Compila data e atleta.'); return; }
+  const sig = JSON.stringify({
+    date: session.date,
+    athlete: session.athlete,
+    type: session.type || 'Ripetute',
+    warmup_min: +(session.warmup_min||0),
+    cooldown_min: +(session.cooldown_min||0),
+    reps: (session.reps||[]).map(r=>({
+      label: r.label||'', distance:+(r.distance||0), time_s:+(r.time_s||0), rest_s:+(r.rest_s||0), rpe:+(r.rpe||0), hr:+(r.hr||0), lactate:(r.lactate===null||r.lactate===undefined?'':+r.lactate)
+    }))
+  });
+  const nowMs = Date.now();
+  if(window.__lastRipSaveSig === sig && (nowMs - (window.__lastRipSaveAt||0)) < 1800){
+    return;
+  }
+  window.__lastRipSaveSig = sig;
+  window.__lastRipSaveAt = nowMs;
   session.id = 'rip_' + Date.now();
   ripetuteSessions.unshift(session);
   saveRipetuteToStorage();
@@ -3749,7 +3765,40 @@ function getDataRaw(){
 function getData(){
   const tableData = getDataRaw();
   const ripConverted = convertRipetuteToDataEntries(ripetuteSessions);
-  return tableData.concat(ripConverted);
+  const isRipRow = (row) => {
+    const t = String(row.activityType || row.type || '').toLowerCase();
+    const n = String(row.note || '').toLowerCase();
+    return t.includes('ripetute') || n.includes('rip:');
+  };
+  const ripKey = (row) => [
+    row.date || '',
+    row.athlete || '',
+    Number(row.km || 0).toFixed(3),
+    String(Math.round(Number(row.minutes || ((Number(row.time)||0) * 60) || 0))),
+    String(Math.round(Number(row.rpe || 0))),
+    String(Math.round(Number(row.hr || 0))),
+    String((row.activityType || row.type || 'Ripetute')).toLowerCase()
+  ].join('|');
+
+  const tableRipCounts = new Map();
+  tableData.forEach((row) => {
+    if(!isRipRow(row)) return;
+    const key = ripKey(row);
+    tableRipCounts.set(key, (tableRipCounts.get(key) || 0) + 1);
+  });
+
+  const ripFiltered = [];
+  ripConverted.forEach((row) => {
+    const key = ripKey(row);
+    const count = tableRipCounts.get(key) || 0;
+    if(count > 0){
+      tableRipCounts.set(key, count - 1);
+      return;
+    }
+    ripFiltered.push(row);
+  });
+
+  return tableData.concat(ripFiltered);
 }
 
 /* merge athletes found in imported arrays */
@@ -4293,6 +4342,8 @@ function createRunnerBillboard(theme){
     alphaTest: 0.15,
     roughness: 0.7,
     metalness: 0.05,
+    emissive: 0x1f2937,
+    emissiveIntensity: 0.18,
     side: THREE.DoubleSide
   });
   const plane = new THREE.Mesh(geo, mat);
@@ -4667,7 +4718,7 @@ function renderRunner2DFallback(host, athletes, kmValues, loadValues, reason){
     const fallback = getDefaultSoldatinoSvg();
     return `
       <div style="position:relative;height:128px;border-bottom:1px dashed #cbd5e1;overflow:hidden;">
-        <img src="${imgSrc}" onerror="this.onerror=null;this.src='${fallback}'" alt="${theme.name}" style="position:absolute;left:${leftPct}%;top:${topPct}%;transform:translate(-50%,-50%);width:${sizePx}px;height:${Math.round(sizePx*1.45)}px;object-fit:contain;object-position:center top;filter:brightness(0.62) contrast(1.32) saturate(1.15) drop-shadow(0 2px 5px #0009);" />
+        <img src="${imgSrc}" onerror="this.onerror=null;this.src='${fallback}'" alt="${theme.name}" style="position:absolute;left:${leftPct}%;top:${topPct}%;transform:translate(-50%,-50%);width:${sizePx}px;height:${Math.round(sizePx*1.45)}px;object-fit:contain;object-position:center top;filter:brightness(0.62) contrast(1.32) saturate(1.45) drop-shadow(0 2px 5px #0009);" />
         <div style="position:absolute;left:8px;right:8px;top:8px;font:800 13px Segoe UI;color:#000;background:#fffffff5;padding:5px 12px;border-radius:999px;white-space:nowrap;text-align:center;overflow:hidden;text-overflow:ellipsis;box-shadow:0 2px 8px #0003;border:1px solid #94a3b8;">${ath} • ${km.toFixed(1)} km</div>
       </div>`;
   }).join('');
