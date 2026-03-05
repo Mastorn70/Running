@@ -5713,7 +5713,7 @@ function updateCharts(){
     topScore: 0,
     load: loadWeightedByKm(byA[ath] || [])
   })).map(r => ({ ...r, topScore: r.km * r.speedRef }))
-    .sort((a,b)=> (b.km - a.km) || (b.speedRef - a.speedRef));
+    .sort((a,b)=> (b.topScore - a.topScore) || (b.km - a.km) || (b.speedRef - a.speedRef));
   const athletesForKm = kmRanking.map(r => r.athlete);
   const totalKmPerAthlete = kmRanking.map(r => r.km);
 
