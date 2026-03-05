@@ -1085,6 +1085,37 @@ body.dark-mode .card h3 {
   max-height: 320px !important;
 }
 
+#speedRunnerCard {
+  position: relative;
+  padding: 0 !important;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(15,23,42,0.25) 0%, rgba(15,23,42,0.35) 100%), url('./images/luna.jpg') center center / cover no-repeat !important;
+}
+
+#speedRunnerCard h3 {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  z-index: 12;
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.38);
+  color: #f8fafc !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.45);
+  backdrop-filter: blur(1px);
+}
+
+#speedRunnerCard .runner-3d-host {
+  width: 100%;
+  height: 360px;
+  min-height: 300px;
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+}
+
 /* TABELLA */
 table {
   width: 100%;
@@ -4737,13 +4768,14 @@ function ensureRunner3DHost(canvasId){
   const bgStyle = `linear-gradient(180deg, rgba(15,23,42,0.25) 0%, rgba(15,23,42,0.35) 100%), url('${bgImage}') center center / cover no-repeat`;
   if(canvasId === 'speedChart' && chartCard){
     chartCard.style.background = bgStyle;
-    chartCard.style.backgroundClip = 'padding-box';
+    chartCard.style.padding = '0';
+    chartCard.style.overflow = 'hidden';
   }
   const applyHostBoxStyle = () => {
     host.style.width = '100%';
-    host.style.height = '320px';
-    host.style.minHeight = '260px';
-    host.style.borderRadius = '12px';
+    host.style.height = (canvasId === 'speedChart') ? '360px' : '320px';
+    host.style.minHeight = (canvasId === 'speedChart') ? '300px' : '260px';
+    host.style.borderRadius = (canvasId === 'speedChart') ? '16px' : '12px';
     host.style.overflow = 'hidden';
     host.style.position = 'relative';
   };
