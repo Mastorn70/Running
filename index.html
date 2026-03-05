@@ -1910,30 +1910,6 @@ body.dark-mode .prediction-chart-container {
   </div>
   <!-- /MODALE FILTRI MOBILE -->
   <style>@media (max-width:900px){.mobile-dashboard{position:relative;}}</style>
-  <div class="mini-card">
-    <canvas id="chartMobile1"></canvas>
-    <div class="kpi-value">2,27 <span class="kpi-unit">km</span></div>
-    <div class="kpi-label">Distanza</div>
-    <div class="kpi-icons"><span>❤️</span><span>📈</span></div>
-  </div>
-  <div class="mini-card">
-    <canvas id="chartMobile2"></canvas>
-    <div class="kpi-value">43 <span class="kpi-unit">min</span></div>
-    <div class="kpi-label">Durata</div>
-    <div class="kpi-icons"><span>🔥</span><span>💪</span></div>
-  </div>
-  <div class="mini-card">
-    <canvas id="chartMobile3"></canvas>
-    <div class="kpi-value">0 <span class="kpi-unit">/10</span></div>
-    <div class="kpi-label">Carico</div>
-    <div class="kpi-icons"><span>⚡</span><span>📊</span></div>
-  </div>
-  <div class="mini-card">
-    <canvas id="chartMobile4"></canvas>
-    <div class="kpi-value">40 <span class="kpi-unit">bpm</span></div>
-    <div class="kpi-label">Frequenza</div>
-    <div class="kpi-icons"><span>💓</span><span>⬆️</span></div>
-  </div>
   <div class="mobile-top-kpi" id="mobileTopAthleteKpi">
     <span class="label">Top atleta</span>
     <span class="value" id="mobileTopAthleteValue">-</span>
@@ -2297,97 +2273,11 @@ function syncMobileKpiCompact(){
   set('mobileKpiTopLoad', txt('kpiTopAthleteLoad') || '-');
 }
 function updateMobileCharts() {
-  function loadWeightedByKm(rows){
-    const weightedMinutes = rows.reduce((s,v)=>{
-      const km = parseFloat(v.km) || 0;
-      const minutes = (parseFloat(v.minutes) || ((parseFloat(v.time)||0) * 60));
-      return s + (minutes * km);
-    },0);
-    if(!weightedMinutes) return 0;
-    const weighted = rows.reduce((s,v)=>{
-      const km = parseFloat(v.km) || 0;
-      const minutes = (parseFloat(v.minutes) || ((parseFloat(v.time)||0) * 60));
-      const rpe = parseFloat(v.rpe) || 0;
-      return s + ((rpe * minutes) * km);
-    },0);
-    return weighted / weightedMinutes;
-  }
-    // Aggiorna i numerelli sotto i grafici mobile (dopo aver calcolato i dati)
-    // ...dopo la dichiarazione di kmSettimana, minSettimana, caricoSettimana, fcSettimana...
-    setTimeout(() => {
-      const totKm = kmSettimana.reduce((a,b)=>a+b,0).toFixed(2);
-      const totMin = minSettimana.reduce((a,b)=>a+b,0).toFixed(0);
-      const totCarico = loadWeightedByKm(filt).toFixed(1);
-      const avgFc = fcSettimana.filter(x=>x>0).length ? Math.round(fcSettimana.reduce((a,b)=>a+b,0)/fcSettimana.filter(x=>x>0).length) : 0;
-      const el1 = document.querySelector('#chartMobile1 + .kpi-value');
-      const el2 = document.querySelector('#chartMobile2 + .kpi-value');
-      const el3 = document.querySelector('#chartMobile3 + .kpi-value');
-      const el4 = document.querySelector('#chartMobile4 + .kpi-value');
-      if(el1) el1.innerHTML = totKm + ' <span class="kpi-unit">km</span>';
-      if(el2) el2.innerHTML = totMin + ' <span class="kpi-unit">min</span>';
-      if(el3) el3.innerHTML = totCarico + ' <span class="kpi-unit">/10</span>';
-      if(el4) el4.innerHTML = avgFc + ' <span class="kpi-unit">bpm</span>';
-    }, 0);
   // Distruggi i vecchi grafici se esistono
   if(mobileCharts && mobileCharts.length) {
     mobileCharts.forEach(c=>c && c.destroy && c.destroy());
   }
   mobileCharts = [];
-  // Prendi i dati filtrati reali
-  let combinedData = (typeof getData === 'function') ? getData() : [];
-  const athleteSet = (typeof getActiveAthleteSet === 'function') ? getActiveAthleteSet() : null;
-  let dateFrom = document.getElementById('dateFrom').value;
-  let dateTo = document.getElementById('dateTo').value;
-  // Filtro come in updateCharts
-  let filt = combinedData.filter(d =>
-    (!athleteSet || athleteSet.has(d.athlete)) &&
-    (!dateFrom || d.date >= dateFrom) &&
-    (!dateTo || d.date <= dateTo)
-  );
-  // Raggruppa per giorno della settimana
-  let days = ['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
-  let weekData = [[],[],[],[],[],[],[]];
-  filt.forEach(d => {
-    let dayIdx = (new Date(d.date).getDay()+6)%7; // 0=Lun ... 6=Dom
-    weekData[dayIdx].push(d);
-  });
-  // Calcola valori per i 4 grafici
-  function sum(arr, key) { return arr.reduce((s,v)=>s+(parseFloat(v[key])||0),0); }
-  // 1. Distanza (km)
-  let kmSettimana = weekData.map(arr=>sum(arr,'km'));
-  // 2. Durata (min)
-  let minSettimana = weekData.map(arr=>sum(arr,'minutes'));
-  // 3. Carico (RPE×min) come media pesata sui km
-  let caricoSettimana = weekData.map(arr=>loadWeightedByKm(arr));
-  // 4. Frequenza cardiaca media (bpm)
-  let fcSettimana = weekData.map(arr=>arr.length ? Math.round(sum(arr,'hr')/arr.length) : 0);
-  const chartColors = ['#60a5fa','#f472b6'];
-  function makeChart(id, data, type='bar') {
-    const ctx = document.getElementById(id).getContext('2d');
-    let chart = new Chart(ctx, {
-      type,
-      data: {
-        labels: days,
-        datasets: [{
-          data,
-          backgroundColor: chartColors,
-          borderRadius: 6,
-          borderWidth: 1,
-        }]
-      },
-      options: {
-        plugins: { legend: { display: false } },
-        scales: { x: { display: false }, y: { display: false } },
-        responsive: true,
-        maintainAspectRatio: false,
-      }
-    });
-    mobileCharts.push(chart);
-  }
-  makeChart('chartMobile1', kmSettimana);
-  makeChart('chartMobile2', minSettimana);
-  makeChart('chartMobile3', caricoSettimana);
-  makeChart('chartMobile4', fcSettimana, 'line');
   syncMobileKpiCompact();
 }
 if(window.innerWidth <= 900) setTimeout(updateMobileCharts, 500);
