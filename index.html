@@ -1810,6 +1810,7 @@ body.dark-mode .prediction-chart-container {
   <button style="display:block;width:100%;margin-top:8px;font-size:1.1em;" data-section="predizione">🔮 Predizione</button>
   <button style="display:block;width:100%;margin-top:8px;font-size:1.1em;" data-section="maratona">🧮 Maratona</button>
   <button style="display:block;width:100%;margin-top:8px;font-size:1.1em;" data-section="confronto">🔄 Confronto</button>
+  <button id="mobileThemeBtn" type="button" onclick="toggleThemeMode()" style="display:block;width:100%;margin-top:10px;font-size:1.05em;background:#6366f1;color:#fff;">🌙 Tema</button>
 </nav>
 <!-- Notifica e barra Firebase rimangono ma sono nascosti su mobile -->
 <div id="notificaSalvataggio" style="display:none;position:fixed;top:24px;right:24px;z-index:99999;background:#10b981;color:#fff;padding:12px 24px;border-radius:8px;box-shadow:0 2px 8px #0002;font-size:1.1em;transition:opacity 0.4s;opacity:0;">Dati sincronizzati!</div>
@@ -1915,7 +1916,9 @@ body.dark-mode .prediction-chart-container {
     <span class="value" id="mobileTopAthleteValue">-</span>
   </div>
   <div id="mobileRunner3DSlot">
+    <button id="mobileAllTimeBtn" onclick="applyAllTimeDateFilter()" style="position:absolute;top:8px;left:10px;padding:6px 10px;background:#111827;color:#fff;border:none;border-radius:8px;font-size:0.95em;font-weight:600;z-index:951;box-shadow:0 2px 8px #0002;">All time</button>
     <button id="openMobileFilterBtn" style="position:absolute;top:8px;right:10px;padding:6px 10px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:0.95em;font-weight:600;z-index:950;box-shadow:0 2px 8px #0002;">🔍 Filtra</button>
+    <div id="mobileKmTopRankingOverlay" style="position:absolute;right:8px;bottom:8px;left:8px;max-height:34%;overflow:auto;padding:8px 10px;border:1px solid rgba(203,213,225,.55);border-radius:10px;background:rgba(255,255,255,0.22);font-size:0.72rem;line-height:1.35;color:#0f172a;z-index:940;box-shadow:0 4px 12px rgba(0,0,0,.12);"></div>
   </div>
   <div class="mobile-kpi-after" id="mobileKpiAfter3D">
     <div class="mobile-kpi-chip"><div class="chip-v" id="mobileKpiKmWeek">0</div><div class="chip-l">Km settimana</div></div>
@@ -2185,9 +2188,53 @@ function applyMobileFilters() {
   if(document.getElementById('athleteFilter')) document.getElementById('athleteFilter').value = 'all';
   document.getElementById('dateFrom').value = document.getElementById('mobileDateFrom').value;
   document.getElementById('dateTo').value = document.getElementById('mobileDateTo').value;
+  updateAllTimeButtonState();
   updateCharts();
   updateMobileCharts();
   closeMobileFilterModal();
+}
+function updateAllTimeButtonState() {
+  const fromEl = document.getElementById('dateFrom');
+  const toEl = document.getElementById('dateTo');
+  const isAllTime = (!fromEl || !fromEl.value) && (!toEl || !toEl.value);
+  const applyState = (btn, activeSize) => {
+    if(!btn) return;
+    btn.style.background = isAllTime ? '#16a34a' : '#111827';
+    btn.style.color = '#ffffff';
+    btn.style.border = isAllTime ? '1px solid rgba(255,255,255,0.35)' : 'none';
+    btn.style.fontWeight = '700';
+    if(activeSize) btn.style.fontSize = activeSize;
+  };
+  applyState(document.getElementById('allTimeBtn'), '0.86rem');
+  applyState(document.getElementById('mobileAllTimeBtn'), '0.95em');
+}
+function applyAllTimeDateFilter() {
+  const fromEl = document.getElementById('dateFrom');
+  const toEl = document.getElementById('dateTo');
+  const isAllTime = (!fromEl || !fromEl.value) && (!toEl || !toEl.value);
+  if(isAllTime){
+    const today = new Date();
+    const from = new Date(today);
+    from.setDate(today.getDate() - 6);
+    const fmt = (d) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+    if(fromEl) fromEl.value = fmt(from);
+    if(toEl) toEl.value = fmt(today);
+  } else {
+    if(fromEl) fromEl.value = '';
+    if(toEl) toEl.value = '';
+  }
+  const mobileFrom = document.getElementById('mobileDateFrom');
+  const mobileTo = document.getElementById('mobileDateTo');
+  if(mobileFrom) mobileFrom.value = fromEl ? fromEl.value : '';
+  if(mobileTo) mobileTo.value = toEl ? toEl.value : '';
+  updateAllTimeButtonState();
+  updateCharts();
+  if(typeof updateMobileCharts === 'function' && window.innerWidth <= 900) updateMobileCharts();
 }
 document.getElementById('openMobileFilterBtn').onclick = openMobileFilterModal;
 function updateMobileFilterButtonVisibility() {
@@ -2294,17 +2341,17 @@ document.getElementById('dateTo').addEventListener('change', updateMobileCharts)
     <div style="font-size:1em;line-height:1.6;">
       <strong>KPI principali:</strong>
       <ul>
-        <li><b>Km settimana</b>: chilometri totali percorsi dalla squadra nella settimana selezionata.</li>
-        <li><b>Carico (RPE×min)</b>: somma dei carichi di allenamento (RPE × minuti) di tutti gli atleti nella settimana.</li>
-        <li><b>TRIMP</b>: Training Impulse, misura del carico fisiologico basata su durata e intensità (algoritmo Banister).</li>
-        <li><b>Top atleta</b>: atleta con il carico settimanale più alto.</li>
-        <li><b>% a rischio</b>: percentuale di atleti con carico settimanale superiore al 130% della media personale (rischio overload).</li>
+        <li><b>Km settimana</b>: chilometri totali percorsi dalla squadra negli ultimi 7 giorni.</li>
+        <li><b>Carico (RPE×min)</b>: somma dei carichi di allenamento (RPE × minuti) di tutti gli atleti negli ultimi 7 giorni. È la session-RPE (sRPE) totale della squadra.</li>
+        <li><b>TRIMP</b>: Training Impulse semplificato — calcolato come FC × durata(ore) × 0.1 per ogni sessione, poi sommato. Misura proporzionale del carico cardiovascolare.</li>
+        <li><b>Top atleta</b>: atleta con il miglior score di performance nei dati filtrati, calcolato come <i>km totali × velocità media pesata per km</i>.</li>
+        <li><b>% a rischio</b>: percentuale di atleti con ACWR (Acute:Chronic Workload Ratio) superiore a 1.3, ovvero carico acuto (7 gg) &gt; 130% del carico cronico medio (28 gg).</li>
       </ul>
       <strong>Algoritmi:</strong>
       <ul>
-        <li><b>TRIMP</b>: calcolato come <i>Durata × Intensità × Fattore sesso</i> (Banister, 1991).</li>
-        <li><b>Carico settimanale</b>: somma dei valori RPE×minuti per ogni sessione.</li>
-        <li><b>Rischio overload</b>: atleti con carico settimanale &gt;130% della loro media delle ultime 4 settimane.</li>
+        <li><b>TRIMP semplificato</b>: <i>FC media × durata(ore) × 0.1</i> per sessione. Proporzionale al TRIMP classico (Banister, 1991) ma senza necessità di FC riposo/max.</li>
+        <li><b>Carico settimanale (sRPE)</b>: somma di RPE × minuti per ogni sessione negli ultimi 7 giorni.</li>
+        <li><b>ACWR</b>: rapporto tra carico acuto (RPE×ore, ultimi 7 gg) e carico cronico medio (RPE×ore, ultimi 28 gg ÷ 4). Soglia di rischio: &gt;1.3.</li>
       </ul>
       <strong>Predizione (Predizioni):</strong>
       <ul>
@@ -2343,8 +2390,8 @@ document.getElementById('dateTo').addEventListener('change', updateMobileCharts)
     </div>
 
     <div class="grid">
-      <div class="card" id="kmRunnerCard"><h3>🏃‍♂️ Classifica 3D atleti (avanzamento=score top atleta, dimensione=km)</h3><canvas id="kmChart"></canvas></div>
-      <div class="card"><h3>📊 Velocità 3D (ripetute ultimi 10 gg)</h3><canvas id="speedChart"></canvas></div>
+      <div class="card" id="kmRunnerCard" style="position:relative;"><h3>🏃‍♂️ Classifica 3D atleti (avanzamento=score top atleta, dimensione=km)</h3><button id="allTimeBtn" onclick="applyAllTimeDateFilter()" style="position:absolute;top:12px;left:12px;padding:6px 10px;background:#111827;color:#fff;border:none;border-radius:8px;font-size:0.86rem;font-weight:700;z-index:9;box-shadow:0 2px 8px #0003;">All time</button><canvas id="kmChart"></canvas><div id="kmTopRankingOverlay" style="position:absolute;right:12px;bottom:12px;max-width:min(48%,420px);min-width:300px;max-height:42%;overflow:auto;margin-top:10px;padding:10px;border:1px solid rgba(203,213,225,.55);border-radius:10px;background:rgba(255,255,255,0.22);font-size:0.78rem;line-height:1.4;color:#0f172a;z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.12);"></div></div>
+      <div class="card" id="speedRunnerCard"><h3>Atleta più veloce (ripetute ultimi 10 gg)</h3><canvas id="speedChart"></canvas></div>
       <div class="card"><h3>📊 Km/settimana</h3><canvas id="weeklyChart"></canvas></div>
       <div class="card"><h3>⚡ Carico interno</h3><canvas id="loadChart"></canvas></div>
       <div class="card"><h3>💓 TRIMP</h3><canvas id="trimpChart"></canvas></div>
@@ -4682,23 +4729,41 @@ function disposeRunner3DChart(canvasId){
 function ensureRunner3DHost(canvasId){
   const canvas = document.getElementById(canvasId);
   if(!canvas || !canvas.parentNode) return null;
+  const chartCard = canvas.closest('.card');
   const hostId = `${canvasId}3DHost`;
   let host = document.getElementById(hostId);
   const isMobile = window.matchMedia('(max-width: 900px)').matches;
+  const bgImage = (canvasId === 'speedChart') ? './images/luna.jpg' : './images/lunapienaraccolto.png';
+  const bgStyle = `linear-gradient(180deg, rgba(15,23,42,0.25) 0%, rgba(15,23,42,0.35) 100%), url('${bgImage}') center center / cover no-repeat`;
+  if(canvasId === 'speedChart' && chartCard){
+    chartCard.style.background = bgStyle;
+    chartCard.style.backgroundClip = 'padding-box';
+  }
+  const applyHostBoxStyle = () => {
+    host.style.width = '100%';
+    host.style.height = '320px';
+    host.style.minHeight = '260px';
+    host.style.borderRadius = '12px';
+    host.style.overflow = 'hidden';
+    host.style.position = 'relative';
+  };
   if(!host){
     host = document.createElement('div');
     host.id = hostId;
     host.className = 'runner-3d-host';
     if(!isMobile){
-      host.style.width = '100%';
-      host.style.height = '320px';
-      host.style.minHeight = '260px';
-      host.style.borderRadius = '12px';
-      host.style.overflow = 'hidden';
-      host.style.position = 'relative';
-      host.style.background = "linear-gradient(180deg, rgba(15,23,42,0.25) 0%, rgba(15,23,42,0.35) 100%), url('./images/lunapienaraccolto.png') center center / cover no-repeat";
+      applyHostBoxStyle();
+      host.style.background = bgStyle;
       canvas.parentNode.insertBefore(host, canvas);
     }
+  }
+  if(!isMobile && host){
+    applyHostBoxStyle();
+    host.style.background = bgStyle;
+  }
+  if(isMobile && canvasId === 'speedChart' && host){
+    applyHostBoxStyle();
+    host.style.background = bgStyle;
   }
   if(isMobile && canvasId === 'kmChart'){
     const mobileSlot = document.getElementById('mobileRunner3DSlot');
@@ -5301,7 +5366,7 @@ function renderRunner3DChart(canvasId, athletes, kmValues, progressValues, opts 
   if(canvasId !== 'kmChart'){
     const finish = new THREE.Mesh(
       new THREE.PlaneGeometry(9.6, 0.45),
-      new THREE.MeshBasicMaterial({ color: 0x1e3a8a, side: THREE.DoubleSide })
+      new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.DoubleSide })
     );
     finish.rotation.x = -Math.PI/2;
     finish.position.set(0, 0.012, -1.25);
@@ -5460,20 +5525,12 @@ function renderRunner3DChart(canvasId, athletes, kmValues, progressValues, opts 
   return window.charts[chartId];
 }
 function updateKPI(data, acwr){
-  function loadWeightedByKm(rows){
-    const weightedMinutes = rows.reduce((s,v)=>{
-      const km = parseFloat(v.km) || 0;
-      const minutes = (parseFloat(v.minutes) || ((parseFloat(v.time)||0) * 60));
-      return s + (minutes * km);
-    },0);
-    if(!weightedMinutes) return 0;
-    const weighted = rows.reduce((s,v)=>{
-      const km = parseFloat(v.km) || 0;
-      const minutes = (parseFloat(v.minutes) || ((parseFloat(v.time)||0) * 60));
+  function totalSRPE(rows){
+    return (rows||[]).reduce((s,v)=>{
       const rpe = parseFloat(v.rpe) || 0;
-      return s + ((rpe * minutes) * km);
+      const minutes = (parseFloat(v.minutes) || ((parseFloat(v.time)||0) * 60));
+      return s + (rpe * minutes);
     },0);
-    return weighted / weightedMinutes;
   }
   function speedWeightedByKm(rows){
     const agg = (rows || []).reduce((acc, v) => {
@@ -5502,8 +5559,8 @@ function updateKPI(data, acwr){
     if(w < 1){ kmC += d.km||0; trC += tr; currentRows.push(d); }
     else if(w < 2){ kmP += d.km||0; trP += tr; prevRows.push(d); }
   });
-  const loadC = loadWeightedByKm(currentRows);
-  const loadP = loadWeightedByKm(prevRows);
+  const loadC = totalSRPE(currentRows);
+  const loadP = totalSRPE(prevRows);
   const deltaText = (a,b) => (b ? `${((a-b)/b*100).toFixed(1)}%` : '');
   if($id('kpiKmWeek')) $id('kpiKmWeek').textContent = (kmC).toFixed(1);
   if($id('kpiLoadWeek')) $id('kpiLoadWeek').textContent = Math.round(loadC);
@@ -5520,7 +5577,7 @@ function updateKPI(data, acwr){
     .sort((a,b)=> (b.score - a.score) || (b.kmTot - a.kmTot) || (b.speedRef - a.speedRef))[0] || { athlete:'-', kmTot:0, speedRef:0 };
   if($id('kpiTopAthlete')) $id('kpiTopAthlete').textContent = top.athlete;
   if($id('kpiTopAthleteLoad')) $id('kpiTopAthleteLoad').textContent = `${top.kmTot.toFixed(1)} km • ${top.speedRef.toFixed(2)} km/h`;
-  const risky = Object.values(acwr || {}).filter(v=>v>1.5).length || 0;
+  const risky = Object.values(acwr || {}).filter(v=>v>1.3).length || 0;
   const perc = (risky / (Object.keys(acwr || {}).length || 1) * 100).toFixed(0);
   const riskCard = $id('kpiRiskCard');
   if(riskCard) riskCard.style.border = (risky>0 ? '3px solid #ef4444' : '3px solid #10b981');
@@ -5528,6 +5585,9 @@ function updateKPI(data, acwr){
   if($id('kpiRiskInfo')) $id('kpiRiskInfo').textContent = risky>0 ? `${risky} ⚠️` : '✅ Ok';
 }
 function updateCharts(){
+  const topRankingTarget = (window.innerWidth <= 900 && $id('mobileKmTopRankingOverlay'))
+    ? $id('mobileKmTopRankingOverlay')
+    : $id('kmTopRankingOverlay');
   const combinedData = getData();
   const fA = $id('athleteFilter') ? $id('athleteFilter').value : 'all';
   const athleteSet = (typeof getActiveAthleteSet === 'function') ? getActiveAthleteSet() : ((fA !== 'all') ? new Set([fA]) : null);
@@ -5591,6 +5651,9 @@ function updateCharts(){
     $id('kpiTopAthleteLoad').textContent='';
     $id('kpiRiskPercent').textContent='0%';
     $id('kpiRiskInfo').textContent='';
+    if(topRankingTarget){
+      topRankingTarget.innerHTML = '<strong>Classifica Top atleta</strong><div style="margin-top:6px;color:#64748b;">Nessun dato disponibile con i filtri correnti.</div>';
+    }
     if (typeof updateMobileCharts === 'function' && window.innerWidth <= 900) updateMobileCharts();
     return;
   }
@@ -5649,13 +5712,28 @@ function updateCharts(){
 
   // Carico e TRIMP
   const athletesList = Object.keys(byA);
-  const loadData = athletesList.map(aName => loadWeightedByKm(byA[aName]));
+  const loadData = athletesList.map(aName => (byA[aName]||[]).reduce((s,v)=>{
+    const rpe = parseFloat(v.rpe) || 0;
+    const minutes = (parseFloat(v.minutes) || ((parseFloat(v.time)||0) * 60));
+    return s + (rpe * minutes);
+  },0));
   const trimpData = athletesList.map(aName => byA[aName].reduce((s, v) => s + (v.hr||0) * (v.time||0) * 0.1, 0));
-  createChart('loadChart','bar',athletesList,[{ label:'Carico', data:loadData, backgroundColor:'#f59e0b' }]);
+  createChart('loadChart','bar',athletesList,[{ label:'Carico (RPE×min)', data:loadData, backgroundColor:'#f59e0b' }]);
   createChart('trimpChart','bar',athletesList,[{ label:'TRIMP', data:trimpData, backgroundColor:'#10b981' }]);
 
   // ACWR
   createChart('acwrChart','bar', Object.keys(acwr), [{ label: 'ACWR', data: Object.values(acwr), backgroundColor: Object.values(acwr).map(v => v>1.5? '#ef4444' : v>1.3 ? '#f59e0b' : '#10b981') }]);
+
+  if(topRankingTarget){
+    const rows = kmRanking.slice(0, 10).map((r, idx) => {
+      const medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : '•'));
+      return `<div style="display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:${idx === Math.min(9, kmRanking.length - 1) ? 'none' : '1px dashed rgba(100,116,139,0.35)'};">
+        <span style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${medal} #${idx+1} ${r.athlete}</span>
+        <span style="white-space:nowrap;">score ${r.topScore.toFixed(1)} • ${r.km.toFixed(1)} km • ${r.speedRef.toFixed(2)} km/h</span>
+      </div>`;
+    }).join('');
+    topRankingTarget.innerHTML = `<strong>Classifica Top atleta</strong><div style="margin-top:6px;display:flex;flex-direction:column;gap:0;">${rows || '<div style="color:#64748b;">Nessun dato disponibile.</div>'}</div>`;
+  }
 
   // KPI
   updateKPI(filt, acwr);
@@ -5961,7 +6039,11 @@ function openComparison() {
       }, 0);
       const tempo = tempoMin / 60;
       const tempoLabel = formatDurationFromMinutes(tempoMin);
-      const carico = dat.reduce((s, v) => s + ((Number(v.rpe) || 0) * (Number(v.time) || 0)), 0);
+      const carico = dat.reduce((s, v) => {
+        const rpe = Number(v.rpe) || 0;
+        const minutes = Number(v.minutes) || ((Number(v.time) || 0) * 60);
+        return s + (rpe * minutes);
+      }, 0);
       const trimp = dat.reduce((s, v) => s + ((Number(v.hr) || 0) * (Number(v.time) || 0) * 0.1), 0);
       const velMedia = tempo ? (km / tempo) : 0;
       const rpe_med = dat.length ? (dat.reduce((s, v) => s + (Number(v.rpe) || 0), 0) / dat.length) : 0;
@@ -5974,7 +6056,7 @@ function openComparison() {
           <div class="stat-row"><span class="stat-label">Km totali:</span><span class="stat-value">${km.toFixed(1)}</span></div>
           <div class="stat-row"><span class="stat-label">Tempo totale:</span><span class="stat-value">${tempoLabel} (${tempo.toFixed(2)} h)</span></div>
           <div class="stat-row"><span class="stat-label">Velocità media:</span><span class="stat-value">${velMedia.toFixed(2)} km/h</span></div>
-          <div class="stat-row"><span class="stat-label">Carico totale:</span><span class="stat-value">${Math.round(carico)}</span></div>
+          <div class="stat-row"><span class="stat-label">Carico totale (RPE×min):</span><span class="stat-value">${Math.round(carico)}</span></div>
           <div class="stat-row"><span class="stat-label">TRIMP:</span><span class="stat-value">${Math.round(trimp)}</span></div>
           <div class="stat-row"><span class="stat-label">RPE medio:</span><span class="stat-value">${rpe_med.toFixed(1)}/10</span></div>
           <div class="stat-row"><span class="stat-label">FC media:</span><span class="stat-value">${Math.round(hr_med)} bpm</span></div>
@@ -6210,13 +6292,59 @@ function generatePredictions(){
       alert('Dati insufficienti per predire la velocità (servono almeno 2 uscite con tempo).');
       return;
     }
-    const datesSpeed = speedData.map(d => new Date(d.date).getTime());
-    const baseDateSpeed = datesSpeed[0];
-    const xSpeed = datesSpeed.map(d => (d - baseDateSpeed) / (1000 * 60 * 60 * 24));
-    const ySpeed = speedData.map(d => {
+    const refDistance = 10;
+    const safeTargetDistance = Math.max(0.1, Number(targetDistance) || refDistance);
+    const speedRows = speedData.map(d => {
+      const dateMs = new Date(d.date).getTime();
+      const dist = Math.max(0.1, Number(d.km || 0));
       const t = Number(d.time || 0) || ((Number(d.minutes || 0)) / 60);
-      return t > 0 ? (Number(d.km || 0) / t) : 0;
+      const speedObs = t > 0 ? (dist / t) : 0;
+      return { dateMs, dist, speedObs };
+    }).filter(r => isFinite(r.dateMs) && r.speedObs > 0);
+
+    const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+    const median = (arr) => {
+      if(!arr || !arr.length) return 0;
+      const s = [...arr].sort((a,b)=>a-b);
+      const m = Math.floor(s.length / 2);
+      return (s.length % 2) ? s[m] : (s[m-1] + s[m]) / 2;
+    };
+
+    const logPairs = speedRows
+      .filter(r => r.dist >= 3 && r.dist <= 30)
+      .map(r => ({ x: Math.log(r.dist), y: Math.log(r.speedObs) }))
+      .filter(p => isFinite(p.x) && isFinite(p.y));
+    let betaDistance = 0.06;
+    if(logPairs.length >= 4){
+      const lr = linearRegression(logPairs.map(p=>p.x), logPairs.map(p=>p.y));
+      betaDistance = clamp(-lr.slope, 0.03, 0.14);
+    }
+
+    const normalizedRows = speedRows.map(r => ({
+      ...r,
+      speedEq10k: r.speedObs * Math.pow(r.dist / refDistance, betaDistance)
+    }));
+
+    const eqValues = normalizedRows.map(r => r.speedEq10k).filter(v => isFinite(v) && v > 0);
+    const medEq = median(eqValues);
+    const madEq = median(eqValues.map(v => Math.abs(v - medEq)));
+    const robustSigma = madEq > 0 ? (1.4826 * madEq) : 0;
+    const cleanedRows = normalizedRows.filter(r => {
+      if(!isFinite(r.speedEq10k) || r.speedEq10k <= 0) return false;
+      if(robustSigma <= 1e-6) return true;
+      return Math.abs(r.speedEq10k - medEq) <= (3 * robustSigma);
     });
+
+    const speedModelRows = (cleanedRows.length >= 2 ? cleanedRows : normalizedRows)
+      .sort((a,b)=>a.dateMs - b.dateMs);
+    if(speedModelRows.length < 2){
+      alert('Dati insufficienti per predire la velocità (servono almeno 2 uscite valide dopo il filtro outlier).');
+      return;
+    }
+
+    const baseDateSpeed = speedModelRows[0].dateMs;
+    const xSpeed = speedModelRows.map(r => (r.dateMs - baseDateSpeed) / msDay);
+    const ySpeed = speedModelRows.map(r => r.speedEq10k);
 
     const nonRipSpeedValues = (athleteRunData.length ? athleteRunData : athleteKmData)
       .map(d => {
@@ -6228,19 +6356,13 @@ function generatePredictions(){
       ? nonRipSpeedValues.reduce((s,v)=>s+v,0) / nonRipSpeedValues.length
       : (ySpeed.length ? ySpeed.reduce((s,v)=>s+v,0)/ySpeed.length : 0);
 
-    const refDistance = 10;    // km reference
-    const safeTargetDistance = Math.max(0.1, Number(targetDistance) || refDistance);
-    const exponent = 1.6;      // >1 reduces small sessions more
-    const damping = 0.45;      // global damping factor
-    const epsilon = 1e-3;
-
-    const weightsSpeed = speedData.map(d=>{
-      const dist = (d.km || 0);
-      let base = dist > 0 ? Math.log(1 + dist) / Math.log(1 + refDistance) : epsilon;
-      const scale = safeTargetDistance > refDistance ? (refDistance / safeTargetDistance) : 1;
-      let w = damping * Math.pow(base, exponent) * scale;
-      if(!isFinite(w) || w <= 0) w = epsilon;
-      return w;
+    const tauDays = 21;
+    const weightsSpeed = speedModelRows.map(r => {
+      const ageDays = Math.max(0, (lastAthleteDateMs - r.dateMs) / msDay);
+      const recencyW = Math.exp(-ageDays / tauDays);
+      const distW = clamp(Math.log(1 + r.dist) / Math.log(1 + refDistance), 0.45, 1.25);
+      const w = recencyW * distW;
+      return isFinite(w) && w > 0 ? w : 1e-3;
     });
 
     const regressionSpeed = weightedLinearRegression(xSpeed, ySpeed, weightsSpeed);
@@ -6651,11 +6773,30 @@ $id('exportPdfBtn')?.addEventListener('click', async () => {
 /* -----------------------------
    UI helpers & bindings
    ----------------------------- */
-$id('toggleThemeBtn')?.addEventListener('click', ()=>{
+function syncThemeButtons() {
+  const isDark = document.body.classList.contains('dark-mode');
+  const desktopBtn = $id('toggleThemeBtn');
+  if(desktopBtn) desktopBtn.textContent = isDark ? '☀️' : '🌙';
+  const mobileBtn = document.getElementById('mobileThemeBtn');
+  if(mobileBtn){
+    mobileBtn.textContent = isDark ? '☀️ Tema' : '🌙 Tema';
+    mobileBtn.style.background = isDark ? '#1f2937' : '#6366f1';
+    mobileBtn.style.color = '#fff';
+  }
+  const mobileMenu = document.getElementById('mobileMenu');
+  if(mobileMenu){
+    mobileMenu.style.background = isDark ? '#0f172a' : '#fff';
+    mobileMenu.style.color = isDark ? '#e2e8f0' : '#0f172a';
+  }
+}
+
+function toggleThemeMode(){
   document.body.classList.toggle('dark-mode');
-  $id('toggleThemeBtn').textContent = document.body.classList.contains('dark-mode') ? '☀️' : '🌙';
+  syncThemeButtons();
   updateCharts();
-});
+}
+
+$id('toggleThemeBtn')?.addEventListener('click', toggleThemeMode);
 
 $id('addRowBtn')?.addEventListener('click', ()=>{
   if(window.innerWidth <= 900) {
@@ -6718,6 +6859,26 @@ window.addEventListener('DOMContentLoaded', ()=>{
    Onload init
    ----------------------------- */
 window.addEventListener('load', ()=>{
+  const formatDateInput = (d) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+  const today = new Date();
+  const sevenDaysFrom = new Date(today);
+  sevenDaysFrom.setDate(today.getDate() - 6);
+  const dateFromEl = $id('dateFrom');
+  const dateToEl = $id('dateTo');
+  if(dateFromEl && !dateFromEl.value) dateFromEl.value = formatDateInput(sevenDaysFrom);
+  if(dateToEl && !dateToEl.value) dateToEl.value = formatDateInput(today);
+  const mobileFromEl = document.getElementById('mobileDateFrom');
+  const mobileToEl = document.getElementById('mobileDateTo');
+  if(mobileFromEl) mobileFromEl.value = dateFromEl ? dateFromEl.value : '';
+  if(mobileToEl) mobileToEl.value = dateToEl ? dateToEl.value : '';
+  syncThemeButtons();
+  updateAllTimeButtonState();
+
   loadSports();
   loadAthletes();
   loadActivityTypes();
@@ -6736,6 +6897,8 @@ window.addEventListener('load', ()=>{
   $id('dateFrom')?.addEventListener('change', updateCharts);
   $id('dateTo')?.addEventListener('change', updateCharts);
   $id('typeFilter')?.addEventListener('change', updateCharts);
+  $id('dateFrom')?.addEventListener('change', updateAllTimeButtonState);
+  $id('dateTo')?.addEventListener('change', updateAllTimeButtonState);
 
   const dataTableBody = document.querySelector('#dataTable tbody');
   if(dataTableBody && !window.__mobileTableEditModalBound){
