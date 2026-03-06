@@ -1842,6 +1842,9 @@ body.dark-mode .prediction-chart-container {
   <button style="display:block;width:100%;margin-top:8px;font-size:1.1em;" data-section="predizione">🔮 Predizione</button>
   <button style="display:block;width:100%;margin-top:8px;font-size:1.1em;" data-section="maratona">🧮 Maratona</button>
   <button style="display:block;width:100%;margin-top:8px;font-size:1.1em;" data-section="confronto">🔄 Confronto</button>
+  <button style="display:block;width:100%;margin-top:8px;font-size:1.1em;" data-section="atleti">👥 Atleti</button>
+  <button style="display:block;width:100%;margin-top:8px;font-size:1.1em;" data-section="kpi">❓ Spiegazione KPI</button>
+  <button style="display:block;width:100%;margin-top:8px;font-size:1.1em;" data-section="regole-score">⚙️ Regole Score</button>
   <button id="mobileThemeBtn" type="button" onclick="toggleThemeMode()" style="display:block;width:100%;margin-top:10px;font-size:1.05em;background:#6366f1;color:#fff;">🌙 Tema</button>
 </nav>
 <!-- Notifica e barra Firebase rimangono ma sono nascosti su mobile -->
@@ -1870,6 +1873,7 @@ body.dark-mode .prediction-chart-container {
     <button id="predictionBtn">🔮 Predizioni</button>
     <button id="marathonBtn" onclick="openMarathon()">🧮 Maratona</button>
     <button id="manageAthletesBtn">👥 Atleti</button>
+    <button id="scoreRulesBtn" type="button" style="background:#6366f1;color:#fff;font-weight:700;">⚙️ Regole Score</button>
     <!--<button id="exportPdfBtn">PDF</button>-->
     <button id="toggleThemeBtn">🌙</button>
     <button id="importStravaBtn" type="button" style="background:#0ea5e9;color:#fff;font-weight:700;">⬇️ Importa Strava</button>
@@ -2822,6 +2826,36 @@ document.getElementById('dateTo').addEventListener('change', updateMobileCharts)
   </div>
 </div>
 
+<div id="scoreRulesModal" class="modal">
+  <div class="modal-content" style="max-width:560px;">
+    <div class="modal-header">
+      <h2>⚙️ Regole Score Top Atleta</h2>
+      <span class="close-btn" onclick="closeScoreRulesModal()">&times;</span>
+    </div>
+    <div class="trend-section">
+      <h3>Regola 1 — Fattore di correzione per sesso</h3>
+      <div class="trend-controls" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end;">
+        <label>Correzione M (%)
+          <input id="scoreRuleMalePct" type="number" step="0.1" value="0" style="width:100%;">
+        </label>
+        <label>Correzione F (%)
+          <input id="scoreRuleFemalePct" type="number" step="0.1" value="0" style="width:100%;">
+        </label>
+        <label style="grid-column:1 / -1;">Correzione Altro / non specificato (%)
+          <input id="scoreRuleOtherPct" type="number" step="0.1" value="0" style="width:100%;">
+        </label>
+      </div>
+      <div style="margin-top:12px;font-size:0.92rem;color:#334155;font-weight:600;">
+        Formula score: <b>km totali × velocità media pesata × (1 + correzione%/100)</b>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;">
+        <button type="button" onclick="resetScoreRules()" style="background:#64748b;">Reset</button>
+        <button type="button" onclick="saveScoreRules()">💾 Salva regole</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 // --- Firebase RTDB import/export ---
 const FIREBASE_URL = 'https://running-7a13f-default-rtdb.europe-west1.firebasedatabase.app/data.json';
@@ -2837,6 +2871,7 @@ window.importFromFirebase = function() {
         let hasRipPayload = false;
         let ripPayload = [];
         let athletesProfilePayload = null;
+        let topScoreRulesPayload = null;
 
         if (Array.isArray(data)) {
           // formato legacy: solo tabella
@@ -2848,11 +2883,16 @@ window.importFromFirebase = function() {
 
           if (Array.isArray(data.athletesProfile)) athletesProfilePayload = data.athletesProfile;
           else if (Array.isArray(data.athletes) && data.athletes.length && typeof data.athletes[0] === 'object') athletesProfilePayload = data.athletes;
+          if (data.topScoreRules && typeof data.topScoreRules === 'object') topScoreRulesPayload = data.topScoreRules;
 
           if (Object.prototype.hasOwnProperty.call(data, 'ripetuteSessions')) {
             hasRipPayload = true;
             ripPayload = Array.isArray(data.ripetuteSessions) ? data.ripetuteSessions : [];
           }
+        }
+
+        if (topScoreRulesPayload && typeof applyTopScoreRulesPayload === 'function') {
+          applyTopScoreRulesPayload(topScoreRulesPayload);
         }
 
         if (Array.isArray(athletesProfilePayload) && typeof applyAthletesProfilePayload === 'function') {
@@ -2936,6 +2976,11 @@ function saveToFirebase() {
     data: dati || [],
     ripetuteSessions: ripPayload || [],
     athletesProfile: athletesProfile || [],
+    topScoreRules: {
+      malePct: Number(topScoreRules.malePct || 0),
+      femalePct: Number(topScoreRules.femalePct || 0),
+      otherPct: Number(topScoreRules.otherPct || 0)
+    },
     savedAt: new Date().toISOString()
   };
   console.log('Dati inviati a Firebase:', payload);
@@ -3141,6 +3186,8 @@ let sports=['corsa','bici','palestra','nuoto','sci'];
 let athletes=['Max'];
 let athleteDetails = {};
 let activityTypes=['Allenamento','Gara','Test','Recupero','Tecnica','Ripetute'];
+const TOP_SCORE_RULES_KEY = 'topScoreRules';
+let topScoreRules = { malePct: 0, femalePct: 0, otherPct: 0 };
 
 function getAthletesProfilePayload(){
   return (athletes || []).map((name) => {
@@ -3177,6 +3224,86 @@ function applyAthletesProfilePayload(profile){
     saveAthletes();
     updateAthletesUI();
   }
+}
+
+function getAthleteSexValue(athleteName){
+  return String((athleteDetails && athleteDetails[athleteName] && athleteDetails[athleteName].sex) || '').trim().toUpperCase();
+}
+
+function getAthleteScoreMultiplier(athleteName){
+  const sex = getAthleteSexValue(athleteName);
+  let pct = Number(topScoreRules.otherPct || 0);
+  if(sex === 'M' || sex === 'MASCHIO') pct = Number(topScoreRules.malePct || 0);
+  if(sex === 'F' || sex === 'FEMMINA') pct = Number(topScoreRules.femalePct || 0);
+  return 1 + (pct / 100);
+}
+
+function loadTopScoreRules(){
+  try {
+    const raw = localStorage.getItem(TOP_SCORE_RULES_KEY);
+    if(!raw) return;
+    const parsed = JSON.parse(raw);
+    if(!parsed || typeof parsed !== 'object') return;
+    topScoreRules = {
+      malePct: Number(parsed.malePct || 0),
+      femalePct: Number(parsed.femalePct || 0),
+      otherPct: Number(parsed.otherPct || 0)
+    };
+  } catch(e) {
+    topScoreRules = { malePct: 0, femalePct: 0, otherPct: 0 };
+  }
+}
+
+function applyTopScoreRulesPayload(payload){
+  if(!payload || typeof payload !== 'object') return;
+  topScoreRules = {
+    malePct: Number(payload.malePct || 0),
+    femalePct: Number(payload.femalePct || 0),
+    otherPct: Number(payload.otherPct || 0)
+  };
+  localStorage.setItem(TOP_SCORE_RULES_KEY, JSON.stringify(topScoreRules));
+}
+
+function openScoreRulesModal(){
+  const m = document.getElementById('scoreRulesModal');
+  if(!m) return;
+  const maleInput = document.getElementById('scoreRuleMalePct');
+  const femaleInput = document.getElementById('scoreRuleFemalePct');
+  const otherInput = document.getElementById('scoreRuleOtherPct');
+  if(maleInput) maleInput.value = String(Number(topScoreRules.malePct || 0));
+  if(femaleInput) femaleInput.value = String(Number(topScoreRules.femalePct || 0));
+  if(otherInput) otherInput.value = String(Number(topScoreRules.otherPct || 0));
+  m.classList.add('show');
+}
+
+function closeScoreRulesModal(){
+  const m = document.getElementById('scoreRulesModal');
+  if(m) m.classList.remove('show');
+}
+
+function resetScoreRules(){
+  topScoreRules = { malePct: 0, femalePct: 0, otherPct: 0 };
+  const maleInput = document.getElementById('scoreRuleMalePct');
+  const femaleInput = document.getElementById('scoreRuleFemalePct');
+  const otherInput = document.getElementById('scoreRuleOtherPct');
+  if(maleInput) maleInput.value = '0';
+  if(femaleInput) femaleInput.value = '0';
+  if(otherInput) otherInput.value = '0';
+}
+
+function saveScoreRules(){
+  const maleInput = document.getElementById('scoreRuleMalePct');
+  const femaleInput = document.getElementById('scoreRuleFemalePct');
+  const otherInput = document.getElementById('scoreRuleOtherPct');
+  topScoreRules = {
+    malePct: Number((maleInput && maleInput.value) || 0),
+    femalePct: Number((femaleInput && femaleInput.value) || 0),
+    otherPct: Number((otherInput && otherInput.value) || 0)
+  };
+  localStorage.setItem(TOP_SCORE_RULES_KEY, JSON.stringify(topScoreRules));
+  closeScoreRulesModal();
+  if(typeof updateCharts === 'function') updateCharts();
+  if(typeof saveToFirebase === 'function') saveToFirebase();
 }
 
 // ripetute storage
@@ -5689,7 +5816,8 @@ function updateKPI(data, acwr){
     .map(([ath,rows])=>{
       const kmTot = (rows || []).reduce((s,v)=> s + (Number(v.km) || 0), 0);
       const speedRef = speedWeightedByKm(rows);
-      return { athlete: ath, kmTot, speedRef, score: kmTot * speedRef };
+      const multiplier = getAthleteScoreMultiplier(ath);
+      return { athlete: ath, kmTot, speedRef, score: kmTot * speedRef * multiplier };
     })
     .sort((a,b)=> (b.score - a.score) || (b.kmTot - a.kmTot) || (b.speedRef - a.speedRef))[0] || { athlete:'-', kmTot:0, speedRef:0 };
   if($id('kpiTopAthlete')) $id('kpiTopAthlete').textContent = top.athlete;
@@ -5782,7 +5910,7 @@ function updateCharts(){
     speedRef: speedWeightedByKm(byA[ath] || []),
     topScore: 0,
     load: loadWeightedByKm(byA[ath] || [])
-  })).map(r => ({ ...r, topScore: r.km * r.speedRef }))
+  })).map(r => ({ ...r, topScore: r.km * r.speedRef * getAthleteScoreMultiplier(r.athlete) }))
     .sort((a,b)=> (b.topScore - a.topScore) || (b.km - a.km) || (b.speedRef - a.speedRef));
   const athletesForKm = kmRanking.map(r => r.athlete);
   const totalKmPerAthlete = kmRanking.map(r => r.km);
@@ -6924,6 +7052,7 @@ $id('addRowBtn')?.addEventListener('click', ()=>{
 });
 $id('manageSportsBtn')?.addEventListener('click', ()=> $id('sportsModal')?.classList.add('show'));
 $id('manageAthletesBtn')?.addEventListener('click', ()=> $id('athletesModal')?.classList.add('show'));
+$id('scoreRulesBtn')?.addEventListener('click', ()=> openScoreRulesModal());
 $id('manageActivityTypesBtn')?.addEventListener('click', ()=> $id('activityTypesModal')?.classList.add('show'));
 $id('applyFilters')?.addEventListener('click', updateCharts);
 $id('updateChartsBtn')?.addEventListener('click', updateCharts);
@@ -6994,6 +7123,7 @@ window.addEventListener('load', ()=>{
   if(mobileFromEl) mobileFromEl.value = dateFromEl ? dateFromEl.value : '';
   if(mobileToEl) mobileToEl.value = dateToEl ? dateToEl.value : '';
   syncThemeButtons();
+  loadTopScoreRules();
   updateAllTimeButtonState();
 
   loadSports();
@@ -7181,10 +7311,12 @@ window.addEventListener('DOMContentLoaded', function() {
 function selectMobileSection(section) {
   closeMobileMenu();
   // Chiudi tutti i modali speciali
-  ['predictionModal','marathonModal','comparisonModal','trendModal'].forEach(id => {
+  ['predictionModal','marathonModal','comparisonModal','trendModal','athletesModal','scoreRulesModal'].forEach(id => {
     var el = document.getElementById(id);
     if(el) el.classList.remove('show');
   });
+  var kpiModal = document.getElementById('kpiInfoModal');
+  if(kpiModal) kpiModal.style.display = 'none';
   // Mostra/nascondi le sezioni mobile
   document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
   // Mostra la sezione tab-content corrispondente
@@ -7200,6 +7332,16 @@ function selectMobileSection(section) {
   }
   if(section === 'confronto' && typeof openComparison === 'function') {
     openComparison();
+  }
+  if(section === 'atleti') {
+    var athletesModal = document.getElementById('athletesModal');
+    if(athletesModal) athletesModal.classList.add('show');
+  }
+  if(section === 'kpi' && typeof openKpiModal === 'function') {
+    openKpiModal();
+  }
+  if(section === 'regole-score' && typeof openScoreRulesModal === 'function') {
+    openScoreRulesModal();
   }
   // Su mobile, scrolla in alto quando si cambia tab
   if(window.innerWidth <= 900) window.scrollTo({top:0,behavior:'smooth'});
