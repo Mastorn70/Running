@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -2674,6 +2675,9 @@ document.getElementById('dateTo').addEventListener('change', updateMobileCharts)
         </select>
         <button onclick="addNewAthlete()" style="padding:10px 20px;">➕ Aggiungi Atleta</button>
       </div>
+      <div style="margin-top:10px;display:flex;justify-content:flex-end;">
+        <button onclick="saveAthletesJson()" style="padding:10px 20px;background:linear-gradient(135deg,#2563eb 0%,#1d4ed8 100%);">☁️ Salva profili atleti su Firebase</button>
+      </div>
     </div>
   </div>
 </div>
@@ -2832,6 +2836,7 @@ window.importFromFirebase = function() {
         let tablePayload = null;
         let hasRipPayload = false;
         let ripPayload = [];
+        let athletesProfilePayload = null;
 
         if (Array.isArray(data)) {
           // formato legacy: solo tabella
@@ -2841,10 +2846,17 @@ window.importFromFirebase = function() {
           else if (Array.isArray(data.tableData)) tablePayload = data.tableData;
           else if (Array.isArray(data.activities)) tablePayload = data.activities;
 
+          if (Array.isArray(data.athletesProfile)) athletesProfilePayload = data.athletesProfile;
+          else if (Array.isArray(data.athletes) && data.athletes.length && typeof data.athletes[0] === 'object') athletesProfilePayload = data.athletes;
+
           if (Object.prototype.hasOwnProperty.call(data, 'ripetuteSessions')) {
             hasRipPayload = true;
             ripPayload = Array.isArray(data.ripetuteSessions) ? data.ripetuteSessions : [];
           }
+        }
+
+        if (Array.isArray(athletesProfilePayload) && typeof applyAthletesProfilePayload === 'function') {
+          applyAthletesProfilePayload(athletesProfilePayload);
         }
 
         if (typeof popolaTabellaDaJSON === 'function' && Array.isArray(tablePayload)) {
@@ -2914,14 +2926,16 @@ function saveToFirebase() {
         reps: Array.isArray(s.reps) ? s.reps : []
       }))
     : [];
+  const athletesProfile = getAthletesProfilePayload();
 
-  if ((!dati || dati.length === 0) && (!ripPayload || ripPayload.length === 0)) {
+  if ((!dati || dati.length === 0) && (!ripPayload || ripPayload.length === 0) && (!athletesProfile || athletesProfile.length === 0)) {
     alert('Nessun dato da salvare!');
     return;
   }
   const payload = {
     data: dati || [],
     ripetuteSessions: ripPayload || [],
+    athletesProfile: athletesProfile || [],
     savedAt: new Date().toISOString()
   };
   console.log('Dati inviati a Firebase:', payload);
@@ -3128,6 +3142,43 @@ let athletes=['Max'];
 let athleteDetails = {};
 let activityTypes=['Allenamento','Gara','Test','Recupero','Tecnica','Ripetute'];
 
+function getAthletesProfilePayload(){
+  return (athletes || []).map((name) => {
+    const detail = athleteDetails[name] || {};
+    return {
+      name,
+      birthYear: detail.birthYear || '',
+      sex: detail.sex || '',
+      avatar: detail.avatar || ''
+    };
+  });
+}
+
+function applyAthletesProfilePayload(profile){
+  if(!Array.isArray(profile)) return;
+  let changed = false;
+  profile.forEach((item) => {
+    if(!item || typeof item !== 'object') return;
+    const name = String(item.name || item.athlete || '').trim();
+    if(!name) return;
+    if(!athletes.includes(name)) {
+      athletes.push(name);
+      changed = true;
+    }
+    if(!athleteDetails[name]) athleteDetails[name] = { birthYear:'', sex:'', avatar:'' };
+    if(item.birthYear !== undefined && item.birthYear !== null && item.birthYear !== '') {
+      const y = parseInt(item.birthYear, 10);
+      athleteDetails[name].birthYear = Number.isFinite(y) ? y : '';
+    }
+    if(item.sex !== undefined) athleteDetails[name].sex = item.sex || '';
+    if(item.avatar !== undefined) athleteDetails[name].avatar = item.avatar || '';
+  });
+  if(changed || profile.length){
+    saveAthletes();
+    updateAthletesUI();
+  }
+}
+
 // ripetute storage
 let ripetuteSessions = [];
 const RIP_PRESET_TYPES = ['100m','150m','200m','300m','400m','500m','600m','800m','1000m','1200m','1600m','2000m','3000m','5000m','Custom'];
@@ -3240,7 +3291,8 @@ function loadAthletes(){
         if(a && a.name) {
           athleteDetails[a.name] = {
             birthYear: a.birthYear || '',
-            sex: a.sex || ''
+            sex: a.sex || '',
+            avatar: a.avatar || ''
           };
         }
       });
@@ -3261,7 +3313,7 @@ function saveAthletes(){
 function updateAthleteDetail(index, field, value){
   const name = athletes[index];
   if(!name) return;
-  if(!athleteDetails[name]) athleteDetails[name] = { birthYear:'', sex:'' };
+  if(!athleteDetails[name]) athleteDetails[name] = { birthYear:'', sex:'', avatar:'' };
   if(field === 'birthYear') {
     const y = parseInt(value, 10);
     athleteDetails[name].birthYear = Number.isFinite(y) ? y : '';
@@ -3271,16 +3323,27 @@ function updateAthleteDetail(index, field, value){
   }
   saveAthletes();
 }
+
+window.selectAthleteAvatar = function(index, avatarSrc) {
+  const name = athletes[index];
+  if(!name) return;
+  if(!athleteDetails[name]) athleteDetails[name] = { birthYear:'', sex:'', avatar:'' };
+  athleteDetails[name].avatar = avatarSrc;
+  saveAthletes();
+  updateAthletesUI();
+};
+
 function updateAthletesUI(){
   const listEl = $id('athletesList');
   if(listEl) listEl.innerHTML = `
     <div style="overflow:auto;max-width:100%;">
-      <table style="width:100%;border-collapse:collapse;min-width:420px;">
+      <table style="width:100%;border-collapse:collapse;min-width:520px;">
         <thead>
           <tr>
             <th style="text-align:left;padding:6px;">Atleta</th>
             <th style="text-align:left;padding:6px;">Anno nascita</th>
             <th style="text-align:left;padding:6px;">Sesso</th>
+            <th style="text-align:left;padding:6px;">Personaggio</th>
             <th style="text-align:left;padding:6px;">Azioni</th>
           </tr>
         </thead>
@@ -3289,6 +3352,7 @@ function updateAthletesUI(){
             const detail = athleteDetails[a] || {};
             const birthYear = detail.birthYear || '';
             const sex = detail.sex || '';
+            const avatar = detail.avatar || '';
             return `
               <tr>
                 <td style="padding:6px;">👤 ${a}</td>
@@ -3301,6 +3365,11 @@ function updateAthletesUI(){
                     <option value="Altro" ${sex==='Altro'?'selected':''}>Altro</option>
                   </select>
                 </td>
+                <td style="padding:6px;min-width:90px;">
+                  <div class="avatar-select-cell" data-athlete-index="${i}">
+                    <!-- Avatar thumbnails will be rendered here -->
+                  </div>
+                </td>
                 <td style="padding:6px;"><button onclick="removeAthlete(${i})" style="background:#ef4444;color:#fff;padding:4px 10px;">Elimina</button></td>
               </tr>
             `;
@@ -3312,6 +3381,29 @@ function updateAthletesUI(){
   document.querySelectorAll('.athlete-select').forEach(sel=>{
     const val = sel.value;
     sel.innerHTML = '<option value="">-- Seleziona Atleta --</option>' + athletes.map(a=>`<option value="${a}" ${a===val?'selected':''}>${a}</option>`).join('');
+  });
+
+  // Avatar selection rendering
+  const avatarList = [
+    './images/avatar1.png',
+    './images/avatar2.png',
+    './images/avatar3.png',
+    './images/avatar4.png',
+    './images/avatar5.png',
+    './images/avatar6.png',
+    './images/avatar7.png',
+    './images/avatar8.png',
+    './images/avatar9.png',
+    './images/avatar10.png'
+  ];
+  document.querySelectorAll('.avatar-select-cell').forEach(cell => {
+    const idx = cell.getAttribute('data-athlete-index');
+    const athlete = athletes[idx];
+    const detail = athleteDetails[athlete] || {};
+    const selectedAvatar = detail.avatar || '';
+    cell.innerHTML = avatarList.map(src =>
+      `<img src="${src}" alt="avatar" title="Scegli" style="width:38px;height:38px;border-radius:50%;margin:2px;cursor:pointer;border:3px solid ${selectedAvatar===src?'#6366f1':'#e5e7eb'};box-shadow:0 1px 4px #0002;object-fit:cover;transition:box-shadow .2s,border .2s;" onclick="selectAthleteAvatar(${idx},'${src}')">`
+    ).join('');
   });
   const ripSel = $id('ripAthlete');
   if(ripSel) ripSel.innerHTML = athletes.map(a=>`<option value="${a}">${a}</option>`).join('');
@@ -3333,7 +3425,8 @@ function addNewAthlete(){
     const sex = sexInput ? sexInput.value : '';
     athleteDetails[a] = {
       birthYear: Number.isFinite(birthYear) ? birthYear : '',
-      sex: sex || ''
+      sex: sex || '',
+      avatar: ''
     };
     saveAthletes();
     updateAthletesUI();
@@ -3351,6 +3444,13 @@ function removeAthlete(i){
     saveAthletes();
     updateAthletesUI();
     updateCharts();
+  }
+}
+
+async function saveAthletesJson(){
+  saveAthletes();
+  if(typeof saveToFirebase === 'function') {
+    saveToFirebase();
   }
 }
 
@@ -4612,6 +4712,9 @@ async function apriFileDiretto(){
       if(Array.isArray(parsed)){
         popolaTabellaDaJSON(parsed);
       } else if(parsed && typeof parsed === 'object'){
+        if(Array.isArray(parsed.athletesProfile) && typeof applyAthletesProfilePayload === 'function') {
+          applyAthletesProfilePayload(parsed.athletesProfile);
+        }
         if(Array.isArray(parsed.data)) popolaTabellaDaJSON(parsed.data);
         else if(Array.isArray(parsed.sessions)) popolaTabellaDaJSON(parsed.sessions);
         else if(Array.isArray(parsed.activities)) popolaTabellaDaJSON(parsed.activities);
@@ -4645,6 +4748,9 @@ async function apriFileDiretto(){
           const d = JSON.parse(ev.target.result);
           if(Array.isArray(d)) popolaTabellaDaJSON(d);
           else if(d && typeof d === 'object'){
+            if(Array.isArray(d.athletesProfile) && typeof applyAthletesProfilePayload === 'function') {
+              applyAthletesProfilePayload(d.athletesProfile);
+            }
             if(Array.isArray(d.data)) popolaTabellaDaJSON(d.data);
             else if(Array.isArray(d.sessions)) popolaTabellaDaJSON(d.sessions);
             else if(Array.isArray(d.activities)) popolaTabellaDaJSON(d.activities);
@@ -4811,30 +4917,15 @@ function ensureRunner3DHost(canvasId){
   return host;
 }
 
-function getRunnerTheme(rank){
-  if(rank === 0) return { name: 'Flash', icon: '⚡', colorHex: '#ef4444', labelBg: '#7f1d1d', labelFg: '#fde68a' };
-  if(rank === 1) return { name: 'Superman', icon: '🦸', colorHex: '#2563eb', labelBg: '#1e3a8a', labelFg: '#fef08a' };
-  if(rank === 2) return { name: 'Thor', icon: '🔨', colorHex: '#0f766e', labelBg: '#134e4a', labelFg: '#f1f5f9' };
-  if(rank === 3) return { name: 'Ironman', icon: '🤖', colorHex: '#f59e0b', labelBg: '#7c2d12', labelFg: '#fff7ed' };
-  return { name: 'Coniglio Bianco', icon: '🐇', colorHex: '#e5e7eb', labelBg: '#334155', labelFg: '#ffffff' };
+function getRunnerImageSrc(athleteName){
+  const avatar = String((athleteDetails && athleteDetails[athleteName] && athleteDetails[athleteName].avatar) || '').trim();
+  return avatar || '';
 }
 
-function isFemaleAthlete(athleteName){
-  const sex = String((athleteDetails && athleteDetails[athleteName] && athleteDetails[athleteName].sex) || '').trim().toUpperCase();
-  return sex === 'F' || sex === 'FEMMINA';
-}
-
-function getRunnerImageSrc(themeName){
-  if(themeName === 'Flash') return 'images/Flash.png';
-  if(themeName === 'Superman') return 'images/Superman.png';
-  if(themeName === 'Thor') return 'images/Thor.png';
-  if(themeName === 'Ironman') return 'images/ironman.png';
-  return 'images/coniglio-bianco.png';
-}
-
-function getRunnerImageAdjust(themeName){
-  if(themeName === 'Ironman') return { sizeMul: 1.34, yPct: 60, yOffset3D: 0.06 };
-  if(themeName === 'Coniglio Bianco') return { sizeMul: 1.42, yPct: 61, yOffset3D: 0.08 };
+function getRunnerImageAdjust(imageSrc){
+  const src = String(imageSrc || '').toLowerCase();
+  if(src.includes('ironman')) return { sizeMul: 1.34, yPct: 60, yOffset3D: 0.06 };
+  if(src.includes('coniglio') || src.includes('rabbit')) return { sizeMul: 1.42, yPct: 61, yOffset3D: 0.08 };
   return { sizeMul: 1.0, yPct: 56, yOffset3D: 0 };
 }
 
@@ -4853,7 +4944,7 @@ function getDefaultSoldatinoSvg(){
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
-function createRunnerBillboard(theme){
+function createRunnerBillboard(imageSrc){
   const group = new THREE.Group();
   const geo = new THREE.PlaneGeometry(1.12, 2.02);
   const mat = new THREE.MeshBasicMaterial({
@@ -4863,7 +4954,7 @@ function createRunnerBillboard(theme){
     side: THREE.DoubleSide
   });
   const plane = new THREE.Mesh(geo, mat);
-  const adjust = getRunnerImageAdjust(theme.name);
+  const adjust = getRunnerImageAdjust(imageSrc);
   plane.position.y = 1.0 + (adjust.yOffset3D || 0);
   plane.scale.set(adjust.sizeMul || 1, adjust.sizeMul || 1, 1);
   group.add(plane);
@@ -4876,22 +4967,31 @@ function createRunnerBillboard(theme){
   shadow.position.y = 0.01;
   group.add(shadow);
 
-  const src = getRunnerImageSrc(theme.name);
+  const src = imageSrc || '';
   const fallback = getDefaultSoldatinoSvg();
   const loader = new THREE.TextureLoader();
-  loader.load(src, (tex) => {
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.needsUpdate = true;
-    mat.map = tex;
-    mat.needsUpdate = true;
-  }, undefined, () => {
+  if(src){
+    loader.load(src, (tex) => {
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.needsUpdate = true;
+      mat.map = tex;
+      mat.needsUpdate = true;
+    }, undefined, () => {
+      loader.load(fallback, (tex2) => {
+        tex2.colorSpace = THREE.SRGBColorSpace;
+        tex2.needsUpdate = true;
+        mat.map = tex2;
+        mat.needsUpdate = true;
+      });
+    });
+  } else {
     loader.load(fallback, (tex2) => {
       tex2.colorSpace = THREE.SRGBColorSpace;
       tex2.needsUpdate = true;
       mat.map = tex2;
       mat.needsUpdate = true;
     });
-  });
+  }
 
   return { group, plane, shadow };
 }
@@ -5221,25 +5321,21 @@ function renderRunner2DFallback(host, athletes, kmValues, progressValues, reason
   const kmMax = Math.max(...rankedKmValues);
   const progressMin = Math.min(...rankedProgressValues);
   const progressMax = Math.max(...rankedProgressValues);
-  let nonFemaleRank2D = 0;
   const rows = (rankedAthletes || []).map((ath, i) => {
     const km = Number(rankedKmValues[i] || 0);
     const progress = Number(rankedProgressValues[i] || 0);
-    const theme = isFemaleAthlete(ath)
-      ? { name: 'Coniglio Bianco', icon: '🐇', colorHex: '#e5e7eb', labelBg: '#334155', labelFg: '#ffffff' }
-      : getRunnerTheme(nonFemaleRank2D++);
+    const imgSrc = getRunnerImageSrc(ath);
     const kmNorm = (kmMax - kmMin) > 0 ? (km - kmMin)/(kmMax - kmMin) : 0.5;
     const progressNorm = (progressMax - progressMin) > 0 ? (progress - progressMin)/(progressMax - progressMin) : 0.5;
     const leftPct = 84 - progressNorm * 78;
-    const adjust = getRunnerImageAdjust(theme.name);
+    const adjust = getRunnerImageAdjust(imgSrc);
     const sizePx = (62 + kmNorm * 30) * (adjust.sizeMul || 1);
     const topPct = adjust.yPct || 56;
-    const imgSrc = getRunnerImageSrc(theme.name);
     const fallback = getDefaultSoldatinoSvg();
     const valueLabel = Number(km).toFixed(1);
     return `
       <div style="position:relative;height:128px;border-bottom:1px dashed #cbd5e1;overflow:hidden;">
-        <img src="${imgSrc}" onerror="this.onerror=null;this.src='${fallback}'" alt="${theme.name}" style="position:absolute;left:${leftPct}%;top:${topPct}%;transform:translate(-50%,-50%);width:${sizePx}px;height:${Math.round(sizePx*1.45)}px;object-fit:contain;object-position:center top;filter:brightness(1) contrast(1.1) saturate(1.1) drop-shadow(0 2px 5px #0009);" />
+        <img src="${imgSrc || fallback}" onerror="this.onerror=null;this.src='${fallback}'" alt="Avatar ${ath}" style="position:absolute;left:${leftPct}%;top:${topPct}%;transform:translate(-50%,-50%);width:${sizePx}px;height:${Math.round(sizePx*1.45)}px;object-fit:contain;object-position:center top;filter:brightness(1) contrast(1.1) saturate(1.1) drop-shadow(0 2px 5px #0009);" />
         <div style="position:absolute;left:8px;right:8px;top:8px;font:800 13px Segoe UI;color:#000;background:#fffffff5;padding:5px 12px;border-radius:999px;white-space:nowrap;text-align:center;overflow:hidden;text-overflow:ellipsis;box-shadow:0 2px 8px #0003;border:1px solid #94a3b8;">${ath} • ${valueLabel} ${valueUnit}</div>
       </div>`;
   }).join('');
@@ -5343,19 +5439,14 @@ function renderRunner3DChart(canvasId, athletes, kmValues, progressValues, opts 
   const progressMax = Math.max(...progressValues);
 
   const runnerStates = [];
-  const usePhotoBillboards = window.matchMedia('(max-width: 900px)').matches;
-  if(usePhotoBillboards){
-    scene.fog = null;
-  }
+  const usePhotoBillboards = true;
+  scene.fog = null;
   const lanes = Math.max(1, athletes.length);
 
-  let nonFemaleRank3D = 0;
   athletes.forEach((ath, i) => {
     const km = Number(kmValues[i] || 0);
     const progress = Number(progressValues[i] || 0);
-    const theme = isFemaleAthlete(ath)
-      ? { name: 'Coniglio Bianco', icon: '🐇', colorHex: '#e5e7eb', labelBg: '#334155', labelFg: '#ffffff' }
-      : getRunnerTheme(nonFemaleRank3D++);
+    const imgSrc = getRunnerImageSrc(ath);
     const kmNorm = (kmMax - kmMin) > 0 ? (km - kmMin) / (kmMax - kmMin) : 0.5;
     const progressNorm = (progressMax - progressMin) > 0 ? (progress - progressMin) / (progressMax - progressMin) : 0.5;
     const z = -14.2 + progressNorm * 12.8;
@@ -5364,19 +5455,13 @@ function renderRunner3DChart(canvasId, athletes, kmValues, progressValues, opts 
 
     let model;
     if(usePhotoBillboards){
-      model = createRunnerBillboard(theme);
+      model = createRunnerBillboard(imgSrc);
       model.group.position.set(x, 0.02, z);
       const mobileBillboardScaleMul = (window.matchMedia('(max-width: 900px)').matches && canvasId === 'speedChart') ? 2.05 : 1.58;
       model.group.scale.set(scale*mobileBillboardScaleMul, scale*mobileBillboardScaleMul, scale*mobileBillboardScaleMul);
       if(model.plane && model.plane.material && model.plane.material.color){
         model.plane.material.color.setRGB(1, 1, 1);
       }
-      scene.add(model.group);
-    }else{
-      const isWoman = false;
-      model = buildRunnerModel(theme, isWoman);
-      model.group.position.set(x, 0.02, z);
-      model.group.scale.set(scale, scale, scale);
       scene.add(model.group);
     }
 
