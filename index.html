@@ -2380,7 +2380,7 @@ document.getElementById('dateTo').addEventListener('change', updateMobileCharts)
         <li><b>Km settimana</b>: chilometri totali percorsi dalla squadra negli ultimi 7 giorni.</li>
         <li><b>Carico (RPE×min)</b>: somma dei carichi di allenamento (RPE × minuti) di tutti gli atleti negli ultimi 7 giorni. È la session-RPE (sRPE) totale della squadra.</li>
         <li><b>TRIMP</b>: Training Impulse semplificato — calcolato come FC × durata(ore) × 0.1 per ogni sessione, poi sommato. Misura proporzionale del carico cardiovascolare.</li>
-        <li><b>Top atleta</b>: atleta con il miglior score di performance nei dati filtrati, calcolato come <i>km totali × velocità media pesata per km</i>.</li>
+        <li><b>Top atleta</b>: atleta con il miglior score nei dati filtrati, calcolato come <i>km totali × velocità media pesata per km × (1 + correzione sesso/100)</i>, dove la correzione è configurabile nelle Regole Score.</li>
         <li><b>% a rischio</b>: percentuale di atleti con ACWR (Acute:Chronic Workload Ratio) superiore a 1.3, ovvero carico acuto (7 gg) &gt; 130% del carico cronico medio (28 gg).</li>
       </ul>
       <strong>Algoritmi:</strong>
@@ -2391,16 +2391,14 @@ document.getElementById('dateTo').addEventListener('change', updateMobileCharts)
       </ul>
       <strong>Predizione (Predizioni):</strong>
       <ul>
-        <li><b>Predizione performance</b>: viene utilizzata una regressione lineare sui dati storici di allenamento (carico, km, TRIMP) per stimare la prestazione futura dell’atleta. Il modello tiene conto delle ultime settimane e dei trend individuali.</li>
-        <li><b>Input</b>: dati recenti di carico, distanza, RPE, TRIMP, risultati precedenti.</li>
-        <li><b>Output</b>: previsione del valore atteso (es. tempo gara, carico, rischio infortunio) per la settimana o evento selezionato.</li>
+        <li><b>Predizione km</b>: usa la mediana delle uscite non-ripetute recenti (finestra ~15 giorni, con fallback ultime uscite disponibili) per stimare i km futuri per sessione.</li>
+        <li><b>Predizione velocità</b>: usa una regressione lineare pesata nel tempo su velocità normalizzata per distanza; applica filtro outlier robusto (MAD) e una curva monotona distanza→velocità con vincolo maratona.</li>
+        <li><b>Output</b>: serie di km e velocità previsti per i giorni futuri selezionati, con confidenza basata su robustezza mediana (km) e R² della regressione (velocità).</li>
       </ul>
       <strong>Maratona (Calcolo previsione maratona):</strong>
       <ul>
-        <li><b>Stima tempo maratona</b>: viene usata la formula di Riegel:<br>
-          <i>Tempo previsto = Tempo recente × (Distanza maratona / Distanza recente)<sup>1.06</sup></i><br>
-          dove il tempo recente è quello ottenuto su una distanza più breve (es. mezza maratona o 10km).</li>
-        <li><b>Personalizzazione</b>: il calcolo può essere aggiustato in base a parametri individuali (età, sesso, storico infortuni, andamento allenamenti).</li>
+        <li><b>Stima tempo maratona</b>: combina una stima da velocità media storica con una stima Riegel (se presenti 21k/10k), con media pesata tra i due modelli.</li>
+        <li><b>Probabilità</b>: il risultato viene corretto in base ai giorni di preparazione e alla distanza dall’obiettivo cronometrico, con output in percentuale e range tempo previsto.</li>
       </ul>
       <p style="font-size:0.95em;color:#666;margin-top:10px;">Per dettagli o personalizzazioni, contatta lo staff tecnico.</p>
     </div>
@@ -3462,49 +3460,88 @@ window.selectAthleteAvatar = function(index, avatarSrc) {
 
 function updateAthletesUI(){
   const listEl = $id('athletesList');
-  if(listEl) listEl.innerHTML = `
-    <div style="overflow:auto;max-width:100%;">
-      <table style="width:100%;border-collapse:collapse;min-width:520px;">
-        <thead>
-          <tr>
-            <th style="text-align:left;padding:6px;">Atleta</th>
-            <th style="text-align:left;padding:6px;">Anno nascita</th>
-            <th style="text-align:left;padding:6px;">Sesso</th>
-            <th style="text-align:left;padding:6px;">Personaggio</th>
-            <th style="text-align:left;padding:6px;">Azioni</th>
-          </tr>
-        </thead>
-        <tbody>
+  const isMobileAthletes = window.matchMedia('(max-width: 900px)').matches;
+  if(listEl) {
+    if(isMobileAthletes) {
+      listEl.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:10px;max-height:58vh;overflow:auto;padding-right:2px;">
           ${athletes.map((a,i)=>{
             const detail = athleteDetails[a] || {};
             const birthYear = detail.birthYear || '';
             const sex = detail.sex || '';
-            const avatar = detail.avatar || '';
             return `
-              <tr>
-                <td style="padding:6px;">👤 ${a}</td>
-                <td style="padding:6px;"><input type="number" min="1900" max="2100" value="${birthYear}" onchange="updateAthleteDetail(${i},'birthYear',this.value)" style="width:110px;"></td>
-                <td style="padding:6px;">
-                  <select onchange="updateAthleteDetail(${i},'sex',this.value)" style="width:90px;">
-                    <option value="" ${sex===''?'selected':''}>-</option>
-                    <option value="M" ${sex==='M'?'selected':''}>M</option>
-                    <option value="F" ${sex==='F'?'selected':''}>F</option>
-                    <option value="Altro" ${sex==='Altro'?'selected':''}>Altro</option>
-                  </select>
-                </td>
-                <td style="padding:6px;min-width:90px;">
-                  <div class="avatar-select-cell" data-athlete-index="${i}">
-                    <!-- Avatar thumbnails will be rendered here -->
-                  </div>
-                </td>
-                <td style="padding:6px;"><button onclick="removeAthlete(${i})" style="background:#ef4444;color:#fff;padding:4px 10px;">Elimina</button></td>
-              </tr>
+              <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:10px;box-shadow:0 2px 8px rgba(0,0,0,.06);">
+                <div style="font-weight:800;color:#0f172a;margin-bottom:8px;">👤 ${a}</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                  <label style="font-size:.82rem;font-weight:700;color:#334155;">Anno nascita
+                    <input type="number" min="1900" max="2100" value="${birthYear}" onchange="updateAthleteDetail(${i},'birthYear',this.value)" style="width:100%;height:36px;">
+                  </label>
+                  <label style="font-size:.82rem;font-weight:700;color:#334155;">Sesso
+                    <select onchange="updateAthleteDetail(${i},'sex',this.value)" style="width:100%;height:36px;">
+                      <option value="" ${sex===''?'selected':''}>-</option>
+                      <option value="M" ${sex==='M'?'selected':''}>M</option>
+                      <option value="F" ${sex==='F'?'selected':''}>F</option>
+                      <option value="Altro" ${sex==='Altro'?'selected':''}>Altro</option>
+                    </select>
+                  </label>
+                </div>
+                <div style="margin-top:8px;">
+                  <div style="font-size:.82rem;font-weight:700;color:#334155;margin-bottom:5px;">Personaggio</div>
+                  <div class="avatar-select-cell" data-athlete-index="${i}" style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;"></div>
+                </div>
+                <div style="margin-top:10px;display:flex;justify-content:flex-end;">
+                  <button onclick="removeAthlete(${i})" style="background:#ef4444;color:#fff;padding:8px 12px;font-size:.9rem;">Elimina</button>
+                </div>
+              </div>
             `;
           }).join('')}
-        </tbody>
-      </table>
-    </div>
-  `;
+        </div>
+      `;
+    } else {
+      listEl.innerHTML = `
+        <div style="overflow:auto;max-width:100%;">
+          <table style="width:100%;border-collapse:collapse;min-width:520px;">
+            <thead>
+              <tr>
+                <th style="text-align:left;padding:6px;">Atleta</th>
+                <th style="text-align:left;padding:6px;">Anno nascita</th>
+                <th style="text-align:left;padding:6px;">Sesso</th>
+                <th style="text-align:left;padding:6px;">Personaggio</th>
+                <th style="text-align:left;padding:6px;">Azioni</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${athletes.map((a,i)=>{
+                const detail = athleteDetails[a] || {};
+                const birthYear = detail.birthYear || '';
+                const sex = detail.sex || '';
+                return `
+                  <tr>
+                    <td style="padding:6px;">👤 ${a}</td>
+                    <td style="padding:6px;"><input type="number" min="1900" max="2100" value="${birthYear}" onchange="updateAthleteDetail(${i},'birthYear',this.value)" style="width:110px;"></td>
+                    <td style="padding:6px;">
+                      <select onchange="updateAthleteDetail(${i},'sex',this.value)" style="width:90px;">
+                        <option value="" ${sex===''?'selected':''}>-</option>
+                        <option value="M" ${sex==='M'?'selected':''}>M</option>
+                        <option value="F" ${sex==='F'?'selected':''}>F</option>
+                        <option value="Altro" ${sex==='Altro'?'selected':''}>Altro</option>
+                      </select>
+                    </td>
+                    <td style="padding:6px;min-width:90px;">
+                      <div class="avatar-select-cell" data-athlete-index="${i}">
+                        <!-- Avatar thumbnails will be rendered here -->
+                      </div>
+                    </td>
+                    <td style="padding:6px;"><button onclick="removeAthlete(${i})" style="background:#ef4444;color:#fff;padding:4px 10px;">Elimina</button></td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+  }
   document.querySelectorAll('.athlete-select').forEach(sel=>{
     const val = sel.value;
     sel.innerHTML = '<option value="">-- Seleziona Atleta --</option>' + athletes.map(a=>`<option value="${a}" ${a===val?'selected':''}>${a}</option>`).join('');
@@ -3529,7 +3566,7 @@ function updateAthletesUI(){
     const detail = athleteDetails[athlete] || {};
     const selectedAvatar = detail.avatar || '';
     cell.innerHTML = avatarList.map(src =>
-      `<img src="${src}" alt="avatar" title="Scegli" style="width:38px;height:38px;border-radius:50%;margin:2px;cursor:pointer;border:3px solid ${selectedAvatar===src?'#6366f1':'#e5e7eb'};box-shadow:0 1px 4px #0002;object-fit:cover;transition:box-shadow .2s,border .2s;" onclick="selectAthleteAvatar(${idx},'${src}')">`
+      `<img src="${src}" alt="avatar" title="Scegli" style="width:42px;height:42px;border-radius:50%;margin:2px;cursor:pointer;border:3px solid ${selectedAvatar===src?'#6366f1':'#e5e7eb'};box-shadow:0 1px 4px #0002;object-fit:cover;transition:box-shadow .2s,border .2s;flex:0 0 auto;" onclick="selectAthleteAvatar(${idx},'${src}')">`
     ).join('');
   });
   const ripSel = $id('ripAthlete');
