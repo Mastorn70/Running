@@ -477,18 +477,34 @@
 
 .app-splash-fallback {
   display: none;
-  color: #fff;
-  font-size: clamp(1.1rem, 3.8vw, 1.8rem);
-  font-weight: 800;
+  font-size: clamp(1.15rem, 4vw, 2rem);
+  font-weight: 900;
   text-align: center;
-  letter-spacing: 0.3px;
-  text-shadow: 0 2px 10px rgba(0,0,0,.35);
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  background: linear-gradient(90deg, #ffffff 0%, #c7d2fe 35%, #93c5fd 65%, #ffffff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 14px rgba(59,130,246,.35), 0 0 28px rgba(167,139,250,.25);
+  filter: drop-shadow(0 2px 6px rgba(15,23,42,.45));
 }
 
 .app-splash-tip {
-  color: rgba(255,255,255,0.9);
-  font-size: 0.95rem;
-  font-weight: 600;
+  font-size: clamp(1rem, 3.2vw, 1.35rem);
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  background: linear-gradient(90deg, #f8fafc 0%, #bfdbfe 28%, #a78bfa 60%, #f8fafc 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 10px rgba(59,130,246,.35), 0 0 20px rgba(168,85,247,.3);
+  filter: drop-shadow(0 2px 8px rgba(15,23,42,.55));
+  border: 1px solid rgba(255,255,255,0.26);
+  border-radius: 999px;
+  padding: 6px 14px;
+  background-color: rgba(15,23,42,0.22);
 }
 
 body {
@@ -1953,6 +1969,8 @@ body.dark-mode .prediction-chart-container {
   </div>
   <div id="mobileRunner3DSlot">
     <button id="mobileAllTimeBtn" onclick="applyAllTimeDateFilter()" style="position:absolute;top:8px;left:10px;padding:6px 10px;background:#111827;color:#fff;border:none;border-radius:8px;font-size:0.95em;font-weight:600;z-index:951;box-shadow:0 2px 8px #0002;">All time</button>
+    <button id="mobileFastestBtn" onclick="cycleFastestRaceDistance()" style="position:absolute;top:8px;left:96px;padding:6px 10px;background:#111827;color:#fff;border:none;border-radius:8px;font-size:0.95em;font-weight:600;z-index:951;box-shadow:0 2px 8px #0002;">Fastest</button>
+    <span id="mobileFastestDistanceLabel" style="position:absolute;top:12px;left:185px;color:#fff;font-size:0.9em;font-weight:800;z-index:951;text-shadow:0 1px 2px rgba(0,0,0,.45);"></span>
     <button id="openMobileFilterBtn" style="position:absolute;top:8px;right:10px;padding:6px 10px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:0.95em;font-weight:600;z-index:950;box-shadow:0 2px 8px #0002;">🔍 Filtra</button>
     <div id="mobileKmTopRankingOverlay" style="position:absolute;right:8px;bottom:8px;left:8px;max-height:34%;overflow:auto;padding:8px 10px;border:1px solid rgba(203,213,225,.55);border-radius:10px;background:rgba(255,255,255,0.22);font-size:0.72rem;line-height:1.35;color:#0f172a;z-index:940;box-shadow:0 4px 12px rgba(0,0,0,.12);"></div>
   </div>
@@ -2243,6 +2261,7 @@ function updateAllTimeButtonState() {
   };
   applyState(document.getElementById('allTimeBtn'), '0.86rem');
   applyState(document.getElementById('mobileAllTimeBtn'), '0.95em');
+  updateFastestButtonState();
 }
 function applyAllTimeDateFilter() {
   const fromEl = document.getElementById('dateFrom');
@@ -2424,7 +2443,7 @@ document.getElementById('dateTo').addEventListener('change', updateMobileCharts)
     </div>
 
     <div class="grid">
-      <div class="card" id="kmRunnerCard" style="position:relative;"><h3>🏃‍♂️ Classifica 3D atleti (avanzamento=score top atleta, dimensione=km)</h3><button id="allTimeBtn" onclick="applyAllTimeDateFilter()" style="position:absolute;top:12px;left:12px;padding:6px 10px;background:#111827;color:#fff;border:none;border-radius:8px;font-size:0.86rem;font-weight:700;z-index:9;box-shadow:0 2px 8px #0003;">All time</button><canvas id="kmChart"></canvas><div id="kmTopRankingOverlay" style="position:absolute;right:12px;bottom:12px;max-width:min(48%,420px);min-width:300px;max-height:42%;overflow:auto;margin-top:10px;padding:10px;border:1px solid rgba(203,213,225,.55);border-radius:10px;background:rgba(255,255,255,0.22);font-size:0.78rem;line-height:1.4;color:#0f172a;z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.12);"></div></div>
+      <div class="card" id="kmRunnerCard" style="position:relative;"><h3>🏃‍♂️ Classifica 3D atleti (avanzamento=score top atleta, dimensione=km)</h3><button id="allTimeBtn" onclick="applyAllTimeDateFilter()" style="position:absolute;top:12px;left:12px;padding:6px 10px;background:#111827;color:#fff;border:none;border-radius:8px;font-size:0.86rem;font-weight:700;z-index:9;box-shadow:0 2px 8px #0003;">All time</button><button id="fastestBtn" onclick="cycleFastestRaceDistance()" style="position:absolute;top:12px;left:94px;padding:6px 10px;background:#111827;color:#fff;border:none;border-radius:8px;font-size:0.86rem;font-weight:700;z-index:9;box-shadow:0 2px 8px #0003;">Fastest</button><span id="fastestDistanceLabel" style="position:absolute;top:18px;left:180px;color:#fff;font-size:0.83rem;font-weight:800;z-index:9;text-shadow:0 1px 2px rgba(0,0,0,.45);"></span><canvas id="kmChart"></canvas><div id="kmTopRankingOverlay" style="position:absolute;right:12px;bottom:12px;max-width:min(48%,420px);min-width:300px;max-height:42%;overflow:auto;margin-top:10px;padding:10px;border:1px solid rgba(203,213,225,.55);border-radius:10px;background:rgba(255,255,255,0.22);font-size:0.78rem;line-height:1.4;color:#0f172a;z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.12);"></div></div>
       <div class="card" id="speedRunnerCard"><h3>Atleta più veloce (ripetute ultimi 10 gg)</h3><canvas id="speedChart"></canvas></div>
       <div class="card"><h3>📊 Km/settimana</h3><canvas id="weeklyChart"></canvas></div>
       <div class="card"><h3>⚡ Carico interno</h3><canvas id="loadChart"></canvas></div>
@@ -2477,7 +2496,7 @@ document.getElementById('dateTo').addEventListener('change', updateMobileCharts)
 
     <table id="dataTable">
       <thead>
-        <tr><th>Data</th><th>Atleta</th><th>Km</th><th>Min</th><th>RPE</th><th>FC</th><th>Sport</th><th>Tipo</th><th>Note</th><th>Azioni</th></tr>
+        <tr><th>Data</th><th>Atleta</th><th>Km</th><th>Min</th><th>RPE</th><th>FC</th><th>Sport</th><th>Tipo / Gara km</th><th>Note</th><th>Azioni</th></tr>
       </thead>
       <tbody>
       </tbody>
@@ -2512,6 +2531,14 @@ document.getElementById('dateTo').addEventListener('change', updateMobileCharts)
         </label>
         <label style="grid-column:1 / -1;">Tipo attività
           <select id="mobileSessionActivityType" style="width:100%;"></select>
+        </label>
+        <label style="grid-column:1 / -1;">Distanza gara
+          <select id="mobileSessionRaceDistance" style="width:100%;" disabled>
+            <option value="">-- Gara km --</option>
+            <option value="10K">10K</option>
+            <option value="21K">21K</option>
+            <option value="42K">42K</option>
+          </select>
         </label>
         <label style="grid-column:1 / -1;">Note
           <input id="mobileSessionNote" type="text" placeholder="Note" style="width:100%;">
@@ -2951,7 +2978,7 @@ window.importFromFirebase = function() {
 function saveToFirebase() {
   let dati = [];
   try {
-    dati = getDataRaw().map(x=>({ date:x.date, athlete:x.athlete, km:x.km, minutes:x.minutes, time:x.time, rpe:x.rpe, hr:x.hr, type:x.type, activityType:x.activityType, note:x.note }));
+    dati = getDataRaw().map(x=>({ date:x.date, athlete:x.athlete, km:x.km, minutes:x.minutes, time:x.time, rpe:x.rpe, hr:x.hr, type:x.type, activityType:x.activityType, raceDistance:x.raceDistance || '', note:x.note }));
   } catch(e) {}
   const ripPayload = Array.isArray(ripetuteSessions)
     ? ripetuteSessions.map(s => ({
@@ -3186,6 +3213,71 @@ let athleteDetails = {};
 let activityTypes=['Allenamento','Gara','Test','Recupero','Tecnica','Ripetute'];
 const TOP_SCORE_RULES_KEY = 'topScoreRules';
 let topScoreRules = { malePct: 0, femalePct: 0, otherPct: 0 };
+const RACE_DISTANCE_OPTIONS = ['10K', '21K', '42K'];
+const FASTEST_RACE_DISTANCES = [
+  { value: '10K', label: '10k', km: 10 },
+  { value: '21K', label: '21k', km: 21 },
+  { value: '42K', label: '42k', km: 42 }
+];
+let fastest3DModeIndex = -1;
+
+function isGaraActivityType(activityType){
+  return String(activityType || '').trim().toLowerCase() === 'gara';
+}
+
+function normalizeRaceDistance(value){
+  const raw = String(value || '').trim().toLowerCase();
+  if(!raw) return '';
+  if(raw === '10k' || raw === '10 k' || raw === '10km' || raw === '10 km' || raw === '10') return '10K';
+  if(raw === '21k' || raw === '21 k' || raw === '21km' || raw === '21 km' || raw === 'mezzamaratona' || raw === 'mezza maratona' || raw === 'mezza') return '21K';
+  if(raw === '42k' || raw === '42 k' || raw === '42km' || raw === '42 km' || raw === 'maratona' || raw === '42.195k' || raw === '42,195k') return '42K';
+  return '';
+}
+
+function inferRaceDistanceFromRow(row){
+  if(!row || typeof row !== 'object') return '';
+  const explicit = normalizeRaceDistance(row.raceDistance || row.garaDistance || row.raceKm || row.distanceCategory || row.distanceLabel || '');
+  if(explicit) return explicit;
+  const km = Number(row.km || 0);
+  if(km >= 9.5 && km <= 10.5) return '10K';
+  if(km >= 20 && km <= 22) return '21K';
+  if(km >= 41 && km <= 43) return '42K';
+  return '';
+}
+
+function getActiveFastestRaceDistance(){
+  return (fastest3DModeIndex >= 0 && fastest3DModeIndex < FASTEST_RACE_DISTANCES.length)
+    ? FASTEST_RACE_DISTANCES[fastest3DModeIndex]
+    : null;
+}
+
+function updateFastestButtonState(){
+  const active = getActiveFastestRaceDistance();
+  const applyState = (btn) => {
+    if(!btn) return;
+    btn.style.background = active ? '#0f766e' : '#111827';
+    btn.style.color = '#ffffff';
+    btn.style.border = active ? '1px solid rgba(255,255,255,0.35)' : 'none';
+    btn.style.fontWeight = '700';
+  };
+  applyState(document.getElementById('fastestBtn'));
+  applyState(document.getElementById('mobileFastestBtn'));
+  const desktopLabel = document.getElementById('fastestDistanceLabel');
+  const mobileLabel = document.getElementById('mobileFastestDistanceLabel');
+  if(desktopLabel) desktopLabel.textContent = active ? active.label : '';
+  if(mobileLabel) mobileLabel.textContent = active ? active.label : '';
+}
+
+function cycleFastestRaceDistance(){
+  if(fastest3DModeIndex >= FASTEST_RACE_DISTANCES.length - 1){
+    fastest3DModeIndex = -1;
+  } else {
+    fastest3DModeIndex += 1;
+  }
+  updateFastestButtonState();
+  updateCharts();
+  if(typeof updateMobileCharts === 'function' && window.innerWidth <= 900) updateMobileCharts();
+}
 
 function getAthletesProfilePayload(){
   return (athletes || []).map((name) => {
@@ -3620,6 +3712,54 @@ async function saveAthletesJson(){
 
 function loadActivityTypes(){ const s=localStorage.getItem('activityTypes'); if(s) activityTypes = JSON.parse(s); updateActivityTypesUI(); }
 function saveActivityTypes(){ localStorage.setItem('activityTypes', JSON.stringify(activityTypes)); }
+
+function buildRaceDistanceOptions(selectedValue){
+  const normalized = normalizeRaceDistance(selectedValue);
+  return '<option value="">-- Gara km --</option>' + RACE_DISTANCE_OPTIONS.map(v=>`<option value="${v}" ${v===normalized?'selected':''}>${v}</option>`).join('');
+}
+
+function buildActivityTypeWithRaceHtml(activityTypeValue, raceDistanceValue){
+  const activityNorm = String(activityTypeValue || '').trim();
+  const raceNorm = normalizeRaceDistance(raceDistanceValue);
+  const raceEnabled = isGaraActivityType(activityNorm);
+  const safeRaceValue = raceEnabled ? (raceNorm || '10K') : '';
+  return `
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+      <select class="activity-type-select"><option value="">-- Tipo --</option>${activityTypes.map(t=>`<option value="${t}" ${t===activityNorm?'selected':''}>${t}</option>`).join('')}</select>
+      <select class="race-distance-select" ${raceEnabled ? '' : 'disabled'} style="min-width:84px;${raceEnabled ? '' : 'opacity:0.6;'}">${buildRaceDistanceOptions(safeRaceValue)}</select>
+    </div>
+  `;
+}
+
+function syncRaceDistanceForRow(row){
+  if(!row) return;
+  const activitySel = row.querySelector('.activity-type-select');
+  const raceSel = row.querySelector('.race-distance-select');
+  if(!activitySel || !raceSel) return;
+  const gara = isGaraActivityType(activitySel.value);
+  if(gara){
+    raceSel.disabled = false;
+    raceSel.style.opacity = '1';
+    if(!normalizeRaceDistance(raceSel.value)) raceSel.value = '10K';
+    else raceSel.value = normalizeRaceDistance(raceSel.value);
+  } else {
+    raceSel.value = '';
+    raceSel.disabled = true;
+    raceSel.style.opacity = '0.6';
+  }
+}
+
+function bindRaceDistanceRowBehavior(row){
+  if(!row) return;
+  const activitySel = row.querySelector('.activity-type-select');
+  if(!activitySel) return;
+  if(activitySel.dataset.raceBound !== '1'){
+    activitySel.addEventListener('change', () => syncRaceDistanceForRow(row));
+    activitySel.dataset.raceBound = '1';
+  }
+  syncRaceDistanceForRow(row);
+}
+
 function updateActivityTypesUI(){
   const list = $id('activityTypesList');
   if(list) list.innerHTML = activityTypes.map((t,i)=>`<div class="activity-type-tag">🏷️ ${t}<span class="remove" onclick="removeActivityType(${i})">×</span></div>`).join('');
@@ -3627,6 +3767,7 @@ function updateActivityTypesUI(){
     const val = sel.value;
     sel.innerHTML = '<option value="">-- Tipo --</option>' + activityTypes.map(t=>`<option value="${t}" ${t===val?'selected':''}>${t}</option>`).join('');
   });
+  document.querySelectorAll('#dataTable tbody tr').forEach(bindRaceDistanceRowBehavior);
   updateTableFilters();
 }
 function addNewActivityType(){ const i=$id('newActivityTypeInput'); if(!i) return; const t=i.value.trim(); if(t && !activityTypes.includes(t)){ activityTypes.push(t); saveActivityTypes(); updateActivityTypesUI(); i.value=''; } }
@@ -3648,7 +3789,7 @@ function appendTableRowsFromObjects(arr){
     const minutesVal = (x.minutes !== undefined) ? x.minutes : (x.time ? Math.round(x.time*60) : '');
     const athleteOptions = athletes.map(a=>`<option value="${a}" ${a===athleteVal?'selected':''}>${a}</option>`).join('');
     const sportOptions = sports.map(s=>`<option value="${s}" ${s===x.type?'selected':''}>${s}</option>`).join('');
-    const activityOptions = activityTypes.map(t=>`<option value="${t}" ${t===x.activityType?'selected':''}>${t}</option>`).join('');
+    const activityCellHtml = buildActivityTypeWithRaceHtml(x.activityType || '', x.raceDistance || x.garaDistance || '');
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><input type="date" value="${dateVal}"></td>
@@ -3658,12 +3799,13 @@ function appendTableRowsFromObjects(arr){
       <td><input type="number" value="${x.rpe || ''}"></td>
       <td><input type="number" value="${x.hr || ''}"></td>
       <td><select class="sport-select">${sportOptions}</select></td>
-      <td><select class="activity-type-select"><option value="">-- Tipo --</option>${activityOptions}</select></td>
+      <td>${activityCellHtml}</td>
       <td><input type="text" value="${x.note || x.notes || ''}"></td>
       <td><button onclick="deleteRow(this)" style="padding:4px 8px;font-size:0.75rem;background:#ef4444;">🗑️</button></td>
     `;
     // append at top to keep most recent visible
     tb.insertBefore(tr, tb.firstChild);
+    bindRaceDistanceRowBehavior(tr);
   });
   // refresh UI
   try{ updateTableFilters(); sortTableByDate(false); updateCharts(); }catch(e){ console.warn('appendTableRowsFromObjects post actions failed', e); }
@@ -4427,6 +4569,7 @@ function explodeRipToMainTable(){
   session.reps.forEach(r => {
     const tr = document.createElement('tr');
     const minutes = Math.round((r.time_s || 0) / 60);
+    const activityCellHtml = buildActivityTypeWithRaceHtml('Ripetute', '');
     tr.innerHTML = `
       <td><input type="date" value="${session.date}"></td>
       <td><select class="athlete-select"><option value="">-- Seleziona --</option>${athletes.map(a=>`<option value="${a}" ${a===session.athlete?'selected':''}>${a}</option>`).join('')}</select></td>
@@ -4435,11 +4578,12 @@ function explodeRipToMainTable(){
       <td><input type="number" value="${r.rpe||0}"></td>
       <td><input type="number" value="${r.hr||0}"></td>
       <td><select class="sport-select">${sports.map(s=>`<option value="${s}">${s}</option>`).join('')}</select></td>
-      <td><select class="activity-type-select"><option value="">-- Tipo --</option><option value="Ripetute" selected>Ripetute</option></select></td>
+      <td>${activityCellHtml}</td>
       <td><input type="text" value="Rip: ${r.label||''} | rec ${r.rest_s||0}s | latt:${r.lactate||''}"></td>
       <td><button onclick="deleteRow(this)" style="padding:4px 8px;font-size:0.75rem;background:#ef4444;">🗑️</button></td>
     `;
     tb.insertBefore(tr, tb.firstChild);
+    bindRaceDistanceRowBehavior(tr);
   });
   updateTableFilters();
   sortTableByDate(false);
@@ -4504,7 +4648,9 @@ function getDataRaw(){
     const rpe = +(cells[4]?.querySelector('input')?.value || 0);
     const hr = +(cells[5]?.querySelector('input')?.value || 0);
     const type = cells[6]?.querySelector('select')?.value || '';
-    const activityType = cells[7]?.querySelector('select')?.value || '';
+    const activityType = cells[7]?.querySelector('.activity-type-select')?.value || '';
+    const raceDistanceRaw = normalizeRaceDistance(cells[7]?.querySelector('.race-distance-select')?.value || inferRaceDistanceFromRow({ km }));
+    const raceDistance = isGaraActivityType(activityType) ? (raceDistanceRaw || '10K') : '';
     const note = cells[8]?.querySelector('input')?.value || '';
     return {
       date,
@@ -4516,6 +4662,7 @@ function getDataRaw(){
       hr,
       type,
       activityType,
+      raceDistance,
       note
     };
   }).filter(d=>d.date && d.athlete);
@@ -4676,7 +4823,7 @@ function popolaTabellaDaJSON(d){
       // ensure selects show current lists
       const athleteOptions = athletes.map(a=>`<option value="${a}" ${a===x.athlete?'selected':''}>${a}</option>`).join('');
       const sportOptions = sports.map(s=>`<option value="${s}" ${s===x.type?'selected':''}>${s}</option>`).join('');
-      const activityOptions = activityTypes.map(t=>`<option value="${t}" ${t===x.activityType?'selected':''}>${t}</option>`).join('');
+      const activityCellHtml = buildActivityTypeWithRaceHtml(x.activityType || '', x.raceDistance || x.garaDistance || inferRaceDistanceFromRow(x));
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
@@ -4687,11 +4834,12 @@ function popolaTabellaDaJSON(d){
         <td><input type="number" value="${x.rpe || ''}"></td>
         <td><input type="number" value="${x.hr || ''}"></td>
         <td><select class="sport-select">${sportOptions}</select></td>
-        <td><select class="activity-type-select"><option value="">-- Tipo --</option>${activityOptions}</select></td>
+        <td>${activityCellHtml}</td>
         <td><input type="text" value="${x.note || x.notes || ''}"></td>
         <td><button onclick="deleteRow(this)" style="padding:4px 8px;font-size:0.75rem;background:#ef4444;">🗑️</button></td>
       `;
       tb.appendChild(tr);
+      bindRaceDistanceRowBehavior(tr);
     });
 
     // Refresh UI elements
@@ -4712,7 +4860,7 @@ function popolaTabellaDaJSON(d){
       const minutesVal = x.minutes || (x.time ? Math.round(x.time*60) : '');
       const athleteOptions = athletes.map(a=>`<option value="${a}" ${a===athleteVal?'selected':''}>${a}</option>`).join('');
       const sportOptions = sports.map(s=>`<option value="${s}" ${s===x.type?'selected':''}>${s}</option>`).join('');
-      const activityOptions = activityTypes.map(t=>`<option value="${t}" ${t===x.activityType?'selected':''}>${t}</option>`).join('');
+      const activityCellHtml = buildActivityTypeWithRaceHtml(x.activityType || '', x.raceDistance || x.garaDistance || inferRaceDistanceFromRow(x));
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><input type="date" value="${dateVal}"></td>
@@ -4722,11 +4870,12 @@ function popolaTabellaDaJSON(d){
         <td><input type="number" value="${x.rpe || ''}"></td>
         <td><input type="number" value="${x.hr || ''}"></td>
         <td><select class="sport-select">${sportOptions}</select></td>
-        <td><select class="activity-type-select"><option value="">-- Tipo --</option>${activityOptions}</select></td>
+        <td>${activityCellHtml}</td>
         <td><input type="text" value="${x.note || x.notes || ''}"></td>
         <td><button onclick="deleteRow(this)" style="padding:4px 8px;font-size:0.75rem;background:#ef4444;">🗑️</button></td>
       `;
       tb.appendChild(tr);
+      bindRaceDistanceRowBehavior(tr);
     });
     updateTableFilters();
     sortTableByDate(false);
@@ -5870,6 +6019,7 @@ function updateCharts(){
   const topRankingTarget = (window.innerWidth <= 900 && $id('mobileKmTopRankingOverlay'))
     ? $id('mobileKmTopRankingOverlay')
     : $id('kmTopRankingOverlay');
+  const activeFastestDistance = getActiveFastestRaceDistance();
   const combinedData = getData();
   const fA = $id('athleteFilter') ? $id('athleteFilter').value : 'all';
   const athleteSet = (typeof getActiveAthleteSet === 'function') ? getActiveAthleteSet() : ((fA !== 'all') ? new Set([fA]) : null);
@@ -5934,28 +6084,66 @@ function updateCharts(){
     $id('kpiRiskPercent').textContent='0%';
     $id('kpiRiskInfo').textContent='';
     if(topRankingTarget){
-      topRankingTarget.innerHTML = '<strong>Classifica Top atleta</strong><div style="margin-top:6px;color:#64748b;">Nessun dato disponibile con i filtri correnti.</div>';
+      const emptyTitle = activeFastestDistance ? `Classifica Fastest ${activeFastestDistance.label}` : 'Classifica Top atleta';
+      const emptyText = activeFastestDistance
+        ? `Nessun risultato gara ${activeFastestDistance.label} con i filtri correnti.`
+        : 'Nessun dato disponibile con i filtri correnti.';
+      topRankingTarget.innerHTML = `<strong>${emptyTitle}</strong><div style="margin-top:6px;color:#64748b;">${emptyText}</div>`;
     }
     if (typeof updateMobileCharts === 'function' && window.innerWidth <= 900) updateMobileCharts();
     return;
   }
 
-  // Km cumulativi (ordinati per classifica)
-  const kmRanking = Object.keys(byA).map((ath) => ({
-    athlete: ath,
-    km: byA[ath].reduce((sum, s) => sum + (s.km || 0), 0),
-    speedRef: speedWeightedByKm(byA[ath] || []),
-    topScore: 0,
-    load: loadWeightedByKm(byA[ath] || [])
-  })).map(r => ({ ...r, topScore: r.km * r.speedRef * getAthleteScoreMultiplier(r.athlete) }))
-    .sort((a,b)=> (b.topScore - a.topScore) || (b.km - a.km) || (b.speedRef - a.speedRef));
+  let kmRankingTitle = 'Classifica Top atleta';
+  let kmRanking = [];
+  if(activeFastestDistance){
+    kmRankingTitle = `Classifica Fastest ${activeFastestDistance.label}`;
+    kmRanking = Object.keys(byA).map((ath) => {
+      const raceRows = (byA[ath] || []).filter((row) => {
+        if(!isGaraActivityType(row.activityType)) return false;
+        const raceDistance = normalizeRaceDistance(row.raceDistance || inferRaceDistanceFromRow(row));
+        return raceDistance === activeFastestDistance.value;
+      });
+      let bestSpeed = 0;
+      let bestTimeH = 0;
+      raceRows.forEach((row) => {
+        const km = Number(row.km || 0);
+        const timeH = Number(row.time || 0) || ((Number(row.minutes || 0)) / 60);
+        if(km > 0 && timeH > 0){
+          const speed = km / timeH;
+          if(speed > bestSpeed){
+            bestSpeed = speed;
+            bestTimeH = timeH;
+          }
+        }
+      });
+      return {
+        athlete: ath,
+        km: bestSpeed,
+        speedRef: bestSpeed,
+        topScore: bestSpeed,
+        raceTimeH: bestTimeH,
+        raceDistance: activeFastestDistance.value
+      };
+    }).filter(r => Number(r.speedRef || 0) > 0)
+      .sort((a,b)=> (b.speedRef - a.speedRef));
+  } else {
+    kmRanking = Object.keys(byA).map((ath) => ({
+      athlete: ath,
+      km: byA[ath].reduce((sum, s) => sum + (s.km || 0), 0),
+      speedRef: speedWeightedByKm(byA[ath] || []),
+      topScore: 0,
+      load: loadWeightedByKm(byA[ath] || [])
+    })).map(r => ({ ...r, topScore: r.km * r.speedRef * getAthleteScoreMultiplier(r.athlete) }))
+      .sort((a,b)=> (b.topScore - a.topScore) || (b.km - a.km) || (b.speedRef - a.speedRef));
+  }
   const athletesForKm = kmRanking.map(r => r.athlete);
   const totalKmPerAthlete = kmRanking.map(r => r.km);
 
   if (charts['kmChart']) { charts['kmChart'].destroy(); charts['kmChart'] = null; }
   if (athletesForKm.length) {
     const topScorePerAthlete = kmRanking.map(r => r.topScore);
-    renderRunner3DChart('kmChart', athletesForKm, totalKmPerAthlete, topScorePerAthlete);
+    renderRunner3DChart('kmChart', athletesForKm, totalKmPerAthlete, topScorePerAthlete, activeFastestDistance ? { valueUnit: 'km/h' } : {});
   } else {
     disposeRunner3DChart('kmChart');
   }
@@ -6009,12 +6197,18 @@ function updateCharts(){
   if(topRankingTarget){
     const rows = kmRanking.slice(0, 10).map((r, idx) => {
       const medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : '•'));
+      const detail = activeFastestDistance
+        ? `${r.speedRef.toFixed(2)} km/h${Number(r.raceTimeH || 0) > 0 ? ` • ${formatDurationFromMinutes((r.raceTimeH || 0) * 60)}` : ''}`
+        : `score ${r.topScore.toFixed(1)} • ${r.km.toFixed(1)} km • ${r.speedRef.toFixed(2)} km/h`;
       return `<div style="display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:${idx === Math.min(9, kmRanking.length - 1) ? 'none' : '1px dashed rgba(100,116,139,0.35)'};">
         <span style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${medal} #${idx+1} ${r.athlete}</span>
-        <span style="white-space:nowrap;">score ${r.topScore.toFixed(1)} • ${r.km.toFixed(1)} km • ${r.speedRef.toFixed(2)} km/h</span>
+        <span style="white-space:nowrap;">${detail}</span>
       </div>`;
     }).join('');
-    topRankingTarget.innerHTML = `<strong>Classifica Top atleta</strong><div style="margin-top:6px;display:flex;flex-direction:column;gap:0;">${rows || '<div style="color:#64748b;">Nessun dato disponibile.</div>'}</div>`;
+    const emptyText = activeFastestDistance
+      ? `Nessun risultato gara ${activeFastestDistance.label} con i filtri correnti.`
+      : 'Nessun dato disponibile.';
+    topRankingTarget.innerHTML = `<strong>${kmRankingTitle}</strong><div style="margin-top:6px;display:flex;flex-direction:column;gap:0;">${rows || `<div style="color:#64748b;">${emptyText}</div>`}</div>`;
   }
 
   // KPI
@@ -6035,9 +6229,11 @@ function addRow(){
   const hrVal = preset.hr ?? '';
   const sportVal = preset.type || (sports[0] || 'Corsa');
   const activityTypeVal = preset.activityType || '';
+  const raceDistanceVal = preset.raceDistance || preset.garaDistance || '';
   const noteVal = preset.note || '';
   const tb=document.querySelector('#dataTable tbody');
   const tr=document.createElement('tr');
+  const activityCellHtml = buildActivityTypeWithRaceHtml(activityTypeVal, raceDistanceVal);
   tr.innerHTML=`
     <td><input type="date" value="${dateVal}"></td>
     <td><select class="athlete-select"><option value="">-- Seleziona Atleta --</option>${athletes.map(a=>`<option value="${a}" ${a===athleteVal?'selected':''}>${a}</option>`).join('')}</select></td>
@@ -6046,11 +6242,12 @@ function addRow(){
     <td><input type="number" placeholder="0" value="${rpeVal}"></td>
     <td><input type="number" placeholder="0" value="${hrVal}"></td>
     <td><select class="sport-select">${sports.map(s=>`<option value="${s}" ${s===sportVal?'selected':''}>${s}</option>`).join('')}</select></td>
-    <td><select class="activity-type-select"><option value="">-- Tipo --</option>${activityTypes.map(t=>`<option value="${t}" ${t===activityTypeVal?'selected':''}>${t}</option>`).join('')}</select></td>
+    <td>${activityCellHtml}</td>
     <td><input type="text" value="${noteVal}"></td>
     <td><button onclick="deleteRow(this)" style="padding:4px 8px;font-size:0.75rem;background:#ef4444;">🗑️</button></td>
   `;
   tb.insertBefore(tr, tb.firstChild);
+  bindRaceDistanceRowBehavior(tr);
 }
 function deleteRow(btn){
   if(!confirm('Vuoi eliminare questa sessione?')) return;
@@ -6066,7 +6263,8 @@ function deleteRow(btn){
     rpe: +(cells[4]?.querySelector('input')?.value || 0),
     hr: +(cells[5]?.querySelector('input')?.value || 0),
     type: cells[6]?.querySelector('select')?.value || '',
-    activityType: cells[7]?.querySelector('select')?.value || '',
+    activityType: cells[7]?.querySelector('.activity-type-select')?.value || '',
+    raceDistance: normalizeRaceDistance(cells[7]?.querySelector('.race-distance-select')?.value || ''),
     note: cells[8]?.querySelector('input')?.value || ''
   };
   const wasRipetuta = _isRipetuteRowFromTable(rowData);
@@ -6093,6 +6291,23 @@ function setMobileModalSelectValue(selectEl, value){
   selectEl.value = target;
 }
 
+function syncMobileSessionRaceDistanceState(){
+  const typeSel = document.getElementById('mobileSessionActivityType');
+  const raceSel = document.getElementById('mobileSessionRaceDistance');
+  if(!typeSel || !raceSel) return;
+  const gara = isGaraActivityType(typeSel.value);
+  if(gara){
+    raceSel.disabled = false;
+    raceSel.style.opacity = '1';
+    if(!normalizeRaceDistance(raceSel.value)) raceSel.value = '10K';
+    else raceSel.value = normalizeRaceDistance(raceSel.value);
+  } else {
+    raceSel.value = '';
+    raceSel.disabled = true;
+    raceSel.style.opacity = '0.6';
+  }
+}
+
 function openMobileSessionModal(row = null){
   const modal = document.getElementById('mobileSessionModal');
   if(!modal) return;
@@ -6103,12 +6318,14 @@ function openMobileSessionModal(row = null){
   const athleteSel = document.getElementById('mobileSessionAthlete');
   const sportSel = document.getElementById('mobileSessionSport');
   const typeSel = document.getElementById('mobileSessionActivityType');
+  const raceDistanceSel = document.getElementById('mobileSessionRaceDistance');
   const titleEl = document.getElementById('mobileSessionModalTitle');
   const saveBtn = document.getElementById('mobileSessionSaveBtn');
   const deleteBtn = document.getElementById('mobileSessionDeleteBtn');
   if(athleteSel) athleteSel.innerHTML = '<option value="">-- Seleziona Atleta --</option>' + athletes.map(a=>`<option value="${a}">${a}</option>`).join('');
   if(sportSel) sportSel.innerHTML = sports.map(s=>`<option value="${s}">${s}</option>`).join('');
   if(typeSel) typeSel.innerHTML = '<option value="">-- Tipo --</option>' + activityTypes.map(t=>`<option value="${t}">${t}</option>`).join('');
+  if(raceDistanceSel) raceDistanceSel.innerHTML = buildRaceDistanceOptions('');
   if(mobileSessionEditRow){
     const cells = mobileSessionEditRow.children;
     const rowDate = cells[0]?.querySelector('input')?.value || '';
@@ -6118,7 +6335,8 @@ function openMobileSessionModal(row = null){
     const rowRpe = cells[4]?.querySelector('input')?.value || '';
     const rowHr = cells[5]?.querySelector('input')?.value || '';
     const rowSport = cells[6]?.querySelector('select')?.value || '';
-    const rowType = cells[7]?.querySelector('select')?.value || '';
+    const rowType = cells[7]?.querySelector('.activity-type-select')?.value || '';
+    const rowRaceDistance = normalizeRaceDistance(cells[7]?.querySelector('.race-distance-select')?.value || '');
     const rowNote = cells[8]?.querySelector('input')?.value || '';
     const dateInput = document.getElementById('mobileSessionDate');
     if(dateInput) dateInput.value = rowDate;
@@ -6133,6 +6351,7 @@ function openMobileSessionModal(row = null){
     if(hrInput) hrInput.value = rowHr;
     setMobileModalSelectValue(sportSel, rowSport);
     setMobileModalSelectValue(typeSel, rowType);
+    setMobileModalSelectValue(raceDistanceSel, rowRaceDistance);
     const noteInput = document.getElementById('mobileSessionNote');
     if(noteInput) noteInput.value = rowNote;
     if(titleEl) titleEl.textContent = 'Modifica sessione';
@@ -6145,10 +6364,12 @@ function openMobileSessionModal(row = null){
       const el = document.getElementById(id);
       if(el) el.value = '';
     });
+    if(raceDistanceSel) raceDistanceSel.value = '';
     if(titleEl) titleEl.textContent = 'Nuova sessione';
     if(saveBtn) saveBtn.textContent = 'Salva sessione';
     if(deleteBtn) deleteBtn.style.display = 'none';
   }
+  syncMobileSessionRaceDistanceState();
   modal.style.display = 'flex';
 }
 
@@ -6190,8 +6411,14 @@ function saveMobileSession(){
     hr: document.getElementById('mobileSessionHr')?.value || '',
     type: document.getElementById('mobileSessionSport')?.value || (sports[0] || 'Corsa'),
     activityType: document.getElementById('mobileSessionActivityType')?.value || '',
+    raceDistance: normalizeRaceDistance(document.getElementById('mobileSessionRaceDistance')?.value || ''),
     note: document.getElementById('mobileSessionNote')?.value || ''
   };
+  if(!isGaraActivityType(data.activityType)) data.raceDistance = '';
+  if(isGaraActivityType(data.activityType) && !data.raceDistance){
+    alert('Se il tipo attività è Gara, seleziona obbligatoriamente 10K, 21K o 42K.');
+    return;
+  }
   if(mobileSessionEditRow){
     const cells = mobileSessionEditRow.children;
     if(cells[0]?.querySelector('input')) cells[0].querySelector('input').value = data.date;
@@ -6201,7 +6428,9 @@ function saveMobileSession(){
     if(cells[4]?.querySelector('input')) cells[4].querySelector('input').value = data.rpe;
     if(cells[5]?.querySelector('input')) cells[5].querySelector('input').value = data.hr;
     if(cells[6]?.querySelector('select')) setMobileModalSelectValue(cells[6].querySelector('select'), data.type);
-    if(cells[7]?.querySelector('select')) setMobileModalSelectValue(cells[7].querySelector('select'), data.activityType);
+    if(cells[7]?.querySelector('.activity-type-select')) setMobileModalSelectValue(cells[7].querySelector('.activity-type-select'), data.activityType);
+    if(cells[7]?.querySelector('.race-distance-select')) setMobileModalSelectValue(cells[7].querySelector('.race-distance-select'), data.raceDistance);
+    syncRaceDistanceForRow(mobileSessionEditRow);
     if(cells[8]?.querySelector('input')) cells[8].querySelector('input').value = data.note;
   } else {
     addRow(data);
@@ -6236,11 +6465,13 @@ function applyTableFilter(){
   const rows = document.querySelectorAll('#dataTable tbody tr');
   rows.forEach(row => {
     const inputs = row.querySelectorAll('input');
-    const selects = row.querySelectorAll('select');
+    const athleteSel = row.querySelector('.athlete-select');
+    const sportSel = row.querySelector('.sport-select');
+    const typeSel = row.querySelector('.activity-type-select');
     const rowDate = inputs[0].value;
-    const rowAthlete = selects[0] ? selects[0].value : '';
-    const rowSport = selects[1] ? selects[1].value : '';
-    const rowActivityType = selects[2] ? selects[2].value : '';
+    const rowAthlete = athleteSel ? athleteSel.value : '';
+    const rowSport = sportSel ? sportSel.value : '';
+    const rowActivityType = typeSel ? typeSel.value : '';
     let show = true;
     if(athlete !== 'all' && rowAthlete && rowAthlete !== athlete) show = false;
     if(sport !== 'all' && rowSport && rowSport !== sport) show = false;
@@ -6890,7 +7121,7 @@ $id('refreshTableBtn')?.addEventListener('click', ()=>{
 });
 $id('exportJsonBtn')?.addEventListener('click', ()=>{
   try {
-    const dati = getDataRaw().map(x=>({ date:x.date, athlete:x.athlete, km:x.km, minutes:x.minutes, time:x.time, rpe:x.rpe, hr:x.hr, type:x.type, activityType:x.activityType, note:x.note }));
+    const dati = getDataRaw().map(x=>({ date:x.date, athlete:x.athlete, km:x.km, minutes:x.minutes, time:x.time, rpe:x.rpe, hr:x.hr, type:x.type, activityType:x.activityType, raceDistance:x.raceDistance || '', note:x.note }));
     const b = new Blob([JSON.stringify(dati,null,2)], { type:'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(b);
@@ -7183,6 +7414,7 @@ window.addEventListener('load', ()=>{
   $id('typeFilter')?.addEventListener('change', updateCharts);
   $id('dateFrom')?.addEventListener('change', updateAllTimeButtonState);
   $id('dateTo')?.addEventListener('change', updateAllTimeButtonState);
+  document.getElementById('mobileSessionActivityType')?.addEventListener('change', syncMobileSessionRaceDistanceState);
 
   const dataTableBody = document.querySelector('#dataTable tbody');
   if(dataTableBody && !window.__mobileTableEditModalBound){
