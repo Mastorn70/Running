@@ -3020,12 +3020,20 @@ function saveToFirebase() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
   })
-    .then(res => res.json())
+    .then(res => {
+      if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + res.statusText);
+      // some endpoints may not return JSON; ignore parse errors
+      return res.json().catch(() => null);
+    })
     .then(() => {
       window.mostraNotificaSalvataggio();
-      if(typeof window.importFromFirebase === 'function') window.importFromFirebase();
+      // Import remoto automatico rimosso per evitare sovrascritture immediate.
+      // Se vuoi ricaricare i dati dopo il salvataggio, chiama manualmente `importFromFirebase()`.
     })
-    .catch(err => { console.error('Errore salvataggio Firebase:', err); });
+    .catch(err => {
+      console.error('Errore salvataggio Firebase:', err);
+      alert('Errore salvataggio su Firebase: ' + (err && err.message ? err.message : err));
+    });
 }
 
 // Mostra una notifica discreta in alto a destra
@@ -5787,7 +5795,7 @@ function renderRunner3DChart(canvasId, athletes, kmValues, progressValues, opts 
 
   // Slightly narrower FOV and closer camera to make runners appear larger and closer
   const camera = new THREE.PerspectiveCamera(42, width/height, 0.1, 100);
-  camera.position.set(0, 6.2, 10);
+  camera.position.set(0, 6.2, 15);
   camera.lookAt(0, 1.2, -5.8);
 
   const hemi = new THREE.HemisphereLight(0xffffff, 0xbcd2ff, 0.95);
