@@ -2605,11 +2605,11 @@ document.getElementById('dateTo').addEventListener('change', updateMobileCharts)
           <label>Distanza (km)
             <input id="mobileRipDistanceKm" type="number" min="0" step="0.001" value="0.400" placeholder="0.200" style="width:100%;">
           </label>
-          <label>Tempo (s)
-            <input id="mobileRipTime" type="number" min="0" step="1" value="90" style="width:100%;">
+          <label>Pace (min/km)
+            <input id="mobileRipTime" type="number" min="0" step="0.01" value="4.00" style="width:100%;">
           </label>
-          <label>Recupero (s)
-            <input id="mobileRipRest" type="number" min="0" step="1" value="60" style="width:100%;">
+          <label>Recupero (min)
+            <input id="mobileRipRest" type="number" min="0" step="0.01" value="1.00" style="width:100%;">
           </label>
           <label>RPE
             <input id="mobileRipRpe" type="number" min="0" max="10" step="1" value="7" style="width:100%;">
@@ -2645,8 +2645,8 @@ document.getElementById('dateTo').addEventListener('change', updateMobileCharts)
                   <tr>
                     <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(0,0,0,.12);">Tipo ripetuta</th>
                     <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(0,0,0,.12);">Distanza (km)</th>
-                    <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(0,0,0,.12);">Tempo (s)</th>
-                    <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(0,0,0,.12);">Recupero (s)</th>
+                    <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(0,0,0,.12);">Pace (min/km)</th>
+                    <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(0,0,0,.12);">Recupero (min)</th>
                     <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(0,0,0,.12);">RPE</th>
                     <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(0,0,0,.12);">FC</th>
                     <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(0,0,0,.12);">Lattato</th>
@@ -3963,9 +3963,9 @@ function openMobileRipSessionModal(){
   if(distanceInput) distanceInput.value = '0.400';
   onMobileRipRepTypeChange();
   const timeInput = document.getElementById('mobileRipTime');
-  if(timeInput) timeInput.value = '90';
+  if(timeInput) timeInput.value = '4.00';
   const restInput = document.getElementById('mobileRipRest');
-  if(restInput) restInput.value = '60';
+  if(restInput) restInput.value = '1.00';
   const rpeInput = document.getElementById('mobileRipRpe');
   if(rpeInput) rpeInput.value = '7';
   const hrInput = document.getElementById('mobileRipHr');
@@ -4009,8 +4009,9 @@ function saveMobileRipSession(){
     addRipRow({
       repType: repType,
       distance_km: ripDistanceKm || '',
-      time_s: ripTime || '',
-      rest_s: ripRest || '',
+      // interpret ripTime as pace in min/km -> convert to seconds for the rep duration
+      time_s: (ripTime && ripDistanceKm) ? Math.round(ripTime * ripDistanceKm * 60) : (ripTime ? Math.round(ripTime * 60) : ''),
+      rest_s: ripRest ? Math.round(ripRest * 60) : '',
       rpe: ripRpe || '',
       hr: ripHr || '',
       lactate: ripLactate
@@ -4042,7 +4043,7 @@ function saveMobileRipSession(){
       hr: Number(r.hr || 0),
       type: session.type || 'corsa',
       activityType: 'Ripetute',
-      note: `Rip: ${repLabel} | rec ${Number(r.rest_s || 0)}s | latt:${r.lactate ?? ''}`
+      note: `Rip: ${repLabel} | rec ${((Number(r.rest_s || 0))/60).toFixed(2)}min | latt:${r.lactate ?? ''}`
     };
   });
   if(rowsToAppend.length) appendTableRowsFromObjects(rowsToAppend);
@@ -4074,8 +4075,8 @@ function addRipRow(data = {}){
       </select>
     </td>
     <td style="padding:6px;"><input class="rip-distance-km" placeholder="0.200" type="number" step="0.001" min="0" style="width:110px" value="${normalizeKmValue(distKm)}"></td>
-    <td style="padding:6px;"><input class="rip-time-s" placeholder="tempo s" type="number" min="0" step="1" style="width:100px" value="${data.time_s||data.time||''}"></td>
-    <td style="padding:6px;"><input class="rip-rest-s" placeholder="recupero s" type="number" min="0" step="1" style="width:110px" value="${data.rest_s||data.rest||''}"></td>
+    <td style="padding:6px;"><input class="rip-time-s" placeholder="min/km" type="number" min="0" step="0.01" style="width:100px" value="${(data.time_s && distKm>0) ? (Number(data.time_s)/60/distKm).toFixed(2) : (data.time||'')}"></td>
+    <td style="padding:6px;"><input class="rip-rest-s" placeholder="recupero min" type="number" min="0" step="0.01" style="width:110px" value="${data.rest_s ? (Number(data.rest_s)/60).toFixed(2) : (data.rest||'')}"></td>
     <td style="padding:6px;"><input class="rip-rpe" placeholder="RPE" type="number" min="0" max="10" style="width:70px" value="${data.rpe||''}"></td>
     <td style="padding:6px;"><input class="rip-hr" placeholder="FC" type="number" min="0" style="width:80px" value="${data.hr||''}"></td>
     <td style="padding:6px;"><input class="rip-lactate" placeholder="mmol" type="number" min="0" step="0.1" style="width:90px" value="${data.lactate||''}"></td>
@@ -4091,8 +4092,11 @@ function readRipSessionFromForm(){
   const reps = rows.map(r=>{
     const repType = r.querySelector('.rip-rep-type')?.value || 'Custom';
     const distanceKm = Number(r.querySelector('.rip-distance-km')?.value || 0);
-    const timeS = Number(r.querySelector('.rip-time-s')?.value || 0);
-    const restS = Number(r.querySelector('.rip-rest-s')?.value || 0);
+    // inputs show minutes now -> convert to seconds for storage
+    // interpret rip-time input as pace (min/km) -> compute rep duration in seconds
+    const paceMinPerKm = Number(r.querySelector('.rip-time-s')?.value || 0);
+    const timeS = (paceMinPerKm > 0 && distanceKm > 0) ? Math.round(paceMinPerKm * distanceKm * 60) : Math.round(Number(r.querySelector('.rip-time-s')?.value || 0) * 60);
+    const restS = Math.round(Number(r.querySelector('.rip-rest-s')?.value || 0) * 60);
     const rpe = Number(r.querySelector('.rip-rpe')?.value || 0);
     const hr = Number(r.querySelector('.rip-hr')?.value || 0);
     const lactateRaw = r.querySelector('.rip-lactate')?.value;
@@ -4554,7 +4558,7 @@ function convertRipetuteToDataEntries(ripSessions){
         hr: r.hr || 0,
         type: 'Ripetute',
         activityType: s.type || 'Ripetute',
-        note: `Rip: ${r.label||''} rec ${r.rest_s||0}s latt:${r.lactate||''}`
+        note: `Rip: ${r.label||''} rec ${((r.rest_s||0)/60).toFixed(2)}min latt:${r.lactate||''}`
       });
     });
   });
@@ -4579,7 +4583,7 @@ function explodeRipToMainTable(){
       <td><input type="number" value="${r.hr||0}"></td>
       <td><select class="sport-select">${sports.map(s=>`<option value="${s}">${s}</option>`).join('')}</select></td>
       <td>${activityCellHtml}</td>
-      <td><input type="text" value="Rip: ${r.label||''} | rec ${r.rest_s||0}s | latt:${r.lactate||''}"></td>
+      <td><input type="text" value="Rip: ${r.label||''} | rec ${((r.rest_s||0)/60).toFixed(2)}min | latt:${r.lactate||''}"></td>
       <td><button onclick="deleteRow(this)" style="padding:4px 8px;font-size:0.75rem;background:#ef4444;">🗑️</button></td>
     `;
     tb.insertBefore(tr, tb.firstChild);
