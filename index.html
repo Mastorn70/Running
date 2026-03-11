@@ -5785,8 +5785,9 @@ function renderRunner3DChart(canvasId, athletes, kmValues, progressValues, opts 
   scene.background = null;
   scene.fog = new THREE.Fog(0xcbd5e1, 10, 34);
 
-  const camera = new THREE.PerspectiveCamera(46, width/height, 0.1, 100);
-  camera.position.set(0, 6.2, 13.6);
+  // Slightly narrower FOV and closer camera to make runners appear larger and closer
+  const camera = new THREE.PerspectiveCamera(42, width/height, 0.1, 100);
+  camera.position.set(0, 6.2, 10);
   camera.lookAt(0, 1.2, -5.8);
 
   const hemi = new THREE.HemisphereLight(0xffffff, 0xbcd2ff, 0.95);
@@ -5834,7 +5835,8 @@ function renderRunner3DChart(canvasId, athletes, kmValues, progressValues, opts 
     } else {
       progressNorm = (progressMax - progressMin) > 0 ? (progress - progressMin) / (progressMax - progressMin) : 0.5;
     }
-    const z = -14.2 + progressNorm * 12.8;
+    // Reduce Z range so runners appear nearer the camera (shallower depth)
+    const z = -10 + progressNorm * 9;
     // Reduce lateral spacing for the speed chart (closer figurines) and adapt on mobile
     const baseWidth = (canvasId === 'speedChart') ? 5.4 : 8.4;
     let laneSpacing = baseWidth / Math.max(2, lanes);
@@ -5852,8 +5854,8 @@ function renderRunner3DChart(canvasId, athletes, kmValues, progressValues, opts 
       // Increase figurine scale for the speedChart to make runners more visible
       let mobileBillboardScaleMul;
       if (canvasId === 'speedChart') {
-        // Much larger on mobile when this is the speed chart
-        mobileBillboardScaleMul = window.matchMedia('(max-width: 900px)').matches ? 4.8 : 2.6;
+        // Make speedChart billboards noticeably larger (mobile and desktop)
+        mobileBillboardScaleMul = window.matchMedia('(max-width: 900px)').matches ? 3.8 : 3.0;
       } else {
         mobileBillboardScaleMul = window.matchMedia('(max-width: 900px)').matches ? 2.05 : 1.58;
       }
