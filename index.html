@@ -5854,8 +5854,8 @@ function renderRunner3DChart(canvasId, athletes, kmValues, progressValues, opts 
       // Increase figurine scale for the speedChart to make runners more visible
       let mobileBillboardScaleMul;
       if (canvasId === 'speedChart') {
-        // Make speedChart billboards noticeably larger (mobile and desktop)
-        mobileBillboardScaleMul = window.matchMedia('(max-width: 900px)').matches ? 3.8 : 3.0;
+        // Make speedChart billboards much larger on mobile only (leave desktop unchanged)
+        mobileBillboardScaleMul = window.matchMedia('(max-width: 900px)').matches ?30.0 : 3.0;
       } else {
         mobileBillboardScaleMul = window.matchMedia('(max-width: 900px)').matches ? 2.05 : 1.58;
       }
