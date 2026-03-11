@@ -1973,6 +1973,7 @@ body.dark-mode .prediction-chart-container {
     <span id="mobileFastestDistanceLabel" style="position:absolute;top:12px;left:185px;color:#fff;font-size:0.9em;font-weight:800;z-index:951;text-shadow:0 1px 2px rgba(0,0,0,.45);"></span>
     <button id="openMobileFilterBtn" style="position:absolute;top:8px;right:10px;padding:6px 10px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:0.95em;font-weight:600;z-index:950;box-shadow:0 2px 8px #0002;">🔍 Filtra</button>
     <div id="mobileKmTopRankingOverlay" style="position:absolute;right:8px;bottom:8px;left:8px;max-height:34%;overflow:auto;padding:8px 10px;border:1px solid rgba(203,213,225,.55);border-radius:10px;background:rgba(255,255,255,0.22);font-size:0.72rem;line-height:1.35;color:#0f172a;z-index:940;box-shadow:0 4px 12px rgba(0,0,0,.12);"></div>
+    <div id="mobileSpeedTopRankingOverlay" style="position:absolute;right:8px;bottom:calc(8px + 34% + 10px);left:8px;max-height:20%;overflow:auto;padding:8px 10px;border:1px solid rgba(203,213,225,.55);border-radius:10px;background:rgba(255,255,255,0.18);font-size:0.72rem;line-height:1.25;color:#0f172a;z-index:939;box-shadow:0 4px 12px rgba(0,0,0,.08);"></div>
   </div>
   <div class="mobile-kpi-after" id="mobileKpiAfter3D">
     <div class="mobile-kpi-chip"><div class="chip-v" id="mobileKpiKmWeek">0</div><div class="chip-l">Km settimana</div></div>
@@ -2444,7 +2445,7 @@ document.getElementById('dateTo').addEventListener('change', updateMobileCharts)
 
     <div class="grid">
       <div class="card" id="kmRunnerCard" style="position:relative;"><h3>🏃‍♂️ Classifica 3D atleti (avanzamento=score top atleta, dimensione=km)</h3><button id="allTimeBtn" onclick="applyAllTimeDateFilter()" style="position:absolute;top:12px;left:12px;padding:6px 10px;background:#111827;color:#fff;border:none;border-radius:8px;font-size:0.86rem;font-weight:700;z-index:9;box-shadow:0 2px 8px #0003;">All time</button><button id="fastestBtn" onclick="cycleFastestRaceDistance()" style="position:absolute;top:12px;left:94px;padding:6px 10px;background:#111827;color:#fff;border:none;border-radius:8px;font-size:0.86rem;font-weight:700;z-index:9;box-shadow:0 2px 8px #0003;">Fastest</button><span id="fastestDistanceLabel" style="position:absolute;top:18px;left:180px;color:#fff;font-size:0.83rem;font-weight:800;z-index:9;text-shadow:0 1px 2px rgba(0,0,0,.45);"></span><canvas id="kmChart"></canvas><div id="kmTopRankingOverlay" style="position:absolute;right:12px;bottom:12px;max-width:min(48%,420px);min-width:300px;max-height:42%;overflow:auto;margin-top:10px;padding:10px;border:1px solid rgba(203,213,225,.55);border-radius:10px;background:rgba(255,255,255,0.22);font-size:0.78rem;line-height:1.4;color:#0f172a;z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.12);"></div></div>
-      <div class="card" id="speedRunnerCard"><h3>Atleta più veloce (ripetute ultimi 10 gg)</h3><canvas id="speedChart"></canvas></div>
+      <div class="card" id="speedRunnerCard" style="position:relative;"><h3>Atleta più veloce (ripetute ultimi 10 gg)</h3><canvas id="speedChart"></canvas><div id="speedTopRankingOverlay" style="position:absolute;right:12px;bottom:12px;max-width:min(46%,360px);min-width:220px;max-height:42%;overflow:auto;margin-top:10px;padding:10px;border:1px solid rgba(203,213,225,.55);border-radius:10px;background:rgba(255,255,255,0.22);font-size:0.78rem;line-height:1.25;color:#0f172a;z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.12);"></div></div>
       <div class="card"><h3>📊 Km/settimana</h3><canvas id="weeklyChart"></canvas></div>
       <div class="card"><h3>⚡ Carico interno</h3><canvas id="loadChart"></canvas></div>
       <div class="card"><h3>💓 TRIMP</h3><canvas id="trimpChart"></canvas></div>
@@ -2496,7 +2497,7 @@ document.getElementById('dateTo').addEventListener('change', updateMobileCharts)
 
     <table id="dataTable">
       <thead>
-        <tr><th>Data</th><th>Atleta</th><th>Km</th><th>Min</th><th>RPE</th><th>FC</th><th>Sport</th><th>Tipo / Gara km</th><th>Note</th><th>Azioni</th></tr>
+        <tr><th>Data</th><th>Atleta</th><th>Km</th><th>Min</th><th>RPE</th><th>FC</th><th>Sport</th><th>Tipo / Gara km</th><th>Note</th><th>Azioni</th><th>Min/km</th></tr>
       </thead>
       <tbody>
       </tbody>
@@ -2518,7 +2519,10 @@ document.getElementById('dateTo').addEventListener('change', updateMobileCharts)
           <input id="mobileSessionKm" type="number" min="0" step="0.01" placeholder="0" style="width:100%;">
         </label>
         <label>Min
-          <input id="mobileSessionMin" type="number" min="0" step="1" placeholder="0" style="width:100%;">
+          <input id="mobileSessionMin" type="number" min="0" step="0.01" placeholder="0" style="width:100%;">
+        </label>
+        <label>Min/km
+          <input id="mobileSessionPace" type="number" min="0" step="0.01" placeholder="min/km" style="width:100%;">
         </label>
         <label>RPE
           <input id="mobileSessionRpe" type="number" min="0" max="10" step="1" placeholder="0" style="width:100%;">
@@ -2605,8 +2609,8 @@ document.getElementById('dateTo').addEventListener('change', updateMobileCharts)
           <label>Distanza (km)
             <input id="mobileRipDistanceKm" type="number" min="0" step="0.001" value="0.400" placeholder="0.200" style="width:100%;">
           </label>
-          <label>Pace (min/km)
-            <input id="mobileRipTime" type="number" min="0" step="0.01" value="4.00" style="width:100%;">
+          <label>Tempo (min)
+            <input id="mobileRipTime" type="number" min="0" step="0.01" value="1.50" style="width:100%;">
           </label>
           <label>Recupero (min)
             <input id="mobileRipRest" type="number" min="0" step="0.01" value="1.00" style="width:100%;">
@@ -2645,7 +2649,7 @@ document.getElementById('dateTo').addEventListener('change', updateMobileCharts)
                   <tr>
                     <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(0,0,0,.12);">Tipo ripetuta</th>
                     <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(0,0,0,.12);">Distanza (km)</th>
-                    <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(0,0,0,.12);">Pace (min/km)</th>
+                    <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(0,0,0,.12);">Tempo (min)</th>
                     <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(0,0,0,.12);">Recupero (min)</th>
                     <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(0,0,0,.12);">RPE</th>
                     <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(0,0,0,.12);">FC</th>
@@ -3791,6 +3795,7 @@ function appendTableRowsFromObjects(arr){
     const sportOptions = sports.map(s=>`<option value="${s}" ${s===x.type?'selected':''}>${s}</option>`).join('');
     const activityCellHtml = buildActivityTypeWithRaceHtml(x.activityType || '', x.raceDistance || x.garaDistance || '');
     const tr = document.createElement('tr');
+    const paceVal = (x.pace_min_per_km !== undefined && x.pace_min_per_km !== '') ? x.pace_min_per_km : ((minutesVal && kmVal) ? formatMinutesToPaceDisplay(Number(minutesVal)/Number(kmVal)) : '');
     tr.innerHTML = `
       <td><input type="date" value="${dateVal}"></td>
       <td><select class="athlete-select"><option value="">-- Seleziona --</option>${athleteOptions}</select></td>
@@ -3802,6 +3807,7 @@ function appendTableRowsFromObjects(arr){
       <td>${activityCellHtml}</td>
       <td><input type="text" value="${x.note || x.notes || ''}"></td>
       <td><button onclick="deleteRow(this)" style="padding:4px 8px;font-size:0.75rem;background:#ef4444;">🗑️</button></td>
+      <td><input type="number" value="${paceVal}"></td>
     `;
     // append at top to keep most recent visible
     tb.insertBefore(tr, tb.firstChild);
@@ -3963,7 +3969,7 @@ function openMobileRipSessionModal(){
   if(distanceInput) distanceInput.value = '0.400';
   onMobileRipRepTypeChange();
   const timeInput = document.getElementById('mobileRipTime');
-  if(timeInput) timeInput.value = '4.00';
+  if(timeInput) timeInput.value = '1.50';
   const restInput = document.getElementById('mobileRipRest');
   if(restInput) restInput.value = '1.00';
   const rpeInput = document.getElementById('mobileRipRpe');
@@ -3997,7 +4003,8 @@ function saveMobileRipSession(){
   const ripCount = Math.max(1, +(document.getElementById('mobileRipCount')?.value || 1));
   const repType = (document.getElementById('mobileRipRepType')?.value || 'Custom').trim();
   const ripDistanceKm = +(document.getElementById('mobileRipDistanceKm')?.value || 0);
-  const ripTime = +(document.getElementById('mobileRipTime')?.value || 0);
+  const ripTimeRaw = document.getElementById('mobileRipTime')?.value || 0;
+  const ripTime = parsePaceDisplayToMinutes(ripTimeRaw);
   const ripRest = +(document.getElementById('mobileRipRest')?.value || 0);
   const ripRpe = +(document.getElementById('mobileRipRpe')?.value || 0);
   const ripHr = +(document.getElementById('mobileRipHr')?.value || 0);
@@ -4009,8 +4016,8 @@ function saveMobileRipSession(){
     addRipRow({
       repType: repType,
       distance_km: ripDistanceKm || '',
-      // interpret ripTime as pace in min/km -> convert to seconds for the rep duration
-      time_s: (ripTime && ripDistanceKm) ? Math.round(ripTime * ripDistanceKm * 60) : (ripTime ? Math.round(ripTime * 60) : ''),
+      // ripTime is minutes per km (min/km, mm.ss) -> convert to total seconds for this rep
+      time_s: ripTime && ripDistanceKm ? Math.round(ripTime * ripDistanceKm * 60) : (ripTime ? Math.round(ripTime * 60) : ''),
       rest_s: ripRest ? Math.round(ripRest * 60) : '',
       rpe: ripRpe || '',
       hr: ripHr || '',
@@ -4075,7 +4082,7 @@ function addRipRow(data = {}){
       </select>
     </td>
     <td style="padding:6px;"><input class="rip-distance-km" placeholder="0.200" type="number" step="0.001" min="0" style="width:110px" value="${normalizeKmValue(distKm)}"></td>
-    <td style="padding:6px;"><input class="rip-time-s" placeholder="min/km" type="number" min="0" step="0.01" style="width:100px" value="${(data.time_s && distKm>0) ? (Number(data.time_s)/60/distKm).toFixed(2) : (data.time||'')}"></td>
+    <td style="padding:6px;"><input class="rip-time-s" placeholder="min/km" type="number" min="0" step="0.01" style="width:100px" value="${(data.time_s && (Number(data.distance_km)||distKm)) ? formatMinutesToPaceDisplay((Number(data.time_s)/60) / (Number(data.distance_km)||distKm)) : (data.time||'')}"></td>
     <td style="padding:6px;"><input class="rip-rest-s" placeholder="recupero min" type="number" min="0" step="0.01" style="width:110px" value="${data.rest_s ? (Number(data.rest_s)/60).toFixed(2) : (data.rest||'')}"></td>
     <td style="padding:6px;"><input class="rip-rpe" placeholder="RPE" type="number" min="0" max="10" style="width:70px" value="${data.rpe||''}"></td>
     <td style="padding:6px;"><input class="rip-hr" placeholder="FC" type="number" min="0" style="width:80px" value="${data.hr||''}"></td>
@@ -4092,10 +4099,9 @@ function readRipSessionFromForm(){
   const reps = rows.map(r=>{
     const repType = r.querySelector('.rip-rep-type')?.value || 'Custom';
     const distanceKm = Number(r.querySelector('.rip-distance-km')?.value || 0);
-    // inputs show minutes now -> convert to seconds for storage
-    // interpret rip-time input as pace (min/km) -> compute rep duration in seconds
-    const paceMinPerKm = Number(r.querySelector('.rip-time-s')?.value || 0);
-    const timeS = (paceMinPerKm > 0 && distanceKm > 0) ? Math.round(paceMinPerKm * distanceKm * 60) : Math.round(Number(r.querySelector('.rip-time-s')?.value || 0) * 60);
+    // inputs show pace (min/km) and recupero in minutes -> compute total seconds
+    const paceMinPerKm = parsePaceDisplayToMinutes(r.querySelector('.rip-time-s')?.value || 0);
+    const timeS = Math.round(paceMinPerKm * distanceKm * 60);
     const restS = Math.round(Number(r.querySelector('.rip-rest-s')?.value || 0) * 60);
     const rpe = Number(r.querySelector('.rip-rpe')?.value || 0);
     const hr = Number(r.querySelector('.rip-hr')?.value || 0);
@@ -4205,17 +4211,29 @@ function renderRipAnalysis(session, stats){
   s.innerHTML = `
     <div>Atleta: ${session.athlete} | Data: ${session.date} | Reps: ${stats.total_reps}</div>
     <div>Tot. distanza: ${stats.total_distance_km} km | Tot. tempo HI: ${stats.total_high_time_min} min | Anaerobic: ${stats.anaerobic_time_min} min</div>
-    <div>Vel. media rep: ${stats.avg_speed_kmh} km/h | SEI: ${stats.sei.toFixed(2)} | Lactate load: ${stats.lactate_load}</div>
+    <div>Vel. media rep: ${formatMinutesFloatToMMSS((stats.avg_speed_kmh>0)?(60/stats.avg_speed_kmh):0)} min/km | SEI: ${stats.sei.toFixed(2)} | Lactate load: ${stats.lactate_load}</div>
     <div>TRIMP (proxy): ${stats.total_trimp}</div>
   `;
   const reps = session.reps || [];
   const labels = reps.map((r,i)=> r.label || `rep ${i+1}`);
-  const paceData = reps.map(r => r.time_s ? ((r.distance||0)/1000) / (r.time_s/3600) : 0); // km/h
-  try{ createChart('ripPaceChart','line',labels, [{ label:'Vel (km/h)', data: paceData, borderColor:'#3b82f6', fill:false, tension:0.2 }], { maintainAspectRatio:false }); }catch(e){ console.warn(e); }
+  // compute pace in minutes per km for plotting and tooltips
+  const paceData = reps.map(r => {
+    const time_s = Number(r.time_s || 0);
+    const km = (Number(r.distance || 0) / 1000) || 0;
+    return (time_s > 0 && km > 0) ? ((time_s / 60) / km) : 0; // minutes per km
+  });
+  try{ createChart('ripPaceChart','line',labels, [{ label:'Pace (min/km)', data: paceData, borderColor:'#3b82f6', fill:false, tension:0.2 }], { maintainAspectRatio:false, plugins:{ tooltip:{ callbacks:{ label: ctx => {
+    const v = ctx.parsed.y !== undefined ? ctx.parsed.y : (ctx.parsed.x !== undefined ? ctx.parsed.x : 0);
+    return `Pace: ${formatMinutesFloatToMMSS(v)} /km`;
+  }}}}}); }catch(e){ console.warn(e); }
   // --- ripPaceBoxChart: box-like IQR + median (single-box per session) ---
 try {
   const speeds = reps
-    .map(r => r.time_s ? ((r.distance || 0) / 1000) / (r.time_s / 3600) : 0) // km/h
+    .map(r => {
+      const time_s = Number(r.time_s || 0);
+      const km = (Number(r.distance || 0) / 1000) || 0;
+      return (time_s > 0 && km > 0) ? ((time_s / 60) / km) : 0; // minutes per km
+    })
     .filter(v => v > 0)
     .sort((a, b) => a - b);
 
@@ -4265,7 +4283,7 @@ try {
             callbacks: {
               label: function(ctx) {
                 // tooltip for median point or IQR
-                if (ctx.dataset.label === 'median') return `Mediana: ${ctx.parsed.y.toFixed(2)} km/h`;
+                if (ctx.dataset.label === 'median') return `Mediana: ${formatMinutesFloatToMMSS(ctx.parsed.y)} min/km`;
                 return '';
               }
             }
@@ -4274,7 +4292,7 @@ try {
         scales: {
           x: { ticks: { color: document.body.classList.contains('dark-mode') ? '#cbd5e1' : '#334155' } },
           y: {
-            title: { display: true, text: 'Velocità (km/h)' },
+            title: { display: true, text: 'Pace (min/km)' },
             ticks: { color: document.body.classList.contains('dark-mode') ? '#cbd5e1' : '#334155' },
             beginAtZero: true
           }
@@ -4293,8 +4311,13 @@ try {
     const ctxS = document.getElementById('ripHrScatter').getContext('2d', { willReadFrequently: true, preserveDrawingBuffer: true });
     charts['ripHrScatter'] = new Chart(ctxS, {
       type: 'scatter',
-      data: { datasets: [{ label:'HR vs Vel', data: reps.map(r => ({ x: (r.time_s? ((r.distance||0)/1000) / (r.time_s/3600) : 0), y: r.hr || 0 })), backgroundColor:'#f97316' }] },
-      options: { plugins:{ legend:{ display:false } }, scales:{ x:{ title:{ display:true, text:'Vel (km/h)' } }, y:{ title:{ display:true, text:'FC (bpm)' } } }, maintainAspectRatio:false }
+      data: { datasets: [{ label:'HR vs Pace', data: reps.map(r => {
+            const time_s = Number(r.time_s || 0);
+            const km = (Number(r.distance || 0) / 1000) || 0;
+            const paceMinPerKm = (time_s > 0 && km > 0) ? ((time_s/60) / km) : 0;
+            return { x: paceMinPerKm, y: r.hr || 0 };
+          }), backgroundColor:'#f97316' }] },
+      options: { plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label: ctx => `Pace: ${formatMinutesFloatToMMSS(ctx.parsed.x)} • FC: ${Math.round(ctx.parsed.y)} bpm` } } }, scales:{ x:{ title:{ display:true, text:'Pace (min/km)' } }, y:{ title:{ display:true, text:'FC (bpm)' } } }, maintainAspectRatio:false }
     });
   }catch(e){ console.warn(e); }
   try{
@@ -4432,7 +4455,8 @@ function _removeTableRowsForRipSession(session){
       minutes: +(cells[3]?.querySelector('input')?.value || 0),
       rpe: +(cells[4]?.querySelector('input')?.value || 0),
       hr: +(cells[5]?.querySelector('input')?.value || 0),
-      note: cells[8]?.querySelector('input')?.value || ''
+      note: cells[8]?.querySelector('input')?.value || '' ,
+      pace_min_per_km: +(cells[10]?.querySelector('input')?.value || 0)
     };
     const rowLabel = _extractRepLabelFromNote(row.note || '');
     const rowKey = [
@@ -4574,6 +4598,7 @@ function explodeRipToMainTable(){
     const tr = document.createElement('tr');
     const minutes = Math.round((r.time_s || 0) / 60);
     const activityCellHtml = buildActivityTypeWithRaceHtml('Ripetute', '');
+    const paceVal = ((r.time_s||0)/60) && ((r.distance||0)/1000) ? formatMinutesToPaceDisplay(((r.time_s||0)/60) / ((r.distance||0)/1000)) : '';
     tr.innerHTML = `
       <td><input type="date" value="${session.date}"></td>
       <td><select class="athlete-select"><option value="">-- Seleziona --</option>${athletes.map(a=>`<option value="${a}" ${a===session.athlete?'selected':''}>${a}</option>`).join('')}</select></td>
@@ -4585,6 +4610,7 @@ function explodeRipToMainTable(){
       <td>${activityCellHtml}</td>
       <td><input type="text" value="Rip: ${r.label||''} | rec ${((r.rest_s||0)/60).toFixed(2)}min | latt:${r.lactate||''}"></td>
       <td><button onclick="deleteRow(this)" style="padding:4px 8px;font-size:0.75rem;background:#ef4444;">🗑️</button></td>
+      <td><input type="number" value="${paceVal}"></td>
     `;
     tb.insertBefore(tr, tb.firstChild);
     bindRaceDistanceRowBehavior(tr);
@@ -4648,7 +4674,6 @@ function getDataRaw(){
     const athlete = cells[1]?.querySelector('select')?.value || '';
     const km = +(cells[2]?.querySelector('input')?.value || 0);
     const minutes = +(cells[3]?.querySelector('input')?.value || 0);
-    const time = minutes / 60;
     const rpe = +(cells[4]?.querySelector('input')?.value || 0);
     const hr = +(cells[5]?.querySelector('input')?.value || 0);
     const type = cells[6]?.querySelector('select')?.value || '';
@@ -4656,12 +4681,16 @@ function getDataRaw(){
     const raceDistanceRaw = normalizeRaceDistance(cells[7]?.querySelector('.race-distance-select')?.value || inferRaceDistanceFromRow({ km }));
     const raceDistance = isGaraActivityType(activityType) ? (raceDistanceRaw || '10K') : '';
     const note = cells[8]?.querySelector('input')?.value || '';
+    const rawPaceVal = cells[10]?.querySelector('input')?.value || '';
+    const pace_min_per_km = rawPaceVal ? +(rawPaceVal) : (km ? formatMinutesToPaceDisplay(minutes / km) : 0);
+    const time = minutes / 60;
     return {
       date,
       athlete,
       km,
       minutes,
       time,
+      pace_min_per_km,
       rpe,
       hr,
       type,
@@ -4829,6 +4858,7 @@ function popolaTabellaDaJSON(d){
       const sportOptions = sports.map(s=>`<option value="${s}" ${s===x.type?'selected':''}>${s}</option>`).join('');
       const activityCellHtml = buildActivityTypeWithRaceHtml(x.activityType || '', x.raceDistance || x.garaDistance || inferRaceDistanceFromRow(x));
 
+      const paceVal = (x.pace_min_per_km !== undefined && x.pace_min_per_km !== '') ? x.pace_min_per_km : ((minutesVal && kmVal) ? formatMinutesToPaceDisplay(Number(minutesVal)/Number(kmVal)) : '');
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><input type="date" value="${dateVal}"></td>
@@ -4841,6 +4871,7 @@ function popolaTabellaDaJSON(d){
         <td>${activityCellHtml}</td>
         <td><input type="text" value="${x.note || x.notes || ''}"></td>
         <td><button onclick="deleteRow(this)" style="padding:4px 8px;font-size:0.75rem;background:#ef4444;">🗑️</button></td>
+        <td><input type="number" value="${paceVal}"></td>
       `;
       tb.appendChild(tr);
       bindRaceDistanceRowBehavior(tr);
@@ -4865,6 +4896,7 @@ function popolaTabellaDaJSON(d){
       const athleteOptions = athletes.map(a=>`<option value="${a}" ${a===athleteVal?'selected':''}>${a}</option>`).join('');
       const sportOptions = sports.map(s=>`<option value="${s}" ${s===x.type?'selected':''}>${s}</option>`).join('');
       const activityCellHtml = buildActivityTypeWithRaceHtml(x.activityType || '', x.raceDistance || x.garaDistance || inferRaceDistanceFromRow(x));
+      const paceVal = (x.pace_min_per_km !== undefined && x.pace_min_per_km !== '') ? x.pace_min_per_km : ((minutesVal && kmVal) ? formatMinutesToPaceDisplay(Number(minutesVal)/Number(kmVal)) : '');
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><input type="date" value="${dateVal}"></td>
@@ -4877,6 +4909,7 @@ function popolaTabellaDaJSON(d){
         <td>${activityCellHtml}</td>
         <td><input type="text" value="${x.note || x.notes || ''}"></td>
         <td><button onclick="deleteRow(this)" style="padding:4px 8px;font-size:0.75rem;background:#ef4444;">🗑️</button></td>
+        <td><input type="number" value="${paceVal}"></td>
       `;
       tb.appendChild(tr);
       bindRaceDistanceRowBehavior(tr);
@@ -5765,7 +5798,13 @@ function renderRunner3DChart(canvasId, athletes, kmValues, progressValues, opts 
     const progress = Number(progressValues[i] || 0);
     const imgSrc = getRunnerImageSrc(ath);
     const kmNorm = (kmMax - kmMin) > 0 ? (km - kmMin) / (kmMax - kmMin) : 0.5;
-    const progressNorm = (progressMax - progressMin) > 0 ? (progress - progressMin) / (progressMax - progressMin) : 0.5;
+    // If valueUnit is minutes per km (pace), a lower value is better -> invert progress normalization
+    let progressNorm;
+    if (String(valueUnit).toLowerCase().includes('min')) {
+      progressNorm = (progressMax - progressMin) > 0 ? (progressMax - progress) / (progressMax - progressMin) : 0.5;
+    } else {
+      progressNorm = (progressMax - progressMin) > 0 ? (progress - progressMin) / (progressMax - progressMin) : 0.5;
+    }
     const z = -14.2 + progressNorm * 12.8;
     const x = ((i + 1) - (lanes + 1)/2) * (8.4 / Math.max(2, lanes));
     const scale = 0.82 + kmNorm * 0.78;
@@ -5782,7 +5821,14 @@ function renderRunner3DChart(canvasId, athletes, kmValues, progressValues, opts 
       scene.add(model.group);
     }
 
-    const label = createRunnerLabelSprite(`${ath} • ${km.toFixed(1)} ${valueUnit}`, '#ffffffff', '#0f172a');
+    let displayVal = km;
+    let displayText = '';
+    if(String(valueUnit).toLowerCase().includes('min')){
+      displayText = `${formatMinutesFloatToMMSS(km)} ${valueUnit}`;
+    } else {
+      displayText = `${(Number(km)||0).toFixed(1)} ${valueUnit}`;
+    }
+    const label = createRunnerLabelSprite(`${ath} • ${displayText}`, '#ffffffff', '#0f172a');
     label.position.set(x, (usePhotoBillboards ? 3.6 : 2.9) * scale, z);
     scene.add(label);
 
@@ -6011,7 +6057,10 @@ function updateKPI(data, acwr){
     })
     .sort((a,b)=> (b.score - a.score) || (b.kmTot - a.kmTot) || (b.speedRef - a.speedRef))[0] || { athlete:'-', kmTot:0, speedRef:0 };
   if($id('kpiTopAthlete')) $id('kpiTopAthlete').textContent = top.athlete;
-  if($id('kpiTopAthleteLoad')) $id('kpiTopAthleteLoad').textContent = `${top.kmTot.toFixed(1)} km • ${top.speedRef.toFixed(2)} km/h`;
+  if($id('kpiTopAthleteLoad')) {
+    const paceMin = (top.speedRef > 0) ? (60 / Number(top.speedRef)) : 0;
+    $id('kpiTopAthleteLoad').textContent = `${top.kmTot.toFixed(1)} km • ${formatMinutesFloatToMMSS(paceMin)} min/km`;
+  }
   const risky = Object.values(acwr || {}).filter(v=>v>1.3).length || 0;
   const perc = (risky / (Object.keys(acwr || {}).length || 1) * 100).toFixed(0);
   const riskCard = $id('kpiRiskCard');
@@ -6147,7 +6196,7 @@ function updateCharts(){
   if (charts['kmChart']) { charts['kmChart'].destroy(); charts['kmChart'] = null; }
   if (athletesForKm.length) {
     const topScorePerAthlete = kmRanking.map(r => r.topScore);
-    renderRunner3DChart('kmChart', athletesForKm, totalKmPerAthlete, topScorePerAthlete, activeFastestDistance ? { valueUnit: 'km/h' } : {});
+    renderRunner3DChart('kmChart', athletesForKm, totalKmPerAthlete, topScorePerAthlete, activeFastestDistance ? { valueUnit: 'km' } : {});
   } else {
     disposeRunner3DChart('kmChart');
   }
@@ -6167,16 +6216,42 @@ function updateCharts(){
       const ts = new Date(r.date || '').getTime();
       return Number.isFinite(ts) && (nowMs - ts) <= tenDaysMs;
     });
+    const sp = speedWeightedByKm(recentRip);
+    const paceMinPerKm = (sp && Number(sp) > 0) ? (60 / Number(sp)) : Infinity;
     return {
       athlete: ath,
-      speed: speedWeightedByKm(recentRip)
+      speed: sp,
+      pace: paceMinPerKm
     };
-  }).filter(x => Number(x.speed || 0) > 0).sort((a,b)=> b.speed - a.speed);
+  }).filter(x => isFinite(x.pace) && x.pace > 0).sort((a,b)=> a.pace - b.pace);
 
-  if (speed3DRanking.length) {
+    if (speed3DRanking.length) {
     const speedAthletes = speed3DRanking.map(x => x.athlete);
     const speedValues = speed3DRanking.map(x => x.speed);
-    renderRunner3DChart('speedChart', speedAthletes, speedValues, speedValues, { valueUnit: 'km/h' });
+    // convert speed (km/h) to pace (minutes per km) for 3D display
+    const paceValuesMinPerKm = speedValues.map(v => (Number(v) > 0) ? (60 / Number(v)) : 0);
+    // format minutes per km using existing helper when showing in inputs/labels if needed
+    renderRunner3DChart('speedChart', speedAthletes, paceValuesMinPerKm, paceValuesMinPerKm, { valueUnit: 'min/km' });
+
+    // populate overlay table (desktop or mobile) showing top athletes with pace mm:ss and recent km
+    try{
+      const speedOverlayTarget = (window.innerWidth <= 900 && $id('mobileSpeedTopRankingOverlay')) ? $id('mobileSpeedTopRankingOverlay') : $id('speedTopRankingOverlay');
+      if(speedOverlayTarget){
+        const rowsHtml = speed3DRanking.slice(0,10).map((r, idx)=>{
+          const recentRows = (byA[r.athlete] || []).filter(rr => {
+            if(!isRipetutaRow(rr)) return false;
+            const ts = new Date(rr.date || '').getTime();
+            return Number.isFinite(ts) && (nowMs - ts) <= tenDaysMs;
+          });
+          const totalKmRecent = recentRows.reduce((s,v)=> s + (Number(v.km)||0), 0);
+          const paceMin = (r.speed > 0) ? (60 / Number(r.speed)) : 0;
+          const paceStr = formatMinutesFloatToMMSS(paceMin);
+          const medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : '•'));
+          return `<div style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:${idx === Math.min(9,speed3DRanking.length-1) ? 'none' : '1px dashed rgba(100,116,139,0.25)'};"><span style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${medal} ${r.athlete}</span><span style="white-space:nowrap;">${paceStr} /km • ${totalKmRecent.toFixed(1)} km</span></div>`;
+        }).join('');
+        speedOverlayTarget.innerHTML = `<strong>Top Velocità (ultimi 10 gg)</strong><div style="margin-top:6px;display:flex;flex-direction:column;gap:0;">${rowsHtml || '<div style="color:#64748b;">Nessun dato</div>'}</div>`;
+      }
+    }catch(e){ console.warn('populate speed overlay failed', e); }
   } else {
     disposeRunner3DChart('speedChart');
   }
@@ -6201,9 +6276,11 @@ function updateCharts(){
   if(topRankingTarget){
     const rows = kmRanking.slice(0, 10).map((r, idx) => {
       const medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : '•'));
+      const paceForR = (r.speedRef > 0) ? (60 / Number(r.speedRef)) : 0;
+      const paceStrR = formatMinutesFloatToMMSS(paceForR);
       const detail = activeFastestDistance
-        ? `${r.speedRef.toFixed(2)} km/h${Number(r.raceTimeH || 0) > 0 ? ` • ${formatDurationFromMinutes((r.raceTimeH || 0) * 60)}` : ''}`
-        : `score ${r.topScore.toFixed(1)} • ${r.km.toFixed(1)} km • ${r.speedRef.toFixed(2)} km/h`;
+        ? `${paceStrR} min/km${Number(r.raceTimeH || 0) > 0 ? ` • ${formatDurationFromMinutes((r.raceTimeH || 0) * 60)}` : ''}`
+        : `score ${r.topScore.toFixed(1)} • ${r.km.toFixed(1)} km • ${paceStrR} min/km`;
       return `<div style="display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:${idx === Math.min(9, kmRanking.length - 1) ? 'none' : '1px dashed rgba(100,116,139,0.35)'};">
         <span style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${medal} #${idx+1} ${r.athlete}</span>
         <span style="white-space:nowrap;">${detail}</span>
@@ -6249,6 +6326,7 @@ function addRow(){
     <td>${activityCellHtml}</td>
     <td><input type="text" value="${noteVal}"></td>
     <td><button onclick="deleteRow(this)" style="padding:4px 8px;font-size:0.75rem;background:#ef4444;">🗑️</button></td>
+    <td><input type="number" placeholder="min/km" value="${preset.pace_min_per_km ?? ''}"></td>
   `;
   tb.insertBefore(tr, tb.firstChild);
   bindRaceDistanceRowBehavior(tr);
@@ -6258,18 +6336,19 @@ function deleteRow(btn){
   const tr = btn && btn.closest ? btn.closest('tr') : null;
   if(!tr) return;
   const cells = tr.children || [];
-  const rowData = {
+    const rowData = {
     date: cells[0]?.querySelector('input')?.value || '',
     athlete: cells[1]?.querySelector('select')?.value || '',
     km: +(cells[2]?.querySelector('input')?.value || 0),
     minutes: +(cells[3]?.querySelector('input')?.value || 0),
-    time: (+(cells[3]?.querySelector('input')?.value || 0)) / 60,
     rpe: +(cells[4]?.querySelector('input')?.value || 0),
     hr: +(cells[5]?.querySelector('input')?.value || 0),
     type: cells[6]?.querySelector('select')?.value || '',
     activityType: cells[7]?.querySelector('.activity-type-select')?.value || '',
     raceDistance: normalizeRaceDistance(cells[7]?.querySelector('.race-distance-select')?.value || ''),
-    note: cells[8]?.querySelector('input')?.value || ''
+    note: cells[8]?.querySelector('input')?.value || '',
+    time: (+(cells[3]?.querySelector('input')?.value || 0)) / 60,
+    pace_min_per_km: +(cells[10]?.querySelector('input')?.value || 0)
   };
   const wasRipetuta = _isRipetuteRowFromTable(rowData);
   tr.remove();
@@ -6342,6 +6421,7 @@ function openMobileSessionModal(row = null){
     const rowType = cells[7]?.querySelector('.activity-type-select')?.value || '';
     const rowRaceDistance = normalizeRaceDistance(cells[7]?.querySelector('.race-distance-select')?.value || '');
     const rowNote = cells[8]?.querySelector('input')?.value || '';
+    const rowPace = cells[10]?.querySelector('input')?.value || '';
     const dateInput = document.getElementById('mobileSessionDate');
     if(dateInput) dateInput.value = rowDate;
     setMobileModalSelectValue(athleteSel, rowAthlete);
@@ -6349,6 +6429,8 @@ function openMobileSessionModal(row = null){
     if(kmInput) kmInput.value = rowKm;
     const minInput = document.getElementById('mobileSessionMin');
     if(minInput) minInput.value = rowMin;
+    const paceInput = document.getElementById('mobileSessionPace');
+    if(paceInput) paceInput.value = rowPace || (rowKm && rowMin ? formatMinutesToPaceDisplay(Number(rowMin)/Number(rowKm)) : '');
     const rpeInput = document.getElementById('mobileSessionRpe');
     if(rpeInput) rpeInput.value = rowRpe;
     const hrInput = document.getElementById('mobileSessionHr');
@@ -6364,7 +6446,7 @@ function openMobileSessionModal(row = null){
   } else {
     const dateInput = document.getElementById('mobileSessionDate');
     if(dateInput) dateInput.value = new Date().toISOString().slice(0,10);
-    ['mobileSessionKm','mobileSessionMin','mobileSessionRpe','mobileSessionHr','mobileSessionNote'].forEach(id=>{
+    ['mobileSessionKm','mobileSessionMin','mobileSessionPace','mobileSessionRpe','mobileSessionHr','mobileSessionNote'].forEach(id=>{
       const el = document.getElementById(id);
       if(el) el.value = '';
     });
@@ -6411,6 +6493,7 @@ function saveMobileSession(){
     athlete,
     km: document.getElementById('mobileSessionKm')?.value || '',
     minutes: document.getElementById('mobileSessionMin')?.value || '',
+    pace_min_per_km: document.getElementById('mobileSessionPace')?.value || '',
     rpe: document.getElementById('mobileSessionRpe')?.value || '',
     hr: document.getElementById('mobileSessionHr')?.value || '',
     type: document.getElementById('mobileSessionSport')?.value || (sports[0] || 'Corsa'),
@@ -6422,6 +6505,18 @@ function saveMobileSession(){
   if(isGaraActivityType(data.activityType) && !data.raceDistance){
     alert('Se il tipo attività è Gara, seleziona obbligatoriamente 10K, 21K o 42K.');
     return;
+  }
+  // if user provided pace (min/km) and km, compute total minutes; otherwise compute pace from minutes+km
+  const kmNum = Number(data.km || 0);
+  const paceRaw = data.pace_min_per_km || '';
+  const paceNumMinutes = parsePaceDisplayToMinutes(paceRaw);
+  const minutesNum = Number(data.minutes || 0);
+  if(paceNumMinutes > 0 && kmNum > 0){
+    // pace given as mm.ss display -> convert to total minutes
+    data.minutes = Number((paceNumMinutes * kmNum).toFixed(2));
+  } else if(minutesNum > 0 && kmNum > 0){
+    // compute pace display mm.ss from total minutes/km
+    data.pace_min_per_km = formatMinutesToPaceDisplay(minutesNum / kmNum);
   }
   if(mobileSessionEditRow){
     const cells = mobileSessionEditRow.children;
@@ -6436,6 +6531,7 @@ function saveMobileSession(){
     if(cells[7]?.querySelector('.race-distance-select')) setMobileModalSelectValue(cells[7].querySelector('.race-distance-select'), data.raceDistance);
     syncRaceDistanceForRow(mobileSessionEditRow);
     if(cells[8]?.querySelector('input')) cells[8].querySelector('input').value = data.note;
+    if(cells[10]?.querySelector('input')) cells[10].querySelector('input').value = data.pace_min_per_km || (data.km && data.minutes ? formatMinutesToPaceDisplay(Number(data.minutes)/Number(data.km)) : '');
   } else {
     addRow(data);
   }
@@ -6572,7 +6668,7 @@ function openComparison() {
           <h3>${nome}</h3>
           <div class="stat-row"><span class="stat-label">Km totali:</span><span class="stat-value">${km.toFixed(1)}</span></div>
           <div class="stat-row"><span class="stat-label">Tempo totale:</span><span class="stat-value">${tempoLabel} (${tempo.toFixed(2)} h)</span></div>
-          <div class="stat-row"><span class="stat-label">Velocità media:</span><span class="stat-value">${velMedia.toFixed(2)} km/h</span></div>
+          <div class="stat-row"><span class="stat-label">Pace medio:</span><span class="stat-value">${formatMinutesFloatToMMSS(velMedia>0?(60/velMedia):0)} min/km</span></div>
           <div class="stat-row"><span class="stat-label">Carico totale (RPE×min):</span><span class="stat-value">${Math.round(carico)}</span></div>
           <div class="stat-row"><span class="stat-label">TRIMP:</span><span class="stat-value">${Math.round(trimp)}</span></div>
           <div class="stat-row"><span class="stat-label">RPE medio:</span><span class="stat-value">${rpe_med.toFixed(1)}/10</span></div>
@@ -7025,7 +7121,7 @@ function displayPredictions(athlete, historicalKmData, historicalSpeedData, futu
             const paceSec = Math.round((r.pace || 0) % 60);
             return `<tr>
               <td style="padding:6px 8px;border-bottom:1px solid rgba(0,0,0,.06);">${r.km} km</td>
-              <td style="padding:6px 8px;border-bottom:1px solid rgba(0,0,0,.06);">${Number(r.speed || 0).toFixed(2)} km/h</td>
+              <td style="padding:6px 8px;border-bottom:1px solid rgba(0,0,0,.06);">${formatMinutesFloatToMMSS((Number(r.speed)||0)>0?(60/Number(r.speed)):0)} /km</td>
               <td style="padding:6px 8px;border-bottom:1px solid rgba(0,0,0,.06);">${paceMin}:${String(paceSec).padStart(2,'0')} /km</td>
             </tr>`;
           }).join('')}
@@ -7047,9 +7143,9 @@ function displayPredictions(athlete, historicalKmData, historicalSpeedData, futu
         </div>
       </div>
       <div class="prediction-card">
-        <h4>🏃 Predizione Velocità (km/h)</h4>
+        <h4>🏃 Predizione Pace (min/km)</h4>
         <div class="prediction-info">
-          <strong>Media prevista:</strong> ${avgSpeed.toFixed(2)} km/h<br>
+          <strong>Media prevista:</strong> ${formatMinutesFloatToMMSS(avgSpeed>0?(60/avgSpeed):0)} min/km<br>
           <strong>Trend:</strong> ${predictedSpeed[predictedSpeed.length-1] > predictedSpeed[0] ? '📈 In crescita' : '📉 In calo'}<br>
           <strong>R² (affidabilità):</strong> ${r2Speed.toFixed(3)}<br>
           <strong>Confidenza:</strong> ${confidenceSpeed}
@@ -7114,6 +7210,7 @@ $id('refreshTableBtn')?.addEventListener('click', ()=>{
       tb.querySelectorAll('input,select').forEach(el=>el.blur());
     }
     setTimeout(()=>{
+      try{ if(typeof migrateExistingPaceFields === 'function') migrateExistingPaceFields(); }catch(e){ console.warn('migrateExistingPaceFields failed on refresh', e); }
       updateCharts();
       saveToFirebase();
       alert('Tabella e Firebase aggiornati!');
@@ -7440,6 +7537,8 @@ window.addEventListener('load', ()=>{
   if(pa) pa.innerHTML=athletes.map((n,i)=>`<option value="${n}" ${i===0?'selected':''}>${n}</option>`).join('');
   if(ma) ma.innerHTML=athletes.map((n,i)=>`<option value="${n}" ${i===0?'selected':''}>${n}</option>`).join('');
   setTimeout(hideAppSplash, 1300);
+  // migrate existing rows to ensure Min/km is populated for older data
+  try{ if(typeof migrateExistingPaceFields === 'function') migrateExistingPaceFields(); }catch(e){console.warn('migrateExistingPaceFields failed', e); }
 });
 
 /* -----------------------------
@@ -7489,6 +7588,99 @@ function openKpiModal() {
 function closeKpiModal() {
   document.getElementById('kpiInfoModal').style.display = 'none';
   // opzionale: torna a dashboard su mobile se vuoi anche qui
+}
+</script>
+<script>
+// Fill Min/km for existing table rows and update related localStorage entries
+// Helper: interpreta un valore "min.sec" (es. 4.59) come minuti in base 60
+function parsePaceDisplayToMinutes(val){
+  if(val === undefined || val === null) return 0;
+  const s = String(val).trim();
+  if(!s) return 0;
+  if(s.indexOf('.') === -1) return Number(s) || 0;
+  const parts = s.split('.');
+  const m = Number(parts[0]) || 0;
+  // prendi al massimo due cifre dei secondi
+  const secStr = (parts[1] || '').padEnd(2,'0').slice(0,2);
+  const sec = Number(secStr) || 0;
+  return m + (sec/60);
+}
+
+// Helper: formatta minuti (float) in mm.ss dove ss sono secondi base60, restituisce numero tipo 4.59
+function formatMinutesToPaceDisplay(minFloat){
+  const mins = Math.floor(Number(minFloat) || 0);
+  let secs = Math.round(((Number(minFloat) || 0) - mins) * 60);
+  if(secs >= 60){ secs = 0; mins += 1; }
+  const secStr = String(secs).padStart(2,'0');
+  return Number(`${mins}.${secStr}`);
+}
+
+// Helper: formatta minuti (float) in mm:ss string (es. 4.5833 -> "4:35")
+function formatMinutesFloatToMMSS(minFloat){
+  const totalSec = Math.round((Number(minFloat) || 0) * 60);
+  const mins = Math.floor(totalSec / 60);
+  const secs = totalSec % 60;
+  return `${mins}:${String(secs).padStart(2,'0')}`;
+}
+
+function migrateExistingPaceFields(){
+  const rows = document.querySelectorAll('#dataTable tbody tr');
+  rows.forEach(row=>{
+    const cells = row.children;
+    const km = Number(cells[2]?.querySelector('input')?.value || 0);
+    const minutes = Number(cells[3]?.querySelector('input')?.value || 0);
+    const paceInput = cells[10]?.querySelector('input');
+    if(km > 0 && minutes > 0 && paceInput && (!paceInput.value || Number(paceInput.value) === 0)){
+      paceInput.value = formatMinutesToPaceDisplay(minutes / km);
+    }
+  });
+
+  // Update importedData if present
+  try{
+    const importedRaw = localStorage.getItem('importedData');
+    if(importedRaw){
+      const imported = JSON.parse(importedRaw);
+      let changed = false;
+      if(Array.isArray(imported)){
+        imported.forEach(it=>{
+          const kmN = Number(it.km || 0);
+          const minutesN = Number(it.minutes || 0);
+          if(kmN > 0 && minutesN > 0 && !(it.pace_min_per_km > 0)){
+            it.pace_min_per_km = formatMinutesToPaceDisplay(minutesN / kmN);
+            changed = true;
+          }
+        });
+      }
+      if(changed) localStorage.setItem('importedData', JSON.stringify(imported));
+    }
+  }catch(e){ console.warn('migrate importedData failed', e); }
+
+  // Update ripetuteSessions entries if present
+  try{
+    const rRaw = localStorage.getItem('ripetuteSessions');
+    if(rRaw){
+      const rips = JSON.parse(rRaw);
+      let changed = false;
+      if(Array.isArray(rips)){
+        rips.forEach(sess=>{
+          if(Array.isArray(sess.ripRows)){
+            sess.ripRows.forEach(rr=>{
+              const kmN = Number(rr.km || 0);
+              const minutesN = Number(rr.minutes || 0);
+              if(kmN > 0 && minutesN > 0 && !(rr.pace_min_per_km > 0)){
+                rr.pace_min_per_km = formatMinutesToPaceDisplay(minutesN / kmN);
+                changed = true;
+              }
+            });
+          }
+        });
+      }
+      if(changed) localStorage.setItem('ripetuteSessions', JSON.stringify(rips));
+    }
+  }catch(e){ console.warn('migrate ripetuteSessions failed', e); }
+
+  try{ if(typeof updateCharts === 'function') updateCharts(); }catch(e){}
+  try{ if(typeof updateTableFilters === 'function') updateTableFilters(); }catch(e){}
 }
 </script>
 <script>
