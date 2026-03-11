@@ -3762,6 +3762,33 @@ function bindRaceDistanceRowBehavior(row){
     activitySel.dataset.raceBound = '1';
   }
   syncRaceDistanceForRow(row);
+  // bind pace/min/km sync
+  try{
+    const cells = row.children;
+    const kmInput = cells[2]?.querySelector('input');
+    const minInput = cells[3]?.querySelector('input');
+    const paceInput = cells[10]?.querySelector('input');
+    const syncFn = () => {
+      const km = Number(kmInput?.value || 0);
+      const minutes = Number(minInput?.value || 0);
+      const paceRaw = paceInput?.value || '';
+      const paceMinutes = parsePaceDisplayToMinutes(paceRaw);
+      if(km > 0){
+        // if pace provided (non-zero), compute total minutes
+        if(paceRaw && paceMinutes > 0 && (!minutes || Number(minutes) === 0)){
+          minInput.value = Number((paceMinutes * km).toFixed(2));
+        }
+        // if minutes provided, compute pace display
+        else if(minutes > 0 && (!paceRaw || Number(paceRaw) === 0)){
+          paceInput.value = formatMinutesToPaceDisplay(minutes / km);
+        }
+      }
+    };
+    // avoid double-binding
+    if(kmInput && !kmInput.dataset.paceBound){ kmInput.addEventListener('blur', syncFn); kmInput.dataset.paceBound = '1'; }
+    if(minInput && !minInput.dataset.paceBound){ minInput.addEventListener('blur', syncFn); minInput.addEventListener('input', syncFn); minInput.dataset.paceBound = '1'; }
+    if(paceInput && !paceInput.dataset.paceBound){ paceInput.addEventListener('blur', syncFn); paceInput.addEventListener('input', syncFn); paceInput.dataset.paceBound = '1'; }
+  }catch(e){ console.warn('bind pace sync failed', e); }
 }
 
 function updateActivityTypesUI(){
@@ -5806,15 +5833,28 @@ function renderRunner3DChart(canvasId, athletes, kmValues, progressValues, opts 
       progressNorm = (progressMax - progressMin) > 0 ? (progress - progressMin) / (progressMax - progressMin) : 0.5;
     }
     const z = -14.2 + progressNorm * 12.8;
-    const x = ((i + 1) - (lanes + 1)/2) * (8.4 / Math.max(2, lanes));
+    // Reduce lateral spacing for the speed chart (closer figurines) and adapt on mobile
+    const baseWidth = (canvasId === 'speedChart') ? 5.4 : 8.4;
+    let laneSpacing = baseWidth / Math.max(2, lanes);
+    if (window.matchMedia('(max-width:900px)').matches) {
+      // moderate reduction on mobile to keep figurines close but avoid overlap
+      laneSpacing *= (canvasId === 'speedChart' ? 0.6 : 0.8);
+    }
+    const x = ((i + 1) - (lanes + 1)/2) * laneSpacing;
     const scale = 0.82 + kmNorm * 0.78;
 
     let model;
     if(usePhotoBillboards){
       model = createRunnerBillboard(imgSrc);
       model.group.position.set(x, 0.02, z);
-      const mobileBillboardScaleMul = (window.matchMedia('(max-width: 900px)').matches && canvasId === 'speedChart') ? 2.05 : 1.58;
-      model.group.scale.set(scale*mobileBillboardScaleMul, scale*mobileBillboardScaleMul, scale*mobileBillboardScaleMul);
+      // Increase figurine scale for the speedChart to make runners more visible
+      let mobileBillboardScaleMul;
+      if (canvasId === 'speedChart') {
+        mobileBillboardScaleMul = window.matchMedia('(max-width: 900px)').matches ? 2.6 : 1.9;
+      } else {
+        mobileBillboardScaleMul = window.matchMedia('(max-width: 900px)').matches ? 2.05 : 1.58;
+      }
+      model.group.scale.set(scale * mobileBillboardScaleMul, scale * mobileBillboardScaleMul, scale * mobileBillboardScaleMul);
       if(model.plane && model.plane.material && model.plane.material.color){
         model.plane.material.color.setRGB(1, 1, 1);
       }
@@ -6233,9 +6273,10 @@ function updateCharts(){
     // format minutes per km using existing helper when showing in inputs/labels if needed
     renderRunner3DChart('speedChart', speedAthletes, paceValuesMinPerKm, paceValuesMinPerKm, { valueUnit: 'min/km' });
 
-    // populate overlay table (desktop or mobile) showing top athletes with pace mm:ss and recent km
+    // populate overlay table showing top athletes with pace mm:ss and recent km
     try{
-      const speedOverlayTarget = (window.innerWidth <= 900 && $id('mobileSpeedTopRankingOverlay')) ? $id('mobileSpeedTopRankingOverlay') : $id('speedTopRankingOverlay');
+      // Prefer the overlay that belongs to the speed card; fall back to the mobile overlay only if the card overlay is missing
+      const speedOverlayTarget = $id('speedTopRankingOverlay') || ($id('mobileSpeedTopRankingOverlay') ? $id('mobileSpeedTopRankingOverlay') : null);
       if(speedOverlayTarget){
         const rowsHtml = speed3DRanking.slice(0,10).map((r, idx)=>{
           const recentRows = (byA[r.athlete] || []).filter(rr => {
@@ -7597,6 +7638,14 @@ function parsePaceDisplayToMinutes(val){
   if(val === undefined || val === null) return 0;
   const s = String(val).trim();
   if(!s) return 0;
+  // support mm:ss or mm.ss or decimal minutes
+  if(s.indexOf(':') !== -1){
+    const parts = s.split(':');
+    const m = Number(parts[0]) || 0;
+    const secStr = (parts[1] || '').padEnd(2,'0').slice(0,2);
+    const sec = Number(secStr) || 0;
+    return m + (sec/60);
+  }
   if(s.indexOf('.') === -1) return Number(s) || 0;
   const parts = s.split('.');
   const m = Number(parts[0]) || 0;
