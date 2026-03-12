@@ -3031,26 +3031,26 @@ window.announceAthlete = function(athleteName, rank) {
   window.speechSynthesis.cancel();
   const messages = {
     0: [
-      `${athleteName}… sei in testa alla classifica! Continua così campione!`,
-      `Grandissimo ${athleteName}! Stai dominando! Sei il numero uno!`,
-      `${athleteName}, sei inarrestabile! Primo posto tutto tuo!`
+      `${athleteName}… sei in testa alla classifica! Continua così campiò!`,
+      `Grandissimo ${athleteName}! Stai dominando! Sei il numero uno Brò!`,
+      `${athleteName}, sei inarrestabile! Primo posto tutto tuo, in groppa al porco!`
     ],
     1: [
-      `Bravo ${athleteName}! Sei secondo! Il primo è a un soffio, non mollare!`,
-      `${athleteName}, secondo posto! Continua a spingere, puoi farcela!`,
-      `Ottimo lavoro ${athleteName}! Sei vicinissimo alla vetta!`
+      `Bravo ${athleteName}! Sei secondo! Il primo è a un soffio, non la mollare proprio qua!`,
+      `${athleteName}, cazzarola secondo posto! Continua a correre, puoi farcela, mbriacò!`,
+      `Ottimo lavoro ${athleteName}! Stai ad un passo dal podio,  siccis!`
     ],
     2: [
-      `Bene ${athleteName}! Terzo posto! Dai gas, il podio è tuo!`,
-      `${athleteName}, sei sul podio! Continuando così sali ancora!`,
-      `Terzo classificato ${athleteName}! Ancora un po' di impegno e li raggiungi!`
+      `Bene ${athleteName}! Terzo posto! Dai gas,   che hai capito corri!`,
+      `${athleteName}, sei sul podio! Continuando così sali ancora, occhio a non cadere!`,
+      `Terzo classificato ${athleteName}! Ancora un po' di impegno e li raggiungi i due bambolotti!`
     ]
   };
   const motivational = [
-    `Forza ${athleteName}! Ogni km conta, continua ad allenarti!`,
-    `${athleteName}, ottima sessione! La costanza fa la differenza!`,
-    `Bravissimo ${athleteName}! Attività registrata! Non fermarti ora!`,
-    `${athleteName}, stai crescendo! Continua così e scala la classifica!`
+    `Forza ${athleteName}! Ogni km conta, continua ad allenarti, non fai proprio schifo!`,
+    `${athleteName}, ottima sessione! La costanza fa la differenza, tra un paio d'anni ce la puoi fare, forse!`,
+    `Bravissimo ${athleteName}! Attività registrata, fregate che schifo! Non fermarti ora che fai cagare!`,
+    `${athleteName}, stai crescendo! Continua così e scala la classifica, mi viene da ridere!`
   ];
   let pool;
   if(rank === 0 || rank === 1 || rank === 2) {
@@ -6235,7 +6235,7 @@ function renderRunner3DChart(canvasId, athletes, kmValues, progressValues, opts 
       scene.add(crownSprite);
 
       // Sprite testo presentatore
-      const presLabel = createRunnerLabelSprite(`${presenterEmoji} Sei il numero UNO`);
+      const presLabel = createRunnerLabelSprite(`${presenterEmoji} Frecate Sei il numero UNO`);
       presLabel.visible = false;
       scene.add(presLabel);
 
