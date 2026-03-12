@@ -2037,6 +2037,7 @@ body.dark-mode .prediction-chart-container {
     <button id="mobileAllTimeBtn" onclick="applyAllTimeDateFilter()" style="position:absolute;top:8px;left:10px;padding:6px 10px;background:#111827;color:#fff;border:none;border-radius:8px;font-size:0.95em;font-weight:600;z-index:951;box-shadow:0 2px 8px #0002;">All time</button>
     <button id="mobileFastestBtn" onclick="cycleFastestRaceDistance()" style="position:absolute;top:8px;left:96px;padding:6px 10px;background:#111827;color:#fff;border:none;border-radius:8px;font-size:0.95em;font-weight:600;z-index:951;box-shadow:0 2px 8px #0002;">Fastest</button>
     <span id="mobileFastestDistanceLabel" style="position:absolute;top:12px;left:185px;color:#fff;font-size:0.9em;font-weight:800;z-index:951;text-shadow:0 1px 2px rgba(0,0,0,.45);"></span>
+    <button id="mobileCeremonyBtn" onclick="toggleCeremony()" title="Attiva/disattiva premiazione" style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);z-index:952;padding:5px 14px;background:rgba(20,20,40,0.72);border:1.5px solid rgba(255,215,0,0.6);border-radius:20px;color:#fde047;font-size:0.82rem;font-weight:700;cursor:pointer;backdrop-filter:blur(4px);box-shadow:0 2px 10px #0005;">🏆 Premiazione</button>
     <button id="openMobileFilterBtn" style="position:absolute;top:8px;right:10px;padding:6px 10px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:0.95em;font-weight:600;z-index:950;box-shadow:0 2px 8px #0002;">🔍 Filtra</button>
     <div id="mobileKmTopRankingOverlay" style="position:absolute;right:8px;bottom:8px;left:8px;max-height:34%;overflow:auto;padding:8px 10px;border:1px solid rgba(203,213,225,.55);border-radius:10px;background:rgba(255,255,255,0.22);font-size:0.72rem;line-height:1.35;color:#0f172a;z-index:940;box-shadow:0 4px 12px rgba(0,0,0,.12);"></div>
     
@@ -2573,7 +2574,7 @@ document.getElementById('dateTo').addEventListener('change', updateMobileCharts)
     </div>
 
     <div class="grid">
-      <div class="card" id="kmRunnerCard" style="position:relative;"><h3>🏃‍♂️ Classifica 3D atleti (avanzamento=score top atleta, dimensione=km)</h3><button id="allTimeBtn" onclick="applyAllTimeDateFilter()" style="position:absolute;top:12px;left:12px;padding:6px 10px;background:#111827;color:#fff;border:none;border-radius:8px;font-size:0.86rem;font-weight:700;z-index:9;box-shadow:0 2px 8px #0003;">All time</button><button id="fastestBtn" onclick="cycleFastestRaceDistance()" style="position:absolute;top:12px;left:94px;padding:6px 10px;background:#111827;color:#fff;border:none;border-radius:8px;font-size:0.86rem;font-weight:700;z-index:9;box-shadow:0 2px 8px #0003;">Fastest</button><span id="fastestDistanceLabel" style="position:absolute;top:18px;left:180px;color:#fff;font-size:0.83rem;font-weight:800;z-index:9;text-shadow:0 1px 2px rgba(0,0,0,.45);"></span><canvas id="kmChart"></canvas><div id="kmTopRankingOverlay" style="position:absolute;right:12px;bottom:12px;max-width:min(48%,420px);min-width:300px;max-height:42%;overflow:auto;margin-top:10px;padding:10px;border:1px solid rgba(203,213,225,.55);border-radius:10px;background:rgba(255,255,255,0.22);font-size:0.78rem;line-height:1.4;color:#0f172a;z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.12);"></div></div>
+      <div class="card" id="kmRunnerCard" style="position:relative;"><h3>🏃‍♂️ Classifica 3D atleti (avanzamento=score top atleta, dimensione=km)</h3><button id="allTimeBtn" onclick="applyAllTimeDateFilter()" style="position:absolute;top:12px;left:12px;padding:6px 10px;background:#111827;color:#fff;border:none;border-radius:8px;font-size:0.86rem;font-weight:700;z-index:9;box-shadow:0 2px 8px #0003;">All time</button><button id="fastestBtn" onclick="cycleFastestRaceDistance()" style="position:absolute;top:12px;left:94px;padding:6px 10px;background:#111827;color:#fff;border:none;border-radius:8px;font-size:0.86rem;font-weight:700;z-index:9;box-shadow:0 2px 8px #0003;">Fastest</button><span id="fastestDistanceLabel" style="position:absolute;top:18px;left:180px;color:#fff;font-size:0.83rem;font-weight:800;z-index:9;text-shadow:0 1px 2px rgba(0,0,0,.45);"></span><button id="ceremonyBtn" onclick="toggleCeremony()" title="Attiva/disattiva premiazione" style="position:absolute;top:12px;right:12px;z-index:20;padding:5px 14px;background:rgba(20,20,40,0.72);border:1.5px solid rgba(255,215,0,0.6);border-radius:20px;color:#fde047;font-size:0.82rem;font-weight:700;cursor:pointer;letter-spacing:0.3px;backdrop-filter:blur(4px);box-shadow:0 2px 10px #0005;">🏆 Premiazione</button><canvas id="kmChart"></canvas><div id="kmTopRankingOverlay" style="position:absolute;right:12px;bottom:12px;max-width:min(48%,420px);min-width:300px;max-height:42%;overflow:auto;margin-top:10px;padding:10px;border:1px solid rgba(203,213,225,.55);border-radius:10px;background:rgba(255,255,255,0.22);font-size:0.78rem;line-height:1.4;color:#0f172a;z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.12);"></div></div>
       <div class="card" id="speedRunnerCard" style="position:relative;"><h3>Atleta più veloce (ripetute ultimi 10 gg)</h3><canvas id="speedChart"></canvas><div id="speedTopRankingOverlay" style="position:absolute;right:12px;bottom:12px;max-width:min(46%,360px);min-width:220px;max-height:42%;overflow:auto;margin-top:10px;padding:10px;border:1px solid rgba(203,213,225,.55);border-radius:10px;background:rgba(255,255,255,0.22);font-size:0.78rem;line-height:1.25;color:#0f172a;z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.12);"></div></div>
       <div class="card"><h3>📊 Km/settimana</h3><canvas id="weeklyChart"></canvas></div>
       <div class="card"><h3>⚡ Carico interno</h3><canvas id="loadChart"></canvas></div>
@@ -3015,7 +3016,20 @@ document.getElementById('dateTo').addEventListener('change', updateMobileCharts)
 </div>
 
 <script>
-// --- Firebase RTDB import/export ---
+window.toggleCeremony = function(){
+  window.__forceCeremonyPreview = !window.__forceCeremonyPreview;
+  ['ceremonyBtn', 'mobileCeremonyBtn'].forEach(id => {
+    const btn = document.getElementById(id);
+    if(btn){
+      btn.style.background = window.__forceCeremonyPreview
+        ? 'rgba(161,120,0,0.85)'
+        : 'rgba(20,20,40,0.72)';
+      btn.textContent = window.__forceCeremonyPreview ? '🏆 ON' : '🏆 Premiazione';
+    }
+  });
+  if(typeof updateCharts === 'function') updateCharts();
+};
+
 const FIREBASE_URL = 'https://running-7a13f-default-rtdb.europe-west1.firebasedatabase.app/data.json';
 
 window.importFromFirebase = function() {
@@ -5453,6 +5467,32 @@ function getRunnerImageAdjust(imageSrc){
   return { sizeMul: 1.0, yPct: 56, yOffset3D: 0 };
 }
 
+function getSoldatinoMaleSvg(){
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='120' height='180' viewBox='0 0 120 180'>
+    <circle cx='60' cy='28' r='18' fill='#fde8c8' stroke='#92400e' stroke-width='3'/>
+    <rect x='44' y='48' width='32' height='50' rx='12' fill='#3b82f6' stroke='#1d4ed8' stroke-width='3'/>
+    <rect x='26' y='56' width='18' height='42' rx='8' fill='#3b82f6' stroke='#1d4ed8' stroke-width='3'/>
+    <rect x='76' y='56' width='18' height='42' rx='8' fill='#3b82f6' stroke='#1d4ed8' stroke-width='3'/>
+    <rect x='44' y='98' width='14' height='52' rx='8' fill='#1e293b' stroke='#0f172a' stroke-width='3'/>
+    <rect x='62' y='98' width='14' height='52' rx='8' fill='#1e293b' stroke='#0f172a' stroke-width='3'/>
+    <rect x='40' y='148' width='20' height='10' rx='4' fill='#334155'/>
+    <rect x='60' y='148' width='20' height='10' rx='4' fill='#334155'/>
+  </svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+function getSoldatinoFemaleSvg(){
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='120' height='180' viewBox='0 0 120 180'>
+    <ellipse cx='60' cy='20' rx='22' ry='14' fill='#92400e'/>
+    <circle cx='60' cy='28' r='18' fill='#fde8c8' stroke='#92400e' stroke-width='3'/>
+    <rect x='44' y='48' width='32' height='38' rx='10' fill='#f472b6' stroke='#db2777' stroke-width='3'/>
+    <rect x='26' y='54' width='18' height='35' rx='8' fill='#f472b6' stroke='#db2777' stroke-width='3'/>
+    <rect x='76' y='54' width='18' height='35' rx='8' fill='#f472b6' stroke='#db2777' stroke-width='3'/>
+    <path d='M40 86 Q28 138 50 152 L70 152 Q92 138 80 86 Z' fill='#f9a8d4' stroke='#db2777' stroke-width='2'/>
+    <rect x='43' y='148' width='15' height='10' rx='4' fill='#be185d'/>
+    <rect x='62' y='148' width='15' height='10' rx='4' fill='#be185d'/>
+  </svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
 function getDefaultSoldatinoSvg(){
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='120' height='180' viewBox='0 0 120 180'>
     <defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#f8fafc'/><stop offset='1' stop-color='#cbd5e1'/></linearGradient></defs>
@@ -6107,6 +6147,83 @@ function renderRunner3DChart(canvasId, athletes, kmValues, progressValues, opts 
     scene.add(finish);
   }
 
+  // --- 🏆 DOMENICA: animazione premiazione top runner ---
+  let ceremonyState = null;
+  if(canvasId === 'kmChart') {
+    const today = new Date();
+    const isSunday = today.getDay() === 0 || window.__forceCeremonyPreview === true; // true ogni domenica (o forzato per anteprima)
+    if(isSunday && athletes.length > 0) {
+      // Trova il 1° classificato
+      const topIdx = Object.entries(_speedRankOf).find(([,r]) => r === 0)?.[0];
+      const topI = topIdx !== undefined ? Number(topIdx) : 0;
+      const topAthName = athletes[topI] || athletes[0];
+      const topSex = getAthleteSexValue(topAthName); // 'M' o 'F'
+      // Figurina presentatore: sempre joker.png
+      const presenterEmoji  = (topSex === 'M') ? '👩' : '👨';
+
+      // Billboard presentatore con joker
+      const presenterBillboard = createRunnerBillboard('images/joker.png');
+      const topRunner = runnerStates[topI];
+      const targetX = (topRunner ? topRunner.model.group.position.x : 0) + 2.0;
+      const targetZ = (topRunner ? topRunner.model.group.position.z : 0);
+      const startX  = targetX + 18;
+      presenterBillboard.group.position.set(startX, 0.02, targetZ);
+      // Metà della scala del top runner
+      const presenterScale = topRunner ? topRunner.model.group.scale.x * 0.5 : 1.0;
+      presenterBillboard.group.scale.set(presenterScale, presenterScale, presenterScale);
+      presenterBillboard.group.rotation.y = -Math.PI * 0.12; // leggermente girata verso il vincitore
+      scene.add(presenterBillboard.group);
+
+      // Sprite corona sopra top runner
+      const crownCnv = document.createElement('canvas');
+      crownCnv.width = 128; crownCnv.height = 128;
+      const cc = crownCnv.getContext('2d');
+      cc.font = '88px serif';
+      cc.textAlign = 'center'; cc.textBaseline = 'middle';
+      cc.fillText('👑', 64, 64);
+      const crownTex = new THREE.CanvasTexture(crownCnv);
+      crownTex.needsUpdate = true;
+      const crownSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: crownTex, transparent: true, depthTest: false }));
+      crownSprite.scale.set(1.6, 1.6, 1);
+      crownSprite.visible = false;
+      if(topRunner) {
+        crownSprite.position.set(
+          topRunner.model.group.position.x + 0.4,
+          topRunner.baseScale * 2.4,
+          topRunner.model.group.position.z
+        );
+      }
+      scene.add(crownSprite);
+
+      // Sprite testo presentatore
+      const presLabel = createRunnerLabelSprite(`${presenterEmoji} Sei il numero UNO`);
+      presLabel.visible = false;
+      scene.add(presLabel);
+
+      // Nascondi subito tutti gli atleti tranne il vincitore
+      runnerStates.forEach((r, idx) => {
+        if(idx !== topI) {
+          if(r.model && r.model.group) r.model.group.visible = false;
+          if(r.label) r.label.visible = false;
+        }
+      });
+
+      ceremonyState = {
+        presenterBillboard,
+        crownSprite,
+        presLabel,
+        startX,
+        targetX,
+        targetZ,
+        arrived: false,
+        presenterScale,
+        topRunner,
+        topI,
+        runnerStates
+      };
+    }
+  }
+
   const state = {
     renderer,
     scene,
@@ -6149,6 +6266,45 @@ function renderRunner3DChart(canvasId, athletes, kmValues, progressValues, opts 
       }
     });
     renderer.render(scene, camera);
+
+    // --- Animazione cerimonia domenicale ---
+    if(ceremonyState) {
+      const cs = ceremonyState;
+      const walkDuration = 3.5; // secondi per raggiungere il vincitore
+      if(!cs.arrived) {
+        const prog = Math.min(1, t / walkDuration);
+        const eased = 1 - Math.pow(1 - prog, 3); // ease-out cubic
+        const curX = cs.startX + (cs.targetX - cs.startX) * eased;
+        cs.presenterBillboard.group.position.x = curX;
+        // Bob camminata
+        const bob = Math.abs(Math.sin(t * 4)) * 0.08;
+        cs.presenterBillboard.group.position.y = 0.02 + bob;
+        if(prog >= 1) {
+          cs.arrived = true;
+          cs.crownSprite.visible = true;
+          cs.presLabel.visible = true;
+          if(cs.topRunner) {
+            cs.presLabel.position.set(
+              cs.targetX + 1.0,
+              cs.topRunner.labelBaseY + 0.4,
+              cs.targetZ
+            );
+          }
+        }
+      } else {
+        // Presentatore arrivato: idle + corona pulsante
+        const idleSway = Math.sin(t * 1.4) * 0.04;
+        cs.presenterBillboard.group.rotation.y = -Math.PI * 0.12 + idleSway;
+        const crownPulse = 1 + Math.sin(t * 3.5) * 0.12;
+        cs.crownSprite.scale.set(1.6 * crownPulse, 1.6 * crownPulse, 1);
+        if(cs.topRunner) {
+          cs.crownSprite.position.y = cs.topRunner.baseScale * 2.4 + Math.sin(t * 2) * 0.15;
+        }
+        // Label fade in
+        if(cs.presLabel.material) cs.presLabel.material.opacity = Math.min(1, (t - 3.5) / 0.8);
+      }
+    }
+
     state.rafId = requestAnimationFrame(animate);
   };
 
