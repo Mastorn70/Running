@@ -6646,6 +6646,8 @@ function updateCharts(){
   }
   const athletesForKm = kmRanking.map(r => r.athlete);
   const totalKmPerAthlete = kmRanking.map(r => r.km);
+  // Salva il primo in classifica km per la cerimonia
+  window.__kmTopAthlete = athletesForKm.length ? athletesForKm[0] : null;
 
   if (charts['kmChart']) { charts['kmChart'].destroy(); charts['kmChart'] = null; }
   if (athletesForKm.length) {
@@ -6990,8 +6992,10 @@ function saveMobileSession(){
     if(cells[10]?.querySelector('input')) cells[10].querySelector('input').value = data.pace_min_per_km || (data.km && data.minutes ? formatMinutesToPaceDisplay(Number(data.minutes)/Number(data.km)) : '');
   } else {
     addRow(data);
-    // Cerimonia automatica per nuova attività
-    if(window.triggerCeremonyAuto) window.triggerCeremonyAuto();
+    // Cerimonia automatica solo se l'atleta salvato è il primo in classifica km
+    if(window.triggerCeremonyAuto && window.__kmTopAthlete && data.athlete === window.__kmTopAthlete) {
+      window.triggerCeremonyAuto();
+    }
   }
   closeMobileSessionModal();
   updateTableFilters();
