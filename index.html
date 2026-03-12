@@ -3026,24 +3026,39 @@ window.triggerCeremonyAuto = function(){
   window.__ceremonyAutoStop = true; // si ferma dopo 3 cicli
 };
 
-window.announceAthlete = function(athleteName, isTop) {
+window.announceAthlete = function(athleteName, rank) {
   if(!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
-
-  const ranking = window.__kmRanking || [];
-  const rank = ranking.indexOf(athleteName); // 0=1°, 1=2°, 2=3°, -1=non in classifica
-
   const messages = {
-    0: `Ohé ${athleteName}! Uncule Sì 'l prime de la classifiche! Ajò, va' avante così campió!`,
-    1: `${athleteName}! Sì 'l seconne! 'L prime ce sta vicine vicine, nun te fermà mo'!`,
-    2: `${athleteName}! Terze poste! Ancora n'ate pochette e sali 'ndo podio, ajò!`,
+    0: [
+      `${athleteName}… sei in testa alla classifica! Continua così campione!`,
+      `Grandissimo ${athleteName}! Stai dominando! Sei il numero uno!`,
+      `${athleteName}, sei inarrestabile! Primo posto tutto tuo!`
+    ],
+    1: [
+      `Bravo ${athleteName}! Sei secondo! Il primo è a un soffio, non mollare!`,
+      `${athleteName}, secondo posto! Continua a spingere, puoi farcela!`,
+      `Ottimo lavoro ${athleteName}! Sei vicinissimo alla vetta!`
+    ],
+    2: [
+      `Bene ${athleteName}! Terzo posto! Dai gas, il podio è tuo!`,
+      `${athleteName}, sei sul podio! Continuando così sali ancora!`,
+      `Terzo classificato ${athleteName}! Ancora un po' di impegno e li raggiungi!`
+    ]
   };
-  const defaultMsg = ranking.length > 0
-    ? `Dai ${athleteName}! Mèttece n'ate gambe e scalà sta classifiche! Ajò corri!`
-    : `Bbravo ${athleteName}! Attività registrata, ajò!`;
-
-  const text = messages[rank] !== undefined ? messages[rank] : defaultMsg;
-
+  const motivational = [
+    `Forza ${athleteName}! Ogni km conta, continua ad allenarti!`,
+    `${athleteName}, ottima sessione! La costanza fa la differenza!`,
+    `Bravissimo ${athleteName}! Attività registrata! Non fermarti ora!`,
+    `${athleteName}, stai crescendo! Continua così e scala la classifica!`
+  ];
+  let pool;
+  if(rank === 0 || rank === 1 || rank === 2) {
+    pool = messages[rank];
+  } else {
+    pool = motivational;
+  }
+  const text = pool[Math.floor(Math.random() * pool.length)];
   const utt = new SpeechSynthesisUtterance(text);
   utt.lang = 'it-IT';
   utt.rate = 0.95;
@@ -6674,9 +6689,9 @@ function updateCharts(){
   }
   const athletesForKm = kmRanking.map(r => r.athlete);
   const totalKmPerAthlete = kmRanking.map(r => r.km);
-  // Salva il primo in classifica km per la cerimonia
+  // Salva la classifica km completa per la cerimonia e gli annunci
   window.__kmTopAthlete = athletesForKm.length ? athletesForKm[0] : null;
-  window.__kmRanking = athletesForKm; // classifica completa per messaggi vocali
+  window.__kmRanking = athletesForKm; // indice 0=primo, 1=secondo, ecc.
 
   if (charts['kmChart']) { charts['kmChart'].destroy(); charts['kmChart'] = null; }
   if (athletesForKm.length) {
@@ -7021,9 +7036,11 @@ function saveMobileSession(){
     if(cells[10]?.querySelector('input')) cells[10].querySelector('input').value = data.pace_min_per_km || (data.km && data.minutes ? formatMinutesToPaceDisplay(Number(data.minutes)/Number(data.km)) : '');
   } else {
     addRow(data);
-    const isTop = !!(window.__kmTopAthlete && data.athlete === window.__kmTopAthlete);
-    // Annuncio vocale con il nome dell'atleta
-    if(window.announceAthlete) window.announceAthlete(data.athlete, isTop);
+    const ranking = window.__kmRanking || [];
+    const rank = ranking.indexOf(data.athlete); // -1 se non in classifica, 0=primo, ecc.
+    const isTop = rank === 0;
+    // Annuncio vocale personalizzato per posizione in classifica
+    if(window.announceAthlete) window.announceAthlete(data.athlete, rank >= 0 ? rank : 99);
     // Cerimonia automatica solo se l'atleta salvato è il primo in classifica km
     if(isTop && window.triggerCeremonyAuto) {
       window.triggerCeremonyAuto();
