@@ -6312,7 +6312,7 @@ function renderRunner3DChart(canvasId, athletes, kmValues, progressValues, opts 
     if(ceremonyState) {
       const cs = ceremonyState;
       // Auto-stop dopo 3 cicli (~21s): walk 3.5s + 3×5.8s idle
-      if(cs.autoStop && t >= 21.0) {
+      if(cs.autoStop && t >= 7.0) {
         if(cs.runnerStates) cs.runnerStates.forEach((r, idx) => {
           if(idx !== cs.topI) {
             if(r.model && r.model.group) r.model.group.visible = true;
@@ -7036,19 +7036,25 @@ function saveMobileSession(){
     if(cells[10]?.querySelector('input')) cells[10].querySelector('input').value = data.pace_min_per_km || (data.km && data.minutes ? formatMinutesToPaceDisplay(Number(data.minutes)/Number(data.km)) : '');
   } else {
     addRow(data);
-    const ranking = window.__kmRanking || [];
-    const rank = ranking.indexOf(data.athlete); // -1 se non in classifica, 0=primo, ecc.
-    const isTop = rank === 0;
-    // Annuncio vocale personalizzato per posizione in classifica
-    if(window.announceAthlete) window.announceAthlete(data.athlete, rank >= 0 ? rank : 99);
-    // Cerimonia automatica solo se l'atleta salvato è il primo in classifica km
-    if(isTop && window.triggerCeremonyAuto) {
-      window.triggerCeremonyAuto();
-    }
   }
+  const _isNewSession = !mobileSessionEditRow;
+  const _newAthlete = data.athlete;
   closeMobileSessionModal();
   updateTableFilters();
   updateCharts();
+  // Controllo DOPO updateCharts(): la classifica __kmRanking è ora aggiornata con la nuova attività
+  if(_isNewSession) {
+    const ranking = window.__kmRanking || [];
+    const rank = ranking.indexOf(_newAthlete);
+    // Annuncio vocale personalizzato per posizione in classifica aggiornata
+    if(window.announceAthlete) window.announceAthlete(_newAthlete, rank >= 0 ? rank : 99);
+    // Cerimonia automatica solo se l'atleta è primo:
+    // setta il flag e ri-renderizza il kmChart così la cerimonia viene costruita
+    if(rank === 0 && window.triggerCeremonyAuto) {
+      window.triggerCeremonyAuto();
+      updateCharts(); // secondo render con il flag attivo → cerimonia parte
+    }
+  }
   if(typeof updateSaveFirebaseBtn === 'function') updateSaveFirebaseBtn();
   if(typeof scheduleAutoFirebaseSave === 'function') scheduleAutoFirebaseSave();
 }
