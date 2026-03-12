@@ -5577,7 +5577,7 @@ function createRunnerLabelSprite(text, _bg, _fg){
   tex.needsUpdate = true;
   const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
   const spr = new THREE.Sprite(mat);
-  spr.scale.set(4.2, 1.12, 1);
+  spr.scale.set(2.2, 0.58, 1);
   return spr;
 }
 
@@ -5961,8 +5961,8 @@ function renderRunner3DChart(canvasId, athletes, kmValues, progressValues, opts 
   const fov = (canvasId === 'speedChart') ? 38 : 42;
   const camera = new THREE.PerspectiveCamera(fov, width/height, 0.1, 100);
   if(canvasId === 'speedChart'){
-    camera.position.set(0, 3.0, 6);
-    camera.lookAt(0, 0.8, -2.0);
+    camera.position.set(0, 6.0, 9);
+    camera.lookAt(0, 2.8, -3.0);
   } else {
     camera.position.set(0, 6.2, 15);
     camera.lookAt(0, 1.2, -5.8);
@@ -6044,6 +6044,10 @@ function renderRunner3DChart(canvasId, athletes, kmValues, progressValues, opts 
     }
     const x = ((i + 1) - (lanes + 1)/2) * laneSpacing;
     const scale = 0.82 + kmNorm * 0.78;
+    // speedChart: il 1° posto è notevolmente più grande, scala decresce per rank
+    const rankBoost = (canvasId === 'speedChart')
+      ? Math.max(0.55, 1.0 - (_speedRankOf[i] / Math.max(1, athletes.length - 1)) * 0.45)
+      : 1.0;
 
     let model;
     if(usePhotoBillboards){
@@ -6057,7 +6061,8 @@ function renderRunner3DChart(canvasId, athletes, kmValues, progressValues, opts 
       } else {
         mobileBillboardScaleMul = window.matchMedia('(max-width: 900px)').matches ? 2.05 : 1.58;
       }
-      model.group.scale.set(scale * mobileBillboardScaleMul, scale * mobileBillboardScaleMul, scale * mobileBillboardScaleMul);
+      const finalScale = scale * mobileBillboardScaleMul * rankBoost;
+      model.group.scale.set(finalScale, finalScale, finalScale);
       if(model.plane && model.plane.material && model.plane.material.color){
         model.plane.material.color.setRGB(1, 1, 1);
       }
@@ -6075,7 +6080,8 @@ function renderRunner3DChart(canvasId, athletes, kmValues, progressValues, opts 
     // Altezza label alternata per evitare sovrapposizioni: ogni figurina sfalsata
     const rankIdx = _speedRankOf[i] !== undefined ? _speedRankOf[i] : i;
     const labelStagger = (canvasId === 'speedChart') ? (rankIdx % 2 === 0 ? 0 : 1.8) : 0;
-    const labelBaseY = (usePhotoBillboards ? 3.6 : 2.9) * scale + labelStagger;
+    const effectiveScale = (canvasId === 'speedChart') ? (scale * rankBoost) : scale;
+    const labelBaseY = (usePhotoBillboards ? 3.6 : 2.9) * effectiveScale + labelStagger;
     label.position.set(x, labelBaseY, z);
     scene.add(label);
 
@@ -6087,7 +6093,7 @@ function renderRunner3DChart(canvasId, athletes, kmValues, progressValues, opts 
       phase: i * 0.75,
       animated: true,
       mode: usePhotoBillboards ? 'billboard' : 'mesh',
-      baseScale: scale
+      baseScale: effectiveScale
     });
   });
 
