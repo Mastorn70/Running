@@ -1882,6 +1882,7 @@ body.dark-mode .prediction-chart-container {
   <button style="display:block;width:100%;margin-top:8px;font-size:1.1em;" data-section="regole-score">⚙️ Regole Score</button>
   <button onclick="openMobileKpiTargetModal();closeMobileMenu();" style="display:block;width:100%;margin-top:8px;font-size:1.1em;">🎯 Target KPI</button>
   <button id="mobileThemeBtn" type="button" onclick="toggleThemeMode()" style="display:block;width:100%;margin-top:10px;font-size:1.05em;background:#6366f1;color:#fff;">🌙 Tema</button>
+  <button id="mobileAudioToggleBtn" type="button" onclick="toggleAudioAnnounce()" style="display:block;width:100%;margin-top:8px;font-size:1.05em;background:#10b981;color:#fff;">🔊 Audio ON</button>
 </nav>
 <!-- Notifica e barra Firebase rimangono ma sono nascosti su mobile -->
 <div id="notificaSalvataggio" style="display:none;position:fixed;top:24px;right:24px;z-index:99999;background:#10b981;color:#fff;padding:12px 24px;border-radius:8px;box-shadow:0 2px 8px #0002;font-size:1.1em;transition:opacity 0.4s;opacity:0;">Dati sincronizzati!</div>
@@ -3026,8 +3027,21 @@ window.triggerCeremonyAuto = function(){
   window.__ceremonyAutoStop = true; // si ferma dopo 3 cicli
 };
 
+// Impostazione audio messaggi vocali (default: on)
+try { window.__audioEnabled = localStorage.getItem('audioEnabled') !== 'false'; } catch(e){ window.__audioEnabled = true; }
+
+window.toggleAudioAnnounce = function(){
+  window.__audioEnabled = !window.__audioEnabled;
+  try { localStorage.setItem('audioEnabled', window.__audioEnabled ? 'true' : 'false'); } catch(e){}
+  const btn = document.getElementById('mobileAudioToggleBtn');
+  if(btn) btn.textContent = window.__audioEnabled ? '🔊 Audio ON' : '🔇 Audio OFF';
+  // Salva anche su Firebase
+  if(typeof saveToFirebase === 'function') saveToFirebase();
+};
+
 window.announceAthlete = function(athleteName, rank, sex) {
   if(!window.speechSynthesis) return;
+  if(window.__audioEnabled === false) return;
   window.speechSynthesis.cancel();
   const messages = {
     0: [
@@ -3118,6 +3132,13 @@ window.importFromFirebase = function() {
             if (kt.trimp)  MOBILE_KPI_TARGETS.trimp  = Number(kt.trimp);
             if (kt.risk != null) MOBILE_KPI_TARGETS.risk = Number(kt.risk);
             try { localStorage.setItem('mobileKpiTargets', JSON.stringify(MOBILE_KPI_TARGETS)); } catch(e){}
+          }
+
+          if (Object.prototype.hasOwnProperty.call(data, 'audioEnabled')) {
+            window.__audioEnabled = data.audioEnabled !== false;
+            try { localStorage.setItem('audioEnabled', window.__audioEnabled ? 'true' : 'false'); } catch(e){}
+            const btn = document.getElementById('mobileAudioToggleBtn');
+            if(btn) btn.textContent = window.__audioEnabled ? '🔊 Audio ON' : '🔇 Audio OFF';
           }
 
           if (Object.prototype.hasOwnProperty.call(data, 'ripetuteSessions')) {
@@ -3217,6 +3238,7 @@ function saveToFirebase() {
       otherPct: Number(topScoreRules.otherPct || 0)
     },
     kpiTargets: { km: MOBILE_KPI_TARGETS.km, carico: MOBILE_KPI_TARGETS.carico, trimp: MOBILE_KPI_TARGETS.trimp, risk: MOBILE_KPI_TARGETS.risk },
+    audioEnabled: window.__audioEnabled !== false,
     savedAt: new Date().toISOString()
   };
   console.log('Dati inviati a Firebase:', payload);
@@ -8027,6 +8049,9 @@ window.addEventListener('DOMContentLoaded', ()=>{
     });
   }
   setTimeout(hideAppSplash, 3200);
+  // Sincronizza testo bottone audio con il valore già caricato da localStorage
+  const audioBtn = document.getElementById('mobileAudioToggleBtn');
+  if(audioBtn) audioBtn.textContent = window.__audioEnabled !== false ? '🔊 Audio ON' : '🔇 Audio OFF';
 });
 
 /* -----------------------------
