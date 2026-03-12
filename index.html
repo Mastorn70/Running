@@ -3034,13 +3034,13 @@ window.announceAthlete = function(athleteName, isTop) {
   const rank = ranking.indexOf(athleteName); // 0=1°, 1=2°, 2=3°, -1=non in classifica
 
   const messages = {
-    0: `${athleteName}… sei in testa! Continua così campione!`,
-    1: `${athleteName}! Sei secondo! Il primo è a portata di mano, non mollare!`,
-    2: `${athleteName}! Terzo posto! Ancora un piccolo sforzo e sali sul podio!`,
+    0: `Ohé ${athleteName}! Uncule Sì 'l prime de la classifiche! Ajò, va' avante così campió!`,
+    1: `${athleteName}! Sì 'l seconne! 'L prime ce sta vicine vicine, nun te fermà mo'!`,
+    2: `${athleteName}! Terze poste! Ancora n'ate pochette e sali 'ndo podio, ajò!`,
   };
   const defaultMsg = ranking.length > 0
-    ? `Dai ${athleteName}! Corri di più e scala la classifica!`
-    : `Bravissimo ${athleteName}! Attività registrata!`;
+    ? `Dai ${athleteName}! Mèttece n'ate gambe e scalà sta classifiche! Ajò corri!`
+    : `Bbravo ${athleteName}! Attività registrata, ajò!`;
 
   const text = messages[rank] !== undefined ? messages[rank] : defaultMsg;
 
