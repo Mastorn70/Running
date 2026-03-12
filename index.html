@@ -3026,6 +3026,34 @@ window.triggerCeremonyAuto = function(){
   window.__ceremonyAutoStop = true; // si ferma dopo 3 cicli
 };
 
+window.announceAthlete = function(athleteName, isTop) {
+  if(!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+
+  const ranking = window.__kmRanking || [];
+  const rank = ranking.indexOf(athleteName); // 0=1°, 1=2°, 2=3°, -1=non in classifica
+
+  const messages = {
+    0: `${athleteName}… sei in testa! Continua così campione!`,
+    1: `${athleteName}! Sei secondo! Il primo è a portata di mano, non mollare!`,
+    2: `${athleteName}! Terzo posto! Ancora un piccolo sforzo e sali sul podio!`,
+  };
+  const defaultMsg = ranking.length > 0
+    ? `Dai ${athleteName}! Corri di più e scala la classifica!`
+    : `Bravissimo ${athleteName}! Attività registrata!`;
+
+  const text = messages[rank] !== undefined ? messages[rank] : defaultMsg;
+
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.lang = 'it-IT';
+  utt.rate = 0.95;
+  utt.pitch = 1.1;
+  const voices = window.speechSynthesis.getVoices();
+  const itVoice = voices.find(v => v.lang.startsWith('it'));
+  if(itVoice) utt.voice = itVoice;
+  window.speechSynthesis.speak(utt);
+};
+
 const FIREBASE_URL = 'https://running-7a13f-default-rtdb.europe-west1.firebasedatabase.app/data.json';
 
 window.importFromFirebase = function() {
@@ -6648,6 +6676,7 @@ function updateCharts(){
   const totalKmPerAthlete = kmRanking.map(r => r.km);
   // Salva il primo in classifica km per la cerimonia
   window.__kmTopAthlete = athletesForKm.length ? athletesForKm[0] : null;
+  window.__kmRanking = athletesForKm; // classifica completa per messaggi vocali
 
   if (charts['kmChart']) { charts['kmChart'].destroy(); charts['kmChart'] = null; }
   if (athletesForKm.length) {
@@ -6992,8 +7021,11 @@ function saveMobileSession(){
     if(cells[10]?.querySelector('input')) cells[10].querySelector('input').value = data.pace_min_per_km || (data.km && data.minutes ? formatMinutesToPaceDisplay(Number(data.minutes)/Number(data.km)) : '');
   } else {
     addRow(data);
+    const isTop = !!(window.__kmTopAthlete && data.athlete === window.__kmTopAthlete);
+    // Annuncio vocale con il nome dell'atleta
+    if(window.announceAthlete) window.announceAthlete(data.athlete, isTop);
     // Cerimonia automatica solo se l'atleta salvato è il primo in classifica km
-    if(window.triggerCeremonyAuto && window.__kmTopAthlete && data.athlete === window.__kmTopAthlete) {
+    if(isTop && window.triggerCeremonyAuto) {
       window.triggerCeremonyAuto();
     }
   }
