@@ -7069,6 +7069,9 @@ function saveMobileSession(){
     if(rank === 0 && window.triggerCeremonyAuto) {
       window.triggerCeremonyAuto();
       updateCharts(); // secondo render con il flag attivo → cerimonia parte
+      // Scroll al grafico 3D km per mostrare la premiazione
+      const kmCard = document.getElementById('kmRunnerCard');
+      if(kmCard) setTimeout(() => kmCard.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
     }
   }
   if(typeof updateSaveFirebaseBtn === 'function') updateSaveFirebaseBtn();
