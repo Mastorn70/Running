@@ -2973,7 +2973,7 @@ document.getElementById('dateTo').addEventListener('change', updateMobileCharts)
         <label>Atleta:</label>
         <select id="predictionAthlete"></select>
         <label>Giorni futuri:</label>
-        <input type="number" id="predictionDays" value="7" min="1" max="30" style="width:80px;">
+        <input type="number" id="predictionDays" value="90" min="1" max="90" style="width:80px;">
         <label>Obiettivo (km):</label>
         <input type="number" id="predictionTarget" value="10" min="1" style="width:80px;">
         <button onclick="generatePredictions()">🚀 Genera Predizioni</button>
@@ -7357,7 +7357,30 @@ function generatePredictions(){
       const t = Number(d.time || 0) || ((Number(d.minutes || 0)) / 60);
       return t > 0 && Number(d.km || 0) > 0 && isFinite(dateMs) && ((lastAthleteDateMs - dateMs) <= speedWindowMs);
     });
+
+    // Aggiungi ripetute > 1000m come punti di velocità aggiuntivi
+    const ripSpeedCandidates = [];
+    (window.ripetuteSessions || []).forEach(s => {
+      if(!s || s.athlete !== athlete || !Array.isArray(s.reps)) return;
+      const dateMs = new Date(s.date).getTime();
+      if(!isFinite(dateMs) || (lastAthleteDateMs - dateMs) > speedWindowMs) return;
+      s.reps.forEach(rep => {
+        const distM = Number(rep.distance || 0);
+        const timeS = Number(rep.time_s || 0);
+        if(distM > 1000 && timeS > 0) {
+          ripSpeedCandidates.push({
+            date: s.date,
+            athlete: s.athlete,
+            km: distM / 1000,
+            minutes: timeS / 60,
+            time: timeS / 3600,
+            type: 'Corsa'
+          });
+        }
+      });
+    });
     const speedData = (speedRunCandidates.length >= 2 ? speedRunCandidates : speedFallbackCandidates)
+      .concat(ripSpeedCandidates)
       .sort((a,b)=> String(a.date).localeCompare(String(b.date)));
     if(speedData.length < 2){
       alert('Dati insufficienti per predire la velocità (servono almeno 2 uscite con tempo).');
