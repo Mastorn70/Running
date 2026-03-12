@@ -140,6 +140,25 @@
   color: #93c5fd;
   line-height: 1.1;
 }
+.mobile-kpi-chip .chip-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(255,255,255,0.14);
+  border-radius: 2px;
+  margin-top: 5px;
+  overflow: hidden;
+}
+.mobile-kpi-chip .chip-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.45s ease;
+}
+.mobile-kpi-chip .chip-target {
+  font-size: 0.56rem;
+  color: rgba(255,255,255,0.42);
+  margin-top: 2px;
+  line-height: 1;
+}
 
 #mobileTopCenterIcon {
   display: none;
@@ -1861,6 +1880,7 @@ body.dark-mode .prediction-chart-container {
   <button style="display:block;width:100%;margin-top:8px;font-size:1.1em;" data-section="atleti">👥 Atleti</button>
   <button style="display:block;width:100%;margin-top:8px;font-size:1.1em;" data-section="kpi">❓ Spiegazione KPI</button>
   <button style="display:block;width:100%;margin-top:8px;font-size:1.1em;" data-section="regole-score">⚙️ Regole Score</button>
+  <button onclick="openMobileKpiTargetModal();closeMobileMenu();" style="display:block;width:100%;margin-top:8px;font-size:1.1em;">🎯 Target KPI</button>
   <button id="mobileThemeBtn" type="button" onclick="toggleThemeMode()" style="display:block;width:100%;margin-top:10px;font-size:1.05em;background:#6366f1;color:#fff;">🌙 Tema</button>
 </nav>
 <!-- Notifica e barra Firebase rimangono ma sono nascosti su mobile -->
@@ -1964,6 +1984,50 @@ body.dark-mode .prediction-chart-container {
     </div>
   </div>
   <!-- /MODALE FILTRI MOBILE -->
+
+  <!-- MODALE TARGET KPI MOBILE -->
+  <div id="mobileKpiTargetModal" style="display:none;position:fixed;z-index:10020;left:0;top:0;width:100vw;height:100vh;background:rgba(15,23,42,0.72);backdrop-filter:blur(3px);justify-content:center;align-items:center;">
+    <div style="background:#1e293b;color:#e2e8f0;max-width:340px;width:90vw;padding:24px 18px 18px 18px;border-radius:18px;box-shadow:0 8px 32px #0007;position:relative;animation:fadeIn 0.25s;border:1.5px solid rgba(99,102,241,0.35);">
+      <button onclick="closeMobileKpiTargetModal()" style="position:absolute;top:10px;right:14px;font-size:1.5em;background:none;border:none;color:#6366f1;cursor:pointer;line-height:1;">&times;</button>
+      <h3 style="margin:0 0 14px 0;font-size:1.05em;color:#818cf8;letter-spacing:0.3px;">🎯 Target KPI settimana</h3>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <label style="font-size:0.85rem;color:#94a3b8;">
+          Km settimana
+          <div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
+            <input id="kpiTargetKm" type="number" min="1" step="1" style="flex:1;padding:7px 10px;border-radius:8px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:0.95rem;">
+            <span style="color:#7dd3fc;font-size:0.8rem;">km</span>
+          </div>
+        </label>
+        <label style="font-size:0.85rem;color:#94a3b8;">
+          Carico (RPE × min)
+          <div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
+            <input id="kpiTargetCarico" type="number" min="1" step="10" style="flex:1;padding:7px 10px;border-radius:8px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:0.95rem;">
+            <span style="color:#7dd3fc;font-size:0.8rem;">u.a.</span>
+          </div>
+        </label>
+        <label style="font-size:0.85rem;color:#94a3b8;">
+          TRIMP
+          <div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
+            <input id="kpiTargetTrimp" type="number" min="1" step="10" style="flex:1;padding:7px 10px;border-radius:8px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:0.95rem;">
+            <span style="color:#7dd3fc;font-size:0.8rem;">u.a.</span>
+          </div>
+        </label>
+        <label style="font-size:0.85rem;color:#94a3b8;">
+          Soglia rischio ACWR (%)
+          <div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
+            <input id="kpiTargetRisk" type="number" min="0" max="100" step="1" style="flex:1;padding:7px 10px;border-radius:8px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:0.95rem;">
+            <span style="color:#7dd3fc;font-size:0.8rem;">%</span>
+          </div>
+        </label>
+        <div style="display:flex;gap:8px;margin-top:4px;">
+          <button onclick="saveMobileKpiTargets()" style="flex:1;padding:9px 0;background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:0.9rem;box-shadow:0 2px 8px #6366f144;">💾 Salva</button>
+          <button onclick="resetMobileKpiTargets()" style="padding:9px 12px;background:#334155;color:#94a3b8;border:none;border-radius:10px;font-size:0.82rem;">Reset</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- /MODALE TARGET KPI MOBILE -->
+
   <style>@media (max-width:900px){.mobile-dashboard{position:relative;}}</style>
   <div class="mobile-top-kpi" id="mobileTopAthleteKpi">
     <span class="label">Top atleta</span>
@@ -1978,10 +2042,10 @@ body.dark-mode .prediction-chart-container {
     
   </div>
   <div class="mobile-kpi-after" id="mobileKpiAfter3D">
-    <div class="mobile-kpi-chip"><div class="chip-v" id="mobileKpiKmWeek">0</div><div class="chip-l">Km settimana</div></div>
-    <div class="mobile-kpi-chip"><div class="chip-v" id="mobileKpiLoadWeek">0</div><div class="chip-l">Carico</div></div>
-    <div class="mobile-kpi-chip"><div class="chip-v" id="mobileKpiTrimp">0</div><div class="chip-l">TRIMP</div></div>
-    <div class="mobile-kpi-chip"><div class="chip-v" id="mobileKpiRisk">0%</div><div class="chip-l">% a rischio</div></div>
+    <div class="mobile-kpi-chip"><div class="chip-v" id="mobileKpiKmWeek">0</div><div class="chip-l" id="mobileKpiKmLabel">Km settimana</div><div class="chip-bar"><div class="chip-fill" id="mobileKpiKmBar" style="width:0%"></div></div><div class="chip-target" id="mobileKpiKmTarget">/ 50 km</div></div>
+    <div class="mobile-kpi-chip"><div class="chip-v" id="mobileKpiLoadWeek">0</div><div class="chip-l" id="mobileKpiLoadLabel">Carico</div><div class="chip-bar"><div class="chip-fill" id="mobileKpiLoadBar" style="width:0%"></div></div><div class="chip-target" id="mobileKpiLoadTarget">/ 3000</div></div>
+    <div class="mobile-kpi-chip"><div class="chip-v" id="mobileKpiTrimp">0</div><div class="chip-l" id="mobileKpiTrimpLabel">TRIMP</div><div class="chip-bar"><div class="chip-fill" id="mobileKpiTrimpBar" style="width:0%"></div></div><div class="chip-target" id="mobileKpiTrimpTarget">/ 300</div></div>
+    <div class="mobile-kpi-chip"><div class="chip-v" id="mobileKpiRisk">0%</div><div class="chip-l">% a rischio</div><div class="chip-bar"><div class="chip-fill" id="mobileKpiRiskBar" style="width:0%"></div></div><div class="chip-target">soglia 0%</div></div>
     <div class="mobile-kpi-chip"><div class="chip-v" id="mobileKpiTopLoad">-</div><div class="chip-l">Top dettaglio</div></div>
   </div>
 </div>
@@ -2367,15 +2431,78 @@ window.switchTab = function(tabName, ev) {
 <script>
 // Mobile Chart.js: aggiorna i grafici in base ai filtri REALI
 let mobileCharts = [];
+// Target di riferimento per le barre KPI mobile (persistiti in localStorage)
+const _kpiTargetDefaults = { km: 50, carico: 3000, trimp: 300, risk: 10 };
+const MOBILE_KPI_TARGETS = Object.assign({}, _kpiTargetDefaults, (() => {
+  try { return JSON.parse(localStorage.getItem('mobileKpiTargets') || '{}'); } catch(e){ return {}; }
+})());
+function openMobileKpiTargetModal() {
+  const m = document.getElementById('mobileKpiTargetModal');
+  if(!m) return;
+  document.getElementById('kpiTargetKm').value = MOBILE_KPI_TARGETS.km;
+  document.getElementById('kpiTargetCarico').value = MOBILE_KPI_TARGETS.carico;
+  document.getElementById('kpiTargetTrimp').value = MOBILE_KPI_TARGETS.trimp;
+  document.getElementById('kpiTargetRisk').value = MOBILE_KPI_TARGETS.risk;
+  m.style.display = 'flex';
+}
+function closeMobileKpiTargetModal() {
+  const m = document.getElementById('mobileKpiTargetModal');
+  if(m) m.style.display = 'none';
+}
+function saveMobileKpiTargets() {
+  const km = parseFloat(document.getElementById('kpiTargetKm').value) || _kpiTargetDefaults.km;
+  const carico = parseFloat(document.getElementById('kpiTargetCarico').value) || _kpiTargetDefaults.carico;
+  const trimp = parseFloat(document.getElementById('kpiTargetTrimp').value) || _kpiTargetDefaults.trimp;
+  const risk = parseFloat(document.getElementById('kpiTargetRisk').value) ?? _kpiTargetDefaults.risk;
+  Object.assign(MOBILE_KPI_TARGETS, { km, carico, trimp, risk });
+  try { localStorage.setItem('mobileKpiTargets', JSON.stringify(MOBILE_KPI_TARGETS)); } catch(e){}
+  closeMobileKpiTargetModal();
+  syncMobileKpiCompact();
+  if(typeof saveToFirebase === 'function') saveToFirebase();
+}
+function resetMobileKpiTargets() {
+  Object.assign(MOBILE_KPI_TARGETS, _kpiTargetDefaults);
+  try { localStorage.removeItem('mobileKpiTargets'); } catch(e){}
+  document.getElementById('kpiTargetKm').value = _kpiTargetDefaults.km;
+  document.getElementById('kpiTargetCarico').value = _kpiTargetDefaults.carico;
+  document.getElementById('kpiTargetTrimp').value = _kpiTargetDefaults.trimp;
+  document.getElementById('kpiTargetRisk').value = _kpiTargetDefaults.risk;
+  syncMobileKpiCompact();
+}
+function _setMobileKpiBar(barId, value, target, invert) {
+  const el = document.getElementById(barId);
+  if(!el) return;
+  const pct = Math.min(100, target > 0 ? Math.round((value / target) * 100) : 0);
+  el.style.width = pct + '%';
+  if(invert) {
+    el.style.background = pct < 20 ? '#10b981' : pct < 50 ? '#f59e0b' : '#ef4444';
+  } else {
+    el.style.background = pct >= 100 ? '#10b981' : pct >= 60 ? '#60a5fa' : '#f59e0b';
+  }
+}
 function syncMobileKpiCompact(){
   const txt = (id) => (document.getElementById(id)?.textContent || '').trim();
   const set = (id, value) => { const el = document.getElementById(id); if(el) el.textContent = value; };
   set('mobileTopAthleteValue', txt('kpiTopAthlete') || '-');
-  set('mobileKpiKmWeek', txt('kpiKmWeek') || '0');
-  set('mobileKpiLoadWeek', txt('kpiLoadWeek') || '0');
-  set('mobileKpiTrimp', txt('kpiTrimpWeek') || '0');
-  set('mobileKpiRisk', txt('kpiRiskPercent') || '0%');
+  const km = txt('kpiKmWeek') || '0';
+  const load = txt('kpiLoadWeek') || '0';
+  const trimp = txt('kpiTrimpWeek') || '0';
+  const risk = txt('kpiRiskPercent') || '0%';
+  set('mobileKpiKmWeek', km);
+  set('mobileKpiLoadWeek', load);
+  set('mobileKpiTrimp', trimp);
+  set('mobileKpiRisk', risk);
   set('mobileKpiTopLoad', txt('kpiTopAthleteLoad') || '-');
+  // Aggiorna barre di scala
+  _setMobileKpiBar('mobileKpiKmBar', parseFloat(km) || 0, MOBILE_KPI_TARGETS.km, false);
+  _setMobileKpiBar('mobileKpiLoadBar', parseFloat(load) || 0, MOBILE_KPI_TARGETS.carico, false);
+  _setMobileKpiBar('mobileKpiTrimpBar', parseFloat(trimp) || 0, MOBILE_KPI_TARGETS.trimp, false);
+  _setMobileKpiBar('mobileKpiRiskBar', parseFloat(risk) || 0, MOBILE_KPI_TARGETS.risk > 0 ? MOBILE_KPI_TARGETS.risk : 100, true);
+  // Aggiorna label target
+  const setT = (id, v) => { const e = document.getElementById(id); if(e) e.textContent = v; };
+  setT('mobileKpiKmTarget', `${(parseFloat(km)||0).toFixed(1)} / ${MOBILE_KPI_TARGETS.km} km`);
+  setT('mobileKpiLoadTarget', `${Math.round(parseFloat(load)||0)} / ${MOBILE_KPI_TARGETS.carico}`);
+  setT('mobileKpiTrimpTarget', `${Math.round(parseFloat(trimp)||0)} / ${MOBILE_KPI_TARGETS.trimp}`);
 }
 function updateMobileCharts() {
   // Distruggi i vecchi grafici se esistono
@@ -2438,9 +2565,9 @@ document.getElementById('dateTo').addEventListener('change', updateMobileCharts)
   <!-- TAB DASHBOARD -->
   <div id="tab-dashboard" class="tab-content active">
     <div class="kpi-grid">
-      <div class="kpi-card"><div class="kpi-title">Km settimana</div><div class="kpi-value" id="kpiKmWeek">0</div><div class="kpi-delta" id="kpiKmWeekDelta"></div></div>
-      <div class="kpi-card"><div class="kpi-title">Carico (RPE×min)</div><div class="kpi-value" id="kpiLoadWeek">0</div><div class="kpi-delta" id="kpiLoadWeekDelta"></div></div>
-      <div class="kpi-card"><div class="kpi-title">TRIMP</div><div class="kpi-value" id="kpiTrimpWeek">0</div><div class="kpi-delta" id="kpiTrimpWeekDelta"></div></div>
+      <div class="kpi-card"><div class="kpi-title" id="kpiKmWeekTitle">Km settimana</div><div class="kpi-value" id="kpiKmWeek">0</div><div class="kpi-delta" id="kpiKmWeekDelta"></div></div>
+      <div class="kpi-card"><div class="kpi-title" id="kpiLoadWeekTitle">Carico (RPE×min)</div><div class="kpi-value" id="kpiLoadWeek">0</div><div class="kpi-delta" id="kpiLoadWeekDelta"></div></div>
+      <div class="kpi-card"><div class="kpi-title" id="kpiTrimpWeekTitle">TRIMP</div><div class="kpi-value" id="kpiTrimpWeek">0</div><div class="kpi-delta" id="kpiTrimpWeekDelta"></div></div>
       <div class="kpi-card"><div class="kpi-title">Top atleta</div><div class="kpi-value" id="kpiTopAthlete">-</div><div class="kpi-delta" id="kpiTopAthleteLoad"></div></div>
       <div class="kpi-card" id="kpiRiskCard"><div class="kpi-title">% a rischio</div><div class="kpi-value" id="kpiRiskPercent">0%</div><div class="kpi-delta" id="kpiRiskInfo"></div></div>
     </div>
@@ -2916,6 +3043,15 @@ window.importFromFirebase = function() {
           else if (Array.isArray(data.athletes) && data.athletes.length && typeof data.athletes[0] === 'object') athletesProfilePayload = data.athletes;
           if (data.topScoreRules && typeof data.topScoreRules === 'object') topScoreRulesPayload = data.topScoreRules;
 
+          if (data.kpiTargets && typeof data.kpiTargets === 'object') {
+            const kt = data.kpiTargets;
+            if (kt.km)     MOBILE_KPI_TARGETS.km     = Number(kt.km);
+            if (kt.carico) MOBILE_KPI_TARGETS.carico = Number(kt.carico);
+            if (kt.trimp)  MOBILE_KPI_TARGETS.trimp  = Number(kt.trimp);
+            if (kt.risk != null) MOBILE_KPI_TARGETS.risk = Number(kt.risk);
+            try { localStorage.setItem('mobileKpiTargets', JSON.stringify(MOBILE_KPI_TARGETS)); } catch(e){}
+          }
+
           if (Object.prototype.hasOwnProperty.call(data, 'ripetuteSessions')) {
             hasRipPayload = true;
             ripPayload = Array.isArray(data.ripetuteSessions) ? data.ripetuteSessions : [];
@@ -3012,6 +3148,7 @@ function saveToFirebase() {
       femalePct: Number(topScoreRules.femalePct || 0),
       otherPct: Number(topScoreRules.otherPct || 0)
     },
+    kpiTargets: { km: MOBILE_KPI_TARGETS.km, carico: MOBILE_KPI_TARGETS.carico, trimp: MOBILE_KPI_TARGETS.trimp, risk: MOBILE_KPI_TARGETS.risk },
     savedAt: new Date().toISOString()
   };
   console.log('Dati inviati a Firebase:', payload);
@@ -5383,37 +5520,64 @@ function createRunnerBillboard(imageSrc){
   return { group, plane, shadow };
 }
 
-function createRunnerLabelSprite(text, bg = '#f8fafcf0', fg = '#0f172a'){
+function createRunnerLabelSprite(text, _bg, _fg){
   const cnv = document.createElement('canvas');
   cnv.width = 512;
-  cnv.height = 128;
+  cnv.height = 148;
   const c = cnv.getContext('2d');
-  c.clearRect(0,0,cnv.width,cnv.height);
-  c.fillStyle = bg;
-  const x=8, y=18, w=496, h=92, r=18;
+  c.clearRect(0, 0, cnv.width, cnv.height);
+
+  // --- Bubble (transparent background, sottile bordo bianco semitrasparente) ---
+  const bx = 8, by = 8, bw = 496, bh = 104, br = 16;
+  // Fill semi-trasparente scurissimo per leggibilità
+  c.fillStyle = 'rgba(10,16,30,0.55)';
   c.beginPath();
-  c.moveTo(x+r, y);
-  c.arcTo(x+w, y, x+w, y+h, r);
-  c.arcTo(x+w, y+h, x, y+h, r);
-  c.arcTo(x, y+h, x, y, r);
-  c.arcTo(x, y, x+w, y, r);
+  c.moveTo(bx+br, by);
+  c.arcTo(bx+bw, by, bx+bw, by+bh, br);
+  c.arcTo(bx+bw, by+bh, bx, by+bh, br);
+  c.arcTo(bx, by+bh, bx, by, br);
+  c.arcTo(bx, by, bx+bw, by, br);
   c.closePath();
   c.fill();
-  c.lineWidth = 3;
-  c.strokeStyle = 'rgba(15,23,42,0.45)';
+  // Bordo bianco
+  c.lineWidth = 2.5;
+  c.strokeStyle = 'rgba(255,255,255,0.55)';
   c.stroke();
-  c.fillStyle = fg;
-  c.font = '800 44px Segoe UI';
+
+  // --- Coda fumetto ---
+  const tailX = bx + bw/2, tailTop = by + bh, tailBot = tailTop + 26;
+  c.beginPath();
+  c.moveTo(tailX - 12, tailTop);
+  c.lineTo(tailX, tailBot);
+  c.lineTo(tailX + 12, tailTop);
+  c.closePath();
+  c.fillStyle = 'rgba(10,16,30,0.55)';
+  c.fill();
+  c.strokeStyle = 'rgba(255,255,255,0.45)';
+  c.lineWidth = 2;
+  c.stroke();
+
+  // --- Testo con outline ---
   c.textAlign = 'center';
   c.textBaseline = 'middle';
-  c.shadowColor = 'rgba(255,255,255,0.35)';
-  c.shadowBlur = 2;
-  c.fillText(text, 256, 64);
+  c.font = '800 42px Segoe UI, Arial';
+  const ty = by + bh / 2;
+  // Outline scuro
+  c.lineWidth = 6;
+  c.strokeStyle = 'rgba(0,0,0,0.85)';
+  c.strokeText(text, 256, ty);
+  // Testo bianco brillante
+  c.fillStyle = '#ffffff';
+  c.shadowColor = 'rgba(0,0,0,0.6)';
+  c.shadowBlur = 4;
+  c.fillText(text, 256, ty);
+  c.shadowBlur = 0;
+
   const tex = new THREE.CanvasTexture(cnv);
   tex.needsUpdate = true;
   const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
   const spr = new THREE.Sprite(mat);
-  spr.scale.set(3.8, 0.95, 1);
+  spr.scale.set(4.2, 1.12, 1);
   return spr;
 }
 
@@ -5794,9 +5958,15 @@ function renderRunner3DChart(canvasId, athletes, kmValues, progressValues, opts 
   scene.fog = new THREE.Fog(0xcbd5e1, 10, 34);
 
   // Slightly narrower FOV and closer camera to make runners appear larger and closer
-  const camera = new THREE.PerspectiveCamera(42, width/height, 0.1, 100);
-  camera.position.set(0, 6.2, 15);
-  camera.lookAt(0, 1.2, -5.8);
+  const fov = (canvasId === 'speedChart') ? 38 : 42;
+  const camera = new THREE.PerspectiveCamera(fov, width/height, 0.1, 100);
+  if(canvasId === 'speedChart'){
+    camera.position.set(0, 3.0, 6);
+    camera.lookAt(0, 0.8, -2.0);
+  } else {
+    camera.position.set(0, 6.2, 15);
+    camera.lookAt(0, 1.2, -5.8);
+  }
 
   const hemi = new THREE.HemisphereLight(0xffffff, 0xbcd2ff, 0.95);
   scene.add(hemi);
@@ -5831,6 +6001,24 @@ function renderRunner3DChart(canvasId, athletes, kmValues, progressValues, opts 
   scene.fog = null;
   const lanes = Math.max(1, athletes.length);
 
+  // speedChart: pre-calcola il rank di ogni atleta per posizionamento Z basato su classifica
+  const _speedProgNorms = athletes.map((_, i) => {
+    const p = Number(progressValues[i] || 0);
+    if((progressMax - progressMin) === 0) return 0.5;
+    return String(valueUnit).toLowerCase().includes('min')
+      ? (progressMax - p) / (progressMax - progressMin)
+      : (p - progressMin) / (progressMax - progressMin);
+  });
+  const _speedRankOf = (() => {
+    const sorted = _speedProgNorms.map((v, i) => i).sort((a, b) => _speedProgNorms[b] - _speedProgNorms[a]);
+    const m = {}; sorted.forEach((idx, rank) => { m[idx] = rank; }); return m;
+  })();
+  // Z per rank: 1° molto vicino, poi salto grande, poi graduale
+  const _speedZ = (rank, total) => {
+    const t = rank / Math.max(1, total - 1); // 0=1°, 1=ultimo
+    return -0.5 - Math.pow(t, 0.5) * 6.0;   // non-lineare: gap 1°→2° molto più grande
+  };
+
   athletes.forEach((ath, i) => {
     const km = Number(kmValues[i] || 0);
     const progress = Number(progressValues[i] || 0);
@@ -5844,7 +6032,9 @@ function renderRunner3DChart(canvasId, athletes, kmValues, progressValues, opts 
       progressNorm = (progressMax - progressMin) > 0 ? (progress - progressMin) / (progressMax - progressMin) : 0.5;
     }
     // Reduce Z range so runners appear nearer the camera (shallower depth)
-    const z = -10 + progressNorm * 9;
+    const z = (canvasId === 'speedChart')
+      ? _speedZ(_speedRankOf[i], athletes.length)
+      : (-10 + progressNorm * 9);
     // Reduce lateral spacing for the speed chart (closer figurines) and adapt on mobile
     const baseWidth = (canvasId === 'speedChart') ? 5.4 : 8.4;
     let laneSpacing = baseWidth / Math.max(2, lanes);
@@ -5863,7 +6053,7 @@ function renderRunner3DChart(canvasId, athletes, kmValues, progressValues, opts 
       let mobileBillboardScaleMul;
       if (canvasId === 'speedChart') {
         // Make speedChart billboards much larger on mobile only (leave desktop unchanged)
-        mobileBillboardScaleMul = window.matchMedia('(max-width: 900px)').matches ?30.0 : 3.0;
+        mobileBillboardScaleMul = window.matchMedia('(max-width: 900px)').matches ? 30.0 : 8.5;
       } else {
         mobileBillboardScaleMul = window.matchMedia('(max-width: 900px)').matches ? 2.05 : 1.58;
       }
@@ -5881,13 +6071,18 @@ function renderRunner3DChart(canvasId, athletes, kmValues, progressValues, opts 
     } else {
       displayText = `${(Number(km)||0).toFixed(1)} ${valueUnit}`;
     }
-    const label = createRunnerLabelSprite(`${ath} • ${displayText}`, '#ffffffff', '#0f172a');
-    label.position.set(x, (usePhotoBillboards ? 3.6 : 2.9) * scale, z);
+    const label = createRunnerLabelSprite(`${ath} • ${displayText}`);
+    // Altezza label alternata per evitare sovrapposizioni: ogni figurina sfalsata
+    const rankIdx = _speedRankOf[i] !== undefined ? _speedRankOf[i] : i;
+    const labelStagger = (canvasId === 'speedChart') ? (rankIdx % 2 === 0 ? 0 : 1.8) : 0;
+    const labelBaseY = (usePhotoBillboards ? 3.6 : 2.9) * scale + labelStagger;
+    label.position.set(x, labelBaseY, z);
     scene.add(label);
 
     runnerStates.push({
       model,
       label,
+      labelBaseY,
       baseY: 0.02,
       phase: i * 0.75,
       animated: true,
@@ -5935,7 +6130,7 @@ function renderRunner3DChart(canvasId, athletes, kmValues, progressValues, opts 
           const sh = 1 - Math.abs(bob) * 1.2;
           r.model.shadow.scale.set(sh, sh, sh);
         }
-        r.label.position.y = (r.model.group.scale.y * 3.0) + bob;
+        r.label.position.y = (r.labelBaseY !== undefined ? r.labelBaseY : (r.model.group.scale.y * 3.0)) + bob;
       } else {
         const swing = Math.sin(t*5 + r.phase) * 0.55;
         const bob = Math.abs(Math.sin(t*5 + r.phase)) * 0.07;
@@ -6084,23 +6279,44 @@ function updateKPI(data, acwr){
   const currentRows=[];
   const prevRows=[];
   const loadA={};
+  const athCurrent=new Set(), athPrev=new Set();
   (data||[]).forEach(d=>{
     const w = week(d.date);
     const tr = (d.hr||0)*(d.time||0)*0.1;
     if(!loadA[d.athlete]) loadA[d.athlete] = [];
     loadA[d.athlete].push(d);
-    if(w < 1){ kmC += d.km||0; trC += tr; currentRows.push(d); }
-    else if(w < 2){ kmP += d.km||0; trP += tr; prevRows.push(d); }
+    if(w < 1){ kmC += d.km||0; trC += tr; currentRows.push(d); athCurrent.add(d.athlete); }
+    else if(w < 2){ kmP += d.km||0; trP += tr; prevRows.push(d); athPrev.add(d.athlete); }
   });
   const loadC = totalSRPE(currentRows);
   const loadP = totalSRPE(prevRows);
+  // Modalità squadra: media per atleta (peso uguale per tutti)
+  const isSquad = athCurrent.size > 1;
+  const nC = Math.max(1, athCurrent.size);
+  const nP = Math.max(1, athPrev.size);
+  const kmDisp   = isSquad ? kmC / nC   : kmC;
+  const loadDisp = isSquad ? loadC / nC : loadC;
+  const trDisp   = isSquad ? trC / nC   : trC;
+  const kmPDisp  = isSquad ? kmP / nP   : kmP;
+  const loadPDisp= isSquad ? loadP / nP : loadP;
+  const trPDisp  = isSquad ? trP / nP   : trP;
+  // Aggiorna etichette
+  const lblKm   = isSquad ? `Km/atleta (Ø ${nC})` : 'Km settimana';
+  const lblLoad = isSquad ? `Carico medio (Ø ${nC})` : 'Carico (RPE×min)';
+  const lblTrimp= isSquad ? `TRIMP medio (Ø ${nC})` : 'TRIMP';
+  const lblKmM  = isSquad ? `Km/atleta` : 'Km settimana';
+  const lblLoadM= isSquad ? `Carico medio` : 'Carico';
+  const lblTrM  = isSquad ? `TRIMP medio` : 'TRIMP';
+  [$id('kpiKmWeekTitle'), $id('mobileKpiKmLabel')].forEach((el,i) => { if(el) el.textContent = [lblKm, lblKmM][i]; });
+  [$id('kpiLoadWeekTitle'), $id('mobileKpiLoadLabel')].forEach((el,i) => { if(el) el.textContent = [lblLoad, lblLoadM][i]; });
+  [$id('kpiTrimpWeekTitle'), $id('mobileKpiTrimpLabel')].forEach((el,i) => { if(el) el.textContent = [lblTrimp, lblTrM][i]; });
   const deltaText = (a,b) => (b ? `${((a-b)/b*100).toFixed(1)}%` : '');
-  if($id('kpiKmWeek')) $id('kpiKmWeek').textContent = (kmC).toFixed(1);
-  if($id('kpiLoadWeek')) $id('kpiLoadWeek').textContent = Math.round(loadC);
-  if($id('kpiTrimpWeek')) $id('kpiTrimpWeek').textContent = Math.round(trC);
-  if($id('kpiKmWeekDelta')) $id('kpiKmWeekDelta').textContent = deltaText(kmC, kmP);
-  if($id('kpiLoadWeekDelta')) $id('kpiLoadWeekDelta').textContent = deltaText(loadC, loadP);
-  if($id('kpiTrimpWeekDelta')) $id('kpiTrimpWeekDelta').textContent = deltaText(trC, trP);
+  if($id('kpiKmWeek')) $id('kpiKmWeek').textContent = kmDisp.toFixed(1);
+  if($id('kpiLoadWeek')) $id('kpiLoadWeek').textContent = Math.round(loadDisp);
+  if($id('kpiTrimpWeek')) $id('kpiTrimpWeek').textContent = Math.round(trDisp);
+  if($id('kpiKmWeekDelta')) $id('kpiKmWeekDelta').textContent = deltaText(kmDisp, kmPDisp);
+  if($id('kpiLoadWeekDelta')) $id('kpiLoadWeekDelta').textContent = deltaText(loadDisp, loadPDisp);
+  if($id('kpiTrimpWeekDelta')) $id('kpiTrimpWeekDelta').textContent = deltaText(trDisp, trPDisp);
   const top = Object.entries(loadA)
     .map(([ath,rows])=>{
       const kmTot = (rows || []).reduce((s,v)=> s + (Number(v.km) || 0), 0);
