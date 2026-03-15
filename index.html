@@ -4063,32 +4063,43 @@ function bindRaceDistanceRowBehavior(row){
     activitySel.dataset.raceBound = '1';
   }
   syncRaceDistanceForRow(row);
-  // bind pace/min/km sync
+  // bind pace/min/km sync — bidirectional
   try{
     const cells = row.children;
     const kmInput = cells[2]?.querySelector('input');
     const minInput = cells[3]?.querySelector('input');
     const paceInput = cells[10]?.querySelector('input');
-    const syncFn = () => {
+    let _lastEditedField = null;
+    const syncFromField = (source) => {
+      _lastEditedField = source;
       const km = Number(kmInput?.value || 0);
       const minutes = Number(minInput?.value || 0);
-      const paceRaw = paceInput?.value || '';
-      const paceMinutes = parsePaceDisplayToMinutes(paceRaw);
-      if(km > 0){
-        // if pace provided (non-zero), compute total minutes
-        if(paceRaw && paceMinutes > 0 && (!minutes || Number(minutes) === 0)){
-          minInput.value = Number((paceMinutes * km).toFixed(2));
-        }
-        // if minutes provided, compute pace display
-        else if(minutes > 0 && (!paceRaw || Number(paceRaw) === 0)){
-          paceInput.value = formatMinutesToPaceDisplay(minutes / km);
-        }
+      const paceMinutes = parsePaceDisplayToMinutes(paceInput?.value || '');
+      if(source === 'km' && km > 0){
+        if(paceMinutes > 0){ minInput.value = Number((paceMinutes * km).toFixed(2)); }
+        else if(minutes > 0){ paceInput.value = formatMinutesToPaceDisplay(minutes / km); }
+      }
+      if(source === 'min' && minutes > 0){
+        if(km > 0){ paceInput.value = formatMinutesToPaceDisplay(minutes / km); }
+        else if(paceMinutes > 0){ kmInput.value = Number((minutes / paceMinutes).toFixed(2)); }
+      }
+      if(source === 'pace' && paceMinutes > 0){
+        if(km > 0){ minInput.value = Number((paceMinutes * km).toFixed(2)); }
+        else if(minutes > 0){ kmInput.value = Number((minutes / paceMinutes).toFixed(2)); }
       }
     };
-    // avoid double-binding
-    if(kmInput && !kmInput.dataset.paceBound){ kmInput.addEventListener('blur', syncFn); kmInput.dataset.paceBound = '1'; }
-    if(minInput && !minInput.dataset.paceBound){ minInput.addEventListener('blur', syncFn); minInput.addEventListener('input', syncFn); minInput.dataset.paceBound = '1'; }
-    if(paceInput && !paceInput.dataset.paceBound){ paceInput.addEventListener('blur', syncFn); paceInput.addEventListener('input', syncFn); paceInput.dataset.paceBound = '1'; }
+    if(kmInput && !kmInput.dataset.paceBound){
+      kmInput.addEventListener('input', () => syncFromField('km'));
+      kmInput.dataset.paceBound = '1';
+    }
+    if(minInput && !minInput.dataset.paceBound){
+      minInput.addEventListener('input', () => syncFromField('min'));
+      minInput.dataset.paceBound = '1';
+    }
+    if(paceInput && !paceInput.dataset.paceBound){
+      paceInput.addEventListener('input', () => syncFromField('pace'));
+      paceInput.dataset.paceBound = '1';
+    }
   }catch(e){ console.warn('bind pace sync failed', e); }
 }
 
@@ -7059,6 +7070,33 @@ function openMobileSessionModal(row = null){
     if(deleteBtn) deleteBtn.style.display = 'none';
   }
   syncMobileSessionRaceDistanceState();
+  // Bind mobile pace/km/min sync
+  if(!window.__mobilePaceSyncBound){
+    const mKm = document.getElementById('mobileSessionKm');
+    const mMin = document.getElementById('mobileSessionMin');
+    const mPace = document.getElementById('mobileSessionPace');
+    const mobileSyncFrom = (source) => {
+      const km = Number(mKm?.value || 0);
+      const minutes = Number(mMin?.value || 0);
+      const paceMinutes = parsePaceDisplayToMinutes(mPace?.value || '');
+      if(source === 'km' && km > 0){
+        if(paceMinutes > 0){ mMin.value = Number((paceMinutes * km).toFixed(2)); }
+        else if(minutes > 0){ mPace.value = formatMinutesToPaceDisplay(minutes / km); }
+      }
+      if(source === 'min' && minutes > 0){
+        if(km > 0){ mPace.value = formatMinutesToPaceDisplay(minutes / km); }
+        else if(paceMinutes > 0){ mKm.value = Number((minutes / paceMinutes).toFixed(2)); }
+      }
+      if(source === 'pace' && paceMinutes > 0){
+        if(km > 0){ mMin.value = Number((paceMinutes * km).toFixed(2)); }
+        else if(minutes > 0){ mKm.value = Number((minutes / paceMinutes).toFixed(2)); }
+      }
+    };
+    if(mKm) mKm.addEventListener('input', () => mobileSyncFrom('km'));
+    if(mMin) mMin.addEventListener('input', () => mobileSyncFrom('min'));
+    if(mPace) mPace.addEventListener('input', () => mobileSyncFrom('pace'));
+    window.__mobilePaceSyncBound = true;
+  }
   modal.style.display = 'flex';
 }
 
