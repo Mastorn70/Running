@@ -2841,6 +2841,14 @@ document.getElementById('dateTo').addEventListener('change', updateMobileCharts)
       <div style="margin-top:10px;display:flex;justify-content:flex-end;">
         <button onclick="saveAthletesJson()" style="padding:10px 20px;background:linear-gradient(135deg,#2563eb 0%,#1d4ed8 100%);">☁️ Salva profili atleti su Firebase</button>
       </div>
+      <hr style="margin:18px 0 10px;border:none;border-top:1px solid #e2e8f0;">
+      <h3 style="color:#ef4444;font-weight:800;">🗑️ Cancellazione remota atleti</h3>
+      <p style="font-size:.82rem;color:#64748b;margin:4px 0 10px;">Aggiungi qui il nome di un atleta da cancellare su tutti i dispositivi. Alla prossima apertura o aggiornamento, l'atleta verrà rimosso automaticamente.</p>
+      <div id="removeAthletesList" style="margin-bottom:10px;"></div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="text" id="removeAthleteInput" placeholder="Nome atleta da cancellare" style="flex:1;height:36px;padding:8px;font-size:0.9rem;font-weight:600;">
+        <button onclick="addAthleteToRemoveList()" style="padding:10px 20px;background:#ef4444;color:#fff;">🗑️ Aggiungi alla lista</button>
+      </div>
     </div>
   </div>
 </div>
@@ -3155,6 +3163,11 @@ window.importFromFirebase = function() {
           applyAthletesProfilePayload(athletesProfilePayload);
         }
 
+        // Cancellazione remota atleti
+        if (Array.isArray(data.athletesToRemove) && data.athletesToRemove.length > 0) {
+          if(typeof applyAthletesToRemove === 'function') applyAthletesToRemove(data.athletesToRemove);
+        }
+
         if (typeof popolaTabellaDaJSON === 'function' && Array.isArray(tablePayload)) {
           popolaTabellaDaJSON(tablePayload);
         }
@@ -3238,6 +3251,7 @@ function saveToFirebase() {
       otherPct: Number(topScoreRules.otherPct || 0)
     },
     kpiTargets: { km: MOBILE_KPI_TARGETS.km, carico: MOBILE_KPI_TARGETS.carico, trimp: MOBILE_KPI_TARGETS.trimp, risk: MOBILE_KPI_TARGETS.risk },
+    athletesToRemove: Array.isArray(athletesToRemove) ? athletesToRemove : [],
     audioEnabled: window.__audioEnabled !== false,
     savedAt: new Date().toISOString()
   };
@@ -3451,6 +3465,7 @@ let fileHandle = null;
 let sports=['corsa','bici','palestra','nuoto','sci'];
 let athletes=['Max'];
 let athleteDetails = {};
+let athletesToRemove = [];
 let activityTypes=['Allenamento','Gara','Test','Recupero','Tecnica','Ripetute'];
 const TOP_SCORE_RULES_KEY = 'topScoreRules';
 let topScoreRules = { malePct: 0, femalePct: 0, otherPct: 0 };
@@ -3767,6 +3782,55 @@ function loadAthletes(){
 function saveAthletes(){
   localStorage.setItem('athletes', JSON.stringify(athletes));
   localStorage.setItem('athleteDetails', JSON.stringify(athleteDetails));
+}
+function loadAthletesToRemove(){
+  try { athletesToRemove = JSON.parse(localStorage.getItem('athletesToRemove') || '[]'); } catch(e){ athletesToRemove = []; }
+}
+function saveAthletesToRemove(){
+  localStorage.setItem('athletesToRemove', JSON.stringify(athletesToRemove));
+}
+function addAthleteToRemoveList(){
+  const inp = document.getElementById('removeAthleteInput');
+  if(!inp) return;
+  const name = inp.value.trim();
+  if(name && !athletesToRemove.includes(name)){
+    athletesToRemove.push(name);
+    saveAthletesToRemove();
+    updateRemoveListUI();
+    inp.value = '';
+  }
+}
+function cancelAthleteFromRemoveList(i){
+  athletesToRemove.splice(i, 1);
+  saveAthletesToRemove();
+  updateRemoveListUI();
+}
+function applyAthletesToRemove(list){
+  if(!Array.isArray(list) || list.length === 0) return;
+  let changed = false;
+  list.forEach(name => {
+    const idx = athletes.indexOf(name);
+    if(idx !== -1){
+      athletes.splice(idx, 1);
+      if(athleteDetails[name]) delete athleteDetails[name];
+      changed = true;
+    }
+  });
+  if(changed){
+    saveAthletes();
+    if(typeof updateAthletesUI === 'function') updateAthletesUI();
+    if(typeof updateCharts === 'function') updateCharts();
+    console.log('Atleti rimossi automaticamente dalla lista di cancellazione remota:', list.filter(n => !athletes.includes(n)));
+  }
+}
+function updateRemoveListUI(){
+  const el = document.getElementById('removeAthletesList');
+  if(!el) return;
+  if(athletesToRemove.length === 0){
+    el.innerHTML = '<span style="color:#94a3b8;font-size:.85rem;">Nessun atleta in lista di cancellazione</span>';
+  } else {
+    el.innerHTML = athletesToRemove.map((n, i) => `<span style="display:inline-flex;align-items:center;gap:4px;background:#fecaca;color:#991b1b;border-radius:8px;padding:4px 10px;font-size:.85rem;font-weight:600;">${n} <span onclick="cancelAthleteFromRemoveList(${i})" style="cursor:pointer;font-weight:800;color:#ef4444;margin-left:4px;">&times;</span></span>`).join(' ');
+  }
 }
 function updateAthleteDetail(index, field, value){
   const name = athletes[index];
@@ -8001,7 +8065,7 @@ $id('addRowBtn')?.addEventListener('click', ()=>{
   addRow();
 });
 $id('manageSportsBtn')?.addEventListener('click', ()=> $id('sportsModal')?.classList.add('show'));
-$id('manageAthletesBtn')?.addEventListener('click', ()=> $id('athletesModal')?.classList.add('show'));
+$id('manageAthletesBtn')?.addEventListener('click', ()=> { $id('athletesModal')?.classList.add('show'); if(typeof updateRemoveListUI === 'function') updateRemoveListUI(); });
 $id('scoreRulesBtn')?.addEventListener('click', ()=> openScoreRulesModal());
 $id('manageActivityTypesBtn')?.addEventListener('click', ()=> $id('activityTypesModal')?.classList.add('show'));
 $id('applyFilters')?.addEventListener('click', updateCharts);
@@ -8081,6 +8145,7 @@ window.addEventListener('load', ()=>{
 
   loadSports();
   loadAthletes();
+  loadAthletesToRemove();
   loadActivityTypes();
   loadRipetuteFromStorage();
   addRow();
@@ -8393,6 +8458,7 @@ function selectMobileSection(section) {
   if(section === 'atleti') {
     var athletesModal = document.getElementById('athletesModal');
     if(athletesModal) athletesModal.classList.add('show');
+    if(typeof updateRemoveListUI === 'function') updateRemoveListUI();
   }
   if(section === 'kpi' && typeof openKpiModal === 'function') {
     openKpiModal();
