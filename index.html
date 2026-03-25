@@ -2746,7 +2746,14 @@ document.getElementById('dateTo').addEventListener('change', updateMobileCharts)
             <input id="mobileRipDistanceKm" type="number" min="0" step="0.001" value="0.400" placeholder="0.200" style="width:100%;">
           </label>
           <label>Tempo (min)
-            <input id="mobileRipTime" type="number" min="0" step="0.01" value="1.50" style="width:100%;">
+            <div style="display:flex;gap:4px;align-items:center;">
+              <input id="mobileRipTimeH" type="number" min="0" step="1" value="0" placeholder="hh" style="width:38px;"> :
+              <input id="mobileRipTimeM" type="number" min="0" max="59" step="1" value="1" placeholder="mm" style="width:38px;"> :
+              <input id="mobileRipTimeS" type="number" min="0" max="59" step="1" value="30" placeholder="ss" style="width:38px;">
+            </div>
+          </label>
+          <label>Pace (min/km)
+            <input id="mobileRipPace" type="text" placeholder="es: 3:45" style="width:100%;">
           </label>
           <label>Recupero (min)
             <input id="mobileRipRest" type="number" min="0" step="0.01" value="1.00" style="width:100%;">
@@ -4313,8 +4320,14 @@ function openMobileRipSessionModal(){
   const distanceInput = document.getElementById('mobileRipDistanceKm');
   if(distanceInput) distanceInput.value = '0.400';
   onMobileRipRepTypeChange();
-  const timeInput = document.getElementById('mobileRipTime');
-  if(timeInput) timeInput.value = '1.50';
+  const timeH = document.getElementById('mobileRipTimeH');
+  const timeM = document.getElementById('mobileRipTimeM');
+  const timeS = document.getElementById('mobileRipTimeS');
+  if(timeH) timeH.value = '0';
+  if(timeM) timeM.value = '1';
+  if(timeS) timeS.value = '30';
+  const paceInput = document.getElementById('mobileRipPace');
+  if(paceInput) paceInput.value = '';
   const restInput = document.getElementById('mobileRipRest');
   if(restInput) restInput.value = '1.00';
   const rpeInput = document.getElementById('mobileRipRpe');
@@ -4348,8 +4361,11 @@ function saveMobileRipSession(){
   const ripCount = Math.max(1, +(document.getElementById('mobileRipCount')?.value || 1));
   const repType = (document.getElementById('mobileRipRepType')?.value || 'Custom').trim();
   const ripDistanceKm = +(document.getElementById('mobileRipDistanceKm')?.value || 0);
-  const ripTimeRaw = document.getElementById('mobileRipTime')?.value || 0;
-  const ripTime = parsePaceDisplayToMinutes(ripTimeRaw);
+  // Calcola tempo totale in minuti dai campi hh,mm,ss
+  const h = +(document.getElementById('mobileRipTimeH')?.value || 0);
+  const m = +(document.getElementById('mobileRipTimeM')?.value || 0);
+  const s = +(document.getElementById('mobileRipTimeS')?.value || 0);
+  const ripTime = h * 60 + m + s / 60;
   const ripRest = +(document.getElementById('mobileRipRest')?.value || 0);
   const ripRpe = +(document.getElementById('mobileRipRpe')?.value || 0);
   const ripHr = +(document.getElementById('mobileRipHr')?.value || 0);
@@ -4361,14 +4377,51 @@ function saveMobileRipSession(){
     addRipRow({
       repType: repType,
       distance_km: ripDistanceKm || '',
-      // ripTime is minutes per km (min/km, mm.ss) -> convert to total seconds for this rep
-      time_s: ripTime && ripDistanceKm ? Math.round(ripTime * ripDistanceKm * 60) : (ripTime ? Math.round(ripTime * 60) : ''),
+      // tempo totale in secondi
+      time_s: Math.round(ripTime * 60),
       rest_s: ripRest ? Math.round(ripRest * 60) : '',
       rpe: ripRpe || '',
       hr: ripHr || '',
       lactate: ripLactate
     });
   }
+  // Sincronizzazione tempo <-> passo
+  function updatePaceFromTime() {
+    const dist = +(document.getElementById('mobileRipDistanceKm')?.value || 0);
+    const h = +(document.getElementById('mobileRipTimeH')?.value || 0);
+    const m = +(document.getElementById('mobileRipTimeM')?.value || 0);
+    const s = +(document.getElementById('mobileRipTimeS')?.value || 0);
+    const totMin = h * 60 + m + s / 60;
+    const paceInput = document.getElementById('mobileRipPace');
+    if(dist > 0 && paceInput) {
+      const pace = totMin / dist;
+      const min = Math.floor(pace);
+      const sec = Math.round((pace - min) * 60);
+      paceInput.value = `${min}:${sec.toString().padStart(2,'0')}`;
+    }
+  }
+  function updateTimeFromPace() {
+    const dist = +(document.getElementById('mobileRipDistanceKm')?.value || 0);
+    const paceInput = document.getElementById('mobileRipPace');
+    if(dist > 0 && paceInput && paceInput.value) {
+      const [min, sec] = paceInput.value.split(':').map(Number);
+      const pace = (min || 0) + (sec || 0) / 60;
+      const totMin = pace * dist;
+      const h = Math.floor(totMin / 60);
+      const m = Math.floor(totMin % 60);
+      const s = Math.round((totMin - h * 60 - m) * 60);
+      document.getElementById('mobileRipTimeH').value = h;
+      document.getElementById('mobileRipTimeM').value = m;
+      document.getElementById('mobileRipTimeS').value = s;
+    }
+  }
+  // Event listeners
+  ['mobileRipTimeH','mobileRipTimeM','mobileRipTimeS','mobileRipDistanceKm'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.addEventListener('input', updatePaceFromTime);
+  });
+  const paceInput = document.getElementById('mobileRipPace');
+  if(paceInput) paceInput.addEventListener('input', updateTimeFromPace);
 
   const session = readRipSessionFromForm();
   const reps = Array.isArray(session.reps) ? session.reps.filter(r => _isMeaningfulRep(r)) : [];
@@ -4382,23 +4435,8 @@ function saveMobileRipSession(){
   ripetuteSessions.unshift(session);
   saveRipetuteToStorage();
 
-  const rowsToAppend = reps.map(r => {
-    const minutes = Math.round((Number(r.time_s || 0)) / 60);
-    const km = Number(r.distance_km || 0) || ((Number(r.distance || 0)) / 1000);
-    const repLabel = r.repType || r.label || 'Custom';
-    return {
-      date: session.date,
-      athlete: session.athlete,
-      km: Number(km.toFixed(3)),
-      minutes,
-      rpe: Number(r.rpe || 0),
-      hr: Number(r.hr || 0),
-      type: session.type || 'corsa',
-      activityType: 'Ripetute',
-      note: `Rip: ${repLabel} | rec ${((Number(r.rest_s || 0))/60).toFixed(2)}min | latt:${r.lactate ?? ''}`
-    };
-  });
-  if(rowsToAppend.length) appendTableRowsFromObjects(rowsToAppend);
+  // RIMOSSO: esportazione automatica delle ripetute nella tabella generale
+  // Ora l'esportazione avviene solo tramite il pulsante "Esporta in Dati Storici"
 
   try {
     const stats = computeRipMetrics(session);
@@ -6353,7 +6391,7 @@ function renderRunner3DChart(canvasId, athletes, kmValues, progressValues, opts 
       scene.add(crownSprite);
 
       // Sprite testo presentatore
-      const presLabel = createRunnerLabelSprite(`${presenterEmoji} Frecate Sei il numero UNO`);
+      const presLabel = createRunnerLabelSprite(`${presenterEmoji} Sei il numero UNO`);
       presLabel.visible = false;
       scene.add(presLabel);
 
