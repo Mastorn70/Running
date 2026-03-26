@@ -2886,6 +2886,9 @@ document.addEventListener('click', function(e){
         <label style="grid-column:1 / -1;">Note
           <input id="mobileSessionNote" type="text" placeholder="Note" style="width:100%;">
         </label>
+        <label style="grid-column:1 / -1;">Score
+          <input id="mobileSessionScore" type="text" readonly placeholder="-" style="width:100%;font-weight:700;background:#f8fafc;">
+        </label>
       </div>
       <div style="display:flex;gap:8px;margin-top:12px;">
         <button type="button" onclick="closeMobileSessionModal()" style="flex:1;background:#64748b;">Annulla</button>
@@ -2969,6 +2972,9 @@ document.addEventListener('click', function(e){
           </label>
           <label>Lattato (mmol)
             <input id="mobileRipLactate" type="number" min="0" step="0.1" placeholder="opzionale" style="width:100%;">
+          </label>
+          <label style="grid-column:1 / -1;font-weight:700;color:#334155;">Score sessione
+            <input id="mobileRipSessionScore" type="text" readonly placeholder="-" style="width:100%;font-weight:700;background:#f8fafc;">
           </label>
         </div>
         <div style="display:flex;gap:8px;margin-top:12px;">
@@ -4866,6 +4872,35 @@ function openMobileRipSessionModal(){
   const lactateInput = document.getElementById('mobileRipLactate');
   if(lactateInput) lactateInput.value = '';
   modal.style.display = 'flex';
+  // bind and compute rip session score inside modal
+  function computeMobileRipSessionScore(){
+    try{
+      const count = Math.max(1, Number(document.getElementById('mobileRipCount')?.value || 1));
+      const dist = Number(document.getElementById('mobileRipDistanceKm')?.value || 0);
+      const h = Number(document.getElementById('mobileRipTimeH')?.value || 0);
+      const m = Number(document.getElementById('mobileRipTimeM')?.value || 0);
+      const s = Number(document.getElementById('mobileRipTimeS')?.value || 0);
+      const warm = Number(document.getElementById('mobileRipWarmup')?.value || 0);
+      const cool = Number(document.getElementById('mobileRipCooldown')?.value || 0);
+      const athlete = document.getElementById('mobileRipAthlete')?.value || '';
+      const out = document.getElementById('mobileRipSessionScore');
+      if(!out) return;
+      const repTime = (h * 60) + m + (s / 60);
+      const totalKm = count * dist;
+      const totalMinutes = warm + cool + (count * repTime);
+      if(totalKm <= 0 || totalMinutes <= 0){ out.value = '-'; return; }
+      const speed = (totalKm) / (totalMinutes / 60);
+      const multiplier = (typeof getAthleteScoreMultiplier === 'function') ? getAthleteScoreMultiplier(athlete, '') : 1;
+      const score = totalKm * speed * multiplier;
+      out.value = isFinite(score) ? Number(score).toFixed(2) : '-';
+    }catch(e){ console.warn('computeMobileRipSessionScore failed', e); }
+  }
+  ['mobileRipCount','mobileRipDistanceKm','mobileRipTimeH','mobileRipTimeM','mobileRipTimeS','mobileRipWarmup','mobileRipCooldown','mobileRipAthlete','mobileRipPace'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.addEventListener('input', computeMobileRipSessionScore);
+  });
+  // run initial compute
+  computeMobileRipSessionScore();
 }
 
 function closeMobileRipSessionModal(){
@@ -5659,12 +5694,18 @@ function getDataRaw(){
     const rawPaceVal = cells[10]?.querySelector('input')?.value || '';
     const pace_min_per_km = rawPaceVal ? +(rawPaceVal) : (km ? formatMinutesToPaceDisplay(minutes / km) : 0);
     const time = minutes / 60;
+    const sportForScore = type || '';
+    const multiplier = (typeof getAthleteScoreMultiplier === 'function') ? getAthleteScoreMultiplier(athlete, sportForScore) : 1;
+    const timeH = minutes / 60;
+    const speed = timeH > 0 ? (km / timeH) : 0;
+    const computedScore = (km > 0 && timeH > 0 && isFinite(speed)) ? (km * speed * multiplier) : 0;
     return {
       date,
       athlete,
       km,
       minutes,
       time,
+      score: isFinite(computedScore) ? Number(computedScore.toFixed(2)) : 0,
       pace_min_per_km,
       rpe,
       hr,
@@ -7468,14 +7509,34 @@ function updateCharts(){
     }).filter(r => Number(r.speedRef || 0) > 0)
       .sort((a,b)=> (b.speedRef - a.speedRef));
   } else {
-    kmRanking = Object.keys(byA).map((ath) => ({
-      athlete: ath,
-      km: byA[ath].reduce((sum, s) => sum + (s.km || 0), 0),
-      speedRef: speedWeightedByKm(byA[ath] || []),
-      topScore: 0,
-      load: loadWeightedByKm(byA[ath] || [])
-    })).map(r => ({ ...r, topScore: r.km * r.speedRef * getAthleteScoreMultiplier(r.athlete, getPrimarySportForRows(byA[r.athlete] || [])) }))
-      .sort((a,b)=> (b.topScore - a.topScore) || (b.km - a.km) || (b.speedRef - a.speedRef));
+    kmRanking = Object.keys(byA).map((ath) => {
+      const rows = byA[ath] || [];
+      const kmSum = rows.reduce((sum, s) => sum + (Number(s.km) || 0), 0);
+      const speedRef = speedWeightedByKm(rows || []);
+      const load = loadWeightedByKm(rows || []);
+      // compute topScore by summing per-row scores (km * speed * multiplier)
+      const topScore = rows.reduce((acc, v) => {
+        try{
+          const km = Number(v.km || 0);
+          const minutes = Number(v.minutes) || ((Number(v.time) || 0) * 60);
+          const timeH = minutes / 60;
+          if(km > 0 && timeH > 0){
+            const sport = v.type || v.sport || '';
+            const multiplier = (typeof getAthleteScoreMultiplier === 'function') ? getAthleteScoreMultiplier(v.athlete || ath, sport) : 1;
+            const speed = km / timeH;
+            acc += km * speed * multiplier;
+          }
+        }catch(e){}
+        return acc;
+      }, 0);
+      return {
+        athlete: ath,
+        km: kmSum,
+        speedRef: speedRef,
+        topScore: topScore,
+        load: load
+      };
+    }).sort((a,b)=> (b.topScore - a.topScore) || (b.km - a.km) || (b.speedRef - a.speedRef));
   }
   const athletesForKm = kmRanking.map(r => r.athlete);
   const totalKmPerAthlete = kmRanking.map(r => r.km);
@@ -7590,6 +7651,25 @@ function updateCharts(){
   updateKPI(filt, acwr);
   if (typeof updateMobileCharts === 'function' && window.innerWidth <= 900) updateMobileCharts();
 }
+
+// Forza il ricalcolo degli score su tutte le righe della tabella e aggiorna i grafici
+function recomputeAllRowScores(){
+  try{
+    const rows = Array.from(document.querySelectorAll('#dataTable tbody tr'));
+    rows.forEach(row => {
+      try{ bindRaceDistanceRowBehavior(row); }catch(e){}
+      try{ updateRowScore(row); }catch(e){}
+    });
+    // small timeout to allow DOM updates
+    setTimeout(()=>{
+      try{ updateCharts(); }catch(e){}
+    }, 50);
+    return rows.length;
+  }catch(e){ console.warn('recomputeAllRowScores failed', e); return 0; }
+}
+
+// Esegui ricalcolo ora per assicurare che le righe esistenti abbiano score aggiornati
+try{ setTimeout(()=>{ recomputeAllRowScores(); }, 100); }catch(e){}
 
 /* -----------------------------
    TABLE: add/delete/sort/filter
@@ -7813,6 +7893,32 @@ function openMobileSessionModal(row = null){
     if(mPace) mPace.addEventListener('input', () => mobileSyncFrom('pace'));
     window.__mobilePaceSyncBound = true;
   }
+  // compute score in modal and bind updates
+  function computeMobileSessionModalScore(){
+    try{
+      const km = Number(document.getElementById('mobileSessionKm')?.value || 0);
+      const h = Number(document.getElementById('mobileSessionHh')?.value || 0);
+      const m = Number(document.getElementById('mobileSessionMm')?.value || 0);
+      const s = Number(document.getElementById('mobileSessionSs')?.value || 0);
+      const minutes = (h * 60) + m + (s / 60);
+      const athlete = document.getElementById('mobileSessionAthlete')?.value || '';
+      const sport = document.getElementById('mobileSessionSport')?.value || '';
+      const out = document.getElementById('mobileSessionScore');
+      if(!out) return;
+      if(km <= 0 || minutes <= 0){ out.value = '-'; return; }
+      const timeH = minutes / 60;
+      const speed = timeH > 0 ? (km / timeH) : 0; // km/h
+      const multiplier = (typeof getAthleteScoreMultiplier === 'function') ? getAthleteScoreMultiplier(athlete, sport) : 1;
+      const score = km * speed * multiplier;
+      out.value = isFinite(score) ? Number(score).toFixed(2) : '-';
+    }catch(e){ console.warn('computeMobileSessionModalScore failed', e); }
+  }
+  ['mobileSessionKm','mobileSessionHh','mobileSessionMm','mobileSessionSs','mobileSessionPace','mobileSessionAthlete','mobileSessionSport'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.addEventListener('input', computeMobileSessionModalScore);
+  });
+  // run once
+  computeMobileSessionModalScore();
   modal.style.display = 'flex';
 }
 
@@ -7895,6 +8001,7 @@ function saveMobileSession(){
     if(cells[7]?.querySelector('.activity-type-select')) setMobileModalSelectValue(cells[7].querySelector('.activity-type-select'), data.activityType);
     if(cells[7]?.querySelector('.race-distance-select')) setMobileModalSelectValue(cells[7].querySelector('.race-distance-select'), data.raceDistance);
     syncRaceDistanceForRow(mobileSessionEditRow);
+    try{ updateRowScore(mobileSessionEditRow); }catch(e){}
     if(cells[8]?.querySelector('input')) cells[8].querySelector('input').value = data.note;
     if(cells[10]?.querySelector('input')) cells[10].querySelector('input').value = data.pace_min_per_km || (data.km && data.minutes ? formatMinutesToPaceDisplay(Number(data.minutes)/Number(data.km)) : '');
   } else {
