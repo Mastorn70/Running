@@ -4603,7 +4603,9 @@ function bindRaceDistanceRowBehavior(row){
     if(athleteSel && !athleteSel.dataset.scoreBound){ athleteSel.addEventListener('change', recompute); athleteSel.dataset.scoreBound='1'; }
     if(sportSel && !sportSel.dataset.scoreBound){ sportSel.addEventListener('change', recompute); sportSel.dataset.scoreBound='1'; }
     if(kmInput && !kmInput.dataset.scoreBound){ kmInput.addEventListener('input', recompute); kmInput.dataset.scoreBound='1'; }
-    if(minInput && !minInput.dataset.scoreBound){ minInput.addEventListener('input', recompute); minInput.dataset.scoreBound='1'; }
+    if(hInput && !hInput.dataset.scoreBound){ hInput.addEventListener('input', recompute); hInput.dataset.scoreBound='1'; }
+    if(mInput && !mInput.dataset.scoreBound){ mInput.addEventListener('input', recompute); mInput.dataset.scoreBound='1'; }
+    if(sInput && !sInput.dataset.scoreBound){ sInput.addEventListener('input', recompute); sInput.dataset.scoreBound='1'; }
     // compute immediately
     updateRowScore(row);
   }catch(e){ console.warn('bind pace sync failed', e); }
@@ -9109,6 +9111,37 @@ function migrateExistingPaceFields(){
   try{ if(typeof updateCharts === 'function') updateCharts(); }catch(e){}
   try{ if(typeof updateTableFilters === 'function') updateTableFilters(); }catch(e){}
 }
+
+// Migra righe che usano il vecchio input 'minutes' verso i tre campi hh/mm/ss,
+// riapplica i binding e ricalcola gli score.
+function migrateRowsMinutesToHms(){
+  try{
+    const rows = Array.from(document.querySelectorAll('#dataTable tbody tr'));
+    let fixed = 0;
+    rows.forEach(row => {
+      const cell = row.children[3];
+      if(!cell) return;
+      // se ha già i campi h/m/s salta
+      if(cell.querySelector('.time-h')) return;
+      const oldInp = cell.querySelector('input[type="number"]');
+      if(!oldInp) return;
+      const minutesVal = Number(oldInp.value || 0);
+      const totalSec = Math.round((Number(minutesVal) || 0) * 60);
+      const hh = Math.floor(totalSec / 3600);
+      const mm = Math.floor((totalSec % 3600) / 60);
+      const ss = totalSec % 60;
+      cell.innerHTML = `<div style="display:flex;gap:6px;align-items:center;"><input class="time-h" type="number" min="0" value="${hh}" placeholder="hh" style="width:48px;"> : <input class="time-m" type="number" min="0" max="59" value="${mm}" placeholder="mm" style="width:48px;"> : <input class="time-s" type="number" min="0" max="59" value="${ss}" placeholder="ss" style="width:48px;"></div>`;
+      fixed++;
+      try{ bindRaceDistanceRowBehavior(row); }catch(e){}
+      try{ updateRowScore(row); }catch(e){}
+    });
+    console.log('migrateRowsMinutesToHms fixed', fixed);
+    return fixed;
+  }catch(e){ console.warn('migrateRowsMinutesToHms failed', e); return 0; }
+}
+
+// Esegui la migrazione ora (utente ha confermato)
+try{ setTimeout(()=>{ migrateRowsMinutesToHms(); }, 50); }catch(e){}
 </script>
 <script>
 // Carica automaticamente i dati da Firebase all'apertura della pagina
