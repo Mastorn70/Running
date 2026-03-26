@@ -2020,6 +2020,29 @@ body.dark-mode .prediction-chart-container {
             <span style="color:#7dd3fc;font-size:0.8rem;">%</span>
           </div>
         </label>
+        <div style="height:1px;background:rgba(255,255,255,0.06);margin:6px 0;border-radius:4px;"></div>
+        <label style="font-size:0.85rem;color:#94a3b8;">Parametri calcolo ACWR</label>
+        <label style="font-size:0.85rem;color:#94a3b8;">
+          Giorni acuti
+          <div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
+            <input id="kpiParamAcuteDays" type="number" min="1" step="1" style="flex:1;padding:7px 10px;border-radius:8px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:0.95rem;">
+            <span style="color:#7dd3fc;font-size:0.8rem;">giorni</span>
+          </div>
+        </label>
+        <label style="font-size:0.85rem;color:#94a3b8;">
+          Giorni cronici
+          <div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
+            <input id="kpiParamChronicDays" type="number" min="1" step="1" style="flex:1;padding:7px 10px;border-radius:8px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:0.95rem;">
+            <span style="color:#7dd3fc;font-size:0.8rem;">giorni</span>
+          </div>
+        </label>
+        <label style="font-size:0.85rem;color:#94a3b8;">
+          Soglia ACWR (ratio)
+          <div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
+            <input id="kpiParamAcwrThreshold" type="number" min="0" step="0.01" style="flex:1;padding:7px 10px;border-radius:8px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:0.95rem;">
+            <span style="color:#7dd3fc;font-size:0.8rem;">ratio</span>
+          </div>
+        </label>
         <div style="display:flex;gap:8px;margin-top:4px;">
           <button onclick="saveMobileKpiTargets()" style="flex:1;padding:9px 0;background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:0.9rem;box-shadow:0 2px 8px #6366f144;">💾 Salva</button>
           <button onclick="resetMobileKpiTargets()" style="padding:9px 12px;background:#334155;color:#94a3b8;border:none;border-radius:10px;font-size:0.82rem;">Reset</button>
@@ -2432,10 +2455,15 @@ window.switchTab = function(tabName, ev) {
 <script>
 // Mobile Chart.js: aggiorna i grafici in base ai filtri REALI
 let mobileCharts = [];
-// Target di riferimento per le barre KPI mobile (persistiti in localStorage)
+// Target di riferimento per le barre KPI mobile/desktop (persistiti in localStorage)
 const _kpiTargetDefaults = { km: 50, carico: 3000, trimp: 300, risk: 10 };
 const MOBILE_KPI_TARGETS = Object.assign({}, _kpiTargetDefaults, (() => {
   try { return JSON.parse(localStorage.getItem('mobileKpiTargets') || '{}'); } catch(e){ return {}; }
+})());
+// Parametri KPI calcolo (ACWR windows e soglia)
+const _kpiParamDefaults = { acuteDays: 7, chronicDays: 28, acwrThreshold: 1.3 };
+const KPI_PARAMS = Object.assign({}, _kpiParamDefaults, (() => {
+  try { return JSON.parse(localStorage.getItem('kpiParams') || '{}'); } catch(e){ return {}; }
 })());
 function openMobileKpiTargetModal() {
   const m = document.getElementById('mobileKpiTargetModal');
@@ -2444,12 +2472,44 @@ function openMobileKpiTargetModal() {
   document.getElementById('kpiTargetCarico').value = MOBILE_KPI_TARGETS.carico;
   document.getElementById('kpiTargetTrimp').value = MOBILE_KPI_TARGETS.trimp;
   document.getElementById('kpiTargetRisk').value = MOBILE_KPI_TARGETS.risk;
+  // populate ACWR params
+  try{
+    document.getElementById('kpiParamAcuteDays').value = KPI_PARAMS.acuteDays;
+    document.getElementById('kpiParamChronicDays').value = KPI_PARAMS.chronicDays;
+    document.getElementById('kpiParamAcwrThreshold').value = KPI_PARAMS.acwrThreshold;
+  }catch(e){}
   m.style.display = 'flex';
 }
 function closeMobileKpiTargetModal() {
   const m = document.getElementById('mobileKpiTargetModal');
   if(m) m.style.display = 'none';
 }
+// Create a desktop-accessible KPI targets button (opens same modal)
+function _ensureDesktopKpiBtn(){
+  let btn = document.getElementById('openDesktopKpiBtn');
+  if(!btn){
+    btn = document.createElement('button');
+    btn.id = 'openDesktopKpiBtn';
+    btn.textContent = '🎯 Target KPI';
+    btn.style.position = 'fixed';
+    btn.style.right = '18px';
+    btn.style.top = '64px';
+    btn.style.zIndex = '10050';
+    btn.style.padding = '8px 12px';
+    btn.style.borderRadius = '10px';
+    btn.style.background = '#6366f1';
+    btn.style.color = '#fff';
+    btn.style.border = 'none';
+    btn.style.boxShadow = '0 6px 18px rgba(15,23,42,0.18)';
+    btn.style.cursor = 'pointer';
+    btn.onclick = function(){ openMobileKpiTargetModal(); };
+    document.body.appendChild(btn);
+  }
+  // show only on desktop
+  if(window.innerWidth > 900) btn.style.display = 'block'; else btn.style.display = 'none';
+}
+window.addEventListener('load', _ensureDesktopKpiBtn);
+window.addEventListener('resize', _ensureDesktopKpiBtn);
 function saveMobileKpiTargets() {
   const km = parseFloat(document.getElementById('kpiTargetKm').value) || _kpiTargetDefaults.km;
   const carico = parseFloat(document.getElementById('kpiTargetCarico').value) || _kpiTargetDefaults.carico;
@@ -2457,6 +2517,14 @@ function saveMobileKpiTargets() {
   const risk = parseFloat(document.getElementById('kpiTargetRisk').value) ?? _kpiTargetDefaults.risk;
   Object.assign(MOBILE_KPI_TARGETS, { km, carico, trimp, risk });
   try { localStorage.setItem('mobileKpiTargets', JSON.stringify(MOBILE_KPI_TARGETS)); } catch(e){}
+  // save ACWR params
+  try{
+    const acute = parseInt(document.getElementById('kpiParamAcuteDays').value) || _kpiParamDefaults.acuteDays;
+    const chronic = parseInt(document.getElementById('kpiParamChronicDays').value) || _kpiParamDefaults.chronicDays;
+    const thr = parseFloat(document.getElementById('kpiParamAcwrThreshold').value) || _kpiParamDefaults.acwrThreshold;
+    Object.assign(KPI_PARAMS, { acuteDays: acute, chronicDays: chronic, acwrThreshold: thr });
+    try{ localStorage.setItem('kpiParams', JSON.stringify(KPI_PARAMS)); }catch(e){}
+  }catch(e){}
   closeMobileKpiTargetModal();
   syncMobileKpiCompact();
   if(typeof saveToFirebase === 'function') saveToFirebase();
@@ -2470,6 +2538,14 @@ function resetMobileKpiTargets() {
   document.getElementById('kpiTargetCarico').value = _kpiTargetDefaults.carico;
   document.getElementById('kpiTargetTrimp').value = _kpiTargetDefaults.trimp;
   document.getElementById('kpiTargetRisk').value = _kpiTargetDefaults.risk;
+  // reset ACWR params
+  try{
+    Object.assign(KPI_PARAMS, _kpiParamDefaults);
+    localStorage.removeItem('kpiParams');
+    document.getElementById('kpiParamAcuteDays').value = _kpiParamDefaults.acuteDays;
+    document.getElementById('kpiParamChronicDays').value = _kpiParamDefaults.chronicDays;
+    document.getElementById('kpiParamAcwrThreshold').value = _kpiParamDefaults.acwrThreshold;
+  }catch(e){}
   syncMobileKpiCompact();
   try{ if(typeof updateCharts === 'function') updateCharts(); }catch(e){}
 }
@@ -3508,6 +3584,12 @@ window.importFromFirebase = function() {
             if (kt.risk != null) MOBILE_KPI_TARGETS.risk = Number(kt.risk);
             try { localStorage.setItem('mobileKpiTargets', JSON.stringify(MOBILE_KPI_TARGETS)); } catch(e){}
           }
+          if (data.kpiParams && typeof data.kpiParams === 'object') {
+            try{
+              Object.assign(KPI_PARAMS, data.kpiParams || {});
+              localStorage.setItem('kpiParams', JSON.stringify(KPI_PARAMS));
+            }catch(e){}
+          }
 
           if (Object.prototype.hasOwnProperty.call(data, 'audioEnabled')) {
             window.__audioEnabled = data.audioEnabled !== false;
@@ -3619,6 +3701,7 @@ function saveToFirebase() {
     },
     sportEquivalence: sportEquivalence || {},
     kpiTargets: { km: MOBILE_KPI_TARGETS.km, carico: MOBILE_KPI_TARGETS.carico, trimp: MOBILE_KPI_TARGETS.trimp, risk: MOBILE_KPI_TARGETS.risk },
+    kpiParams: KPI_PARAMS || {},
     athletesToRemove: Array.isArray(athletesToRemove) ? athletesToRemove : [],
     audioEnabled: window.__audioEnabled !== false,
     savedAt: new Date().toISOString()
@@ -6048,7 +6131,7 @@ function aggiornaFiltroAtleti(data,acwr={}) {
     nomi.forEach(n=>{
       const o = document.createElement('option');
       o.value = n; o.textContent = n;
-      if(acwr[n] > 1.5) o.classList.add('critical-athlete');
+      if((acwr[n] || 0) > (KPI_PARAMS.acwrThreshold || _kpiParamDefaults.acwrThreshold)) o.classList.add('critical-athlete');
       sel.appendChild(o);
     });
     if(nomi.includes(val)) sel.value = val;
@@ -6061,7 +6144,10 @@ function aggiornaFiltroAtleti(data,acwr={}) {
 
 function computeACWR(data){
   const acwr = {}, now = new Date();
-  const acuteStart = new Date(now - 7*86400000), chronicStart = new Date(now - 28*86400000);
+  const acuteDays = Number(KPI_PARAMS.acuteDays || _kpiParamDefaults.acuteDays);
+  const chronicDays = Number(KPI_PARAMS.chronicDays || _kpiParamDefaults.chronicDays);
+  const acuteStart = new Date(now - (acuteDays * 86400000));
+  const chronicStart = new Date(now - (chronicDays * 86400000));
   [...new Set((data||[]).map(d=>d.athlete))].forEach(a=>{
     const da = (data||[]).filter(x=>x.athlete===a);
     const acute = da.filter(x=> new Date(x.date) >= acuteStart).reduce((s,v)=>s + (v.rpe||0)*(v.time||0), 0);
@@ -7233,7 +7319,7 @@ function updateKPI(data, acwr){
     const paceMin = (top.speedRef > 0) ? (60 / Number(top.speedRef)) : 0;
     $id('kpiTopAthleteLoad').textContent = `${top.kmTot.toFixed(1)} km • ${formatMinutesFloatToMMSS(paceMin)} min/km`;
   }
-  const risky = Object.values(acwr || {}).filter(v=>v>1.3).length || 0;
+  const risky = Object.values(acwr || {}).filter(v=>v > (KPI_PARAMS.acwrThreshold || _kpiParamDefaults.acwrThreshold)).length || 0;
   const perc = (risky / (Object.keys(acwr || {}).length || 1) * 100).toFixed(0);
   const riskCard = $id('kpiRiskCard');
   if(riskCard) riskCard.style.border = (risky>0 ? '3px solid #ef4444' : '3px solid #10b981');
@@ -7243,7 +7329,7 @@ function updateKPI(data, acwr){
   try {
     const acwrEntries = Object.entries(acwr || {}).map(([n,v])=>[n, Number(v)]).filter(([n,v]) => Number.isFinite(v) && n);
     acwrEntries.sort((a,b) => b[1] - a[1]);
-    const top3 = acwrEntries.filter(([n,v]) => v > 1.3).slice(0,3);
+    const top3 = acwrEntries.filter(([n,v]) => v > (KPI_PARAMS.acwrThreshold || _kpiParamDefaults.acwrThreshold)).slice(0,3);
     const a1 = $id('kpiInjuryAthlete1');
     const a2 = $id('kpiInjuryAthlete2');
     const a3 = $id('kpiInjuryAthlete3');
@@ -7474,7 +7560,9 @@ function updateCharts(){
   createChart('trimpChart','bar',athletesList,[{ label:'TRIMP', data:trimpData, backgroundColor:'#10b981' }]);
 
   // ACWR
-  createChart('acwrChart','bar', Object.keys(acwr), [{ label: 'ACWR', data: Object.values(acwr), backgroundColor: Object.values(acwr).map(v => v>1.5? '#ef4444' : v>1.3 ? '#f59e0b' : '#10b981') }]);
+  const _acwrWarn = Number(KPI_PARAMS.acwrThreshold || _kpiParamDefaults.acwrThreshold);
+  const _acwrCrit = _acwrWarn * 1.15;
+  createChart('acwrChart','bar', Object.keys(acwr), [{ label: 'ACWR', data: Object.values(acwr), backgroundColor: Object.values(acwr).map(v => v>_acwrCrit ? '#ef4444' : v>_acwrWarn ? '#f59e0b' : '#10b981') }]);
 
   if(topRankingTarget){
     // Show all athletes for the first 3D chart overlay
@@ -7934,6 +8022,8 @@ function openComparison() {
     }
 
     let html = '';
+    const _acwrWarn = Number(KPI_PARAMS.acwrThreshold || _kpiParamDefaults.acwrThreshold);
+    const _acwrCrit = _acwrWarn * 1.15;
     names.forEach((nome, idx) => {
       const dat = data.filter(d => (d.athlete || '').toString().trim() === nome);
 
@@ -7967,7 +8057,7 @@ function openComparison() {
           <div class="stat-row"><span class="stat-label">TRIMP:</span><span class="stat-value">${Math.round(trimp)}</span></div>
           <div class="stat-row"><span class="stat-label">RPE medio:</span><span class="stat-value">${rpe_med.toFixed(1)}/10</span></div>
           <div class="stat-row"><span class="stat-label">FC media:</span><span class="stat-value">${Math.round(hr_med)} bpm</span></div>
-          <div class="stat-row"><span class="stat-label">ACWR:</span><span class="stat-value" style="color:${acwr > 1.5 ? '#ef4444' : acwr > 1.3 ? '#f59e0b' : '#10b981'}">${acwr.toFixed(2)}</span></div>
+          <div class="stat-row"><span class="stat-label">ACWR:</span><span class="stat-value" style="color:${acwr > _acwrCrit ? '#ef4444' : acwr > _acwrWarn ? '#f59e0b' : '#10b981'}">${acwr.toFixed(2)}</span></div>
           <div class="stat-row"><span class="stat-label">Sessioni:</span><span class="stat-value">${dat.length}</span></div>
         </div>
       `;
