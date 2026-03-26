@@ -2504,6 +2504,32 @@ function syncMobileKpiCompact(){
   setT('mobileKpiKmTarget', `${(parseFloat(km)||0).toFixed(1)} / ${MOBILE_KPI_TARGETS.km} km`);
   setT('mobileKpiLoadTarget', `${Math.round(parseFloat(load)||0)} / ${MOBILE_KPI_TARGETS.carico}`);
   setT('mobileKpiTrimpTarget', `${Math.round(parseFloat(trimp)||0)} / ${MOBILE_KPI_TARGETS.trimp}`);
+  // ensure the mobile injury chip is updated after KPI sync
+  try { updateMobileInjuryKpi(); } catch(e) { /* ignore */ }
+}
+// Aggiorna chip mobile per OverTraining (mostra top3 sintetico)
+function updateMobileInjuryKpi(){
+  const wrap = document.getElementById('mobileKpiAfter3D');
+  if(!wrap) return;
+  const a1 = (document.getElementById('kpiInjuryAthlete1')?.textContent || '').trim();
+  const a2 = (document.getElementById('kpiInjuryAthlete2')?.textContent || '').trim();
+  const a3 = (document.getElementById('kpiInjuryAthlete3')?.textContent || '').trim();
+  const exists = document.getElementById('mobileKpiInjury');
+  const contentInner = `${a1 && a1 !== '-' ? a1 : '-'}${a2?('<div style="font-size:0.72rem;margin-top:4px;opacity:0.9">'+a2+'</div>'):''}${a3?('<div style="font-size:0.68rem;margin-top:4px;opacity:0.8">'+a3+'</div>'):''}`;
+  const contentFull = `<div class="mobile-kpi-chip" id="mobileKpiInjury"><div class="chip-v">${contentInner}</div><div class="chip-l">OverTraining</div></div>`;
+  try{
+    const topChip = document.getElementById('mobileKpiTopLoad') ? document.getElementById('mobileKpiTopLoad').closest('.mobile-kpi-chip') : null;
+    if(exists){
+      // update content and ensure position after Top dettaglio
+      exists.innerHTML = `<div class="chip-v">${contentInner}</div><div class="chip-l">OverTraining</div>`;
+      if(topChip && topChip.nextSibling !== exists) {
+        topChip.parentNode.insertBefore(exists, topChip.nextSibling);
+      }
+    } else {
+      if(topChip) topChip.insertAdjacentHTML('afterend', contentFull);
+      else wrap.insertAdjacentHTML('beforeend', contentFull);
+    }
+  }catch(e){ console.warn('updateMobileInjuryKpi failed', e); }
 }
 function updateMobileCharts() {
   // Distruggi i vecchi grafici se esistono
@@ -2517,6 +2543,90 @@ if(window.innerWidth <= 900) setTimeout(updateMobileCharts, 500);
 document.getElementById('athleteFilter').addEventListener('change', updateMobileCharts);
 document.getElementById('dateFrom').addEventListener('change', updateMobileCharts);
 document.getElementById('dateTo').addEventListener('change', updateMobileCharts);
+</script>
+
+<script>
+// Sposta la griglia KPI sotto il primo grafico 3D in versione mobile, ripristina su desktop
+(function(){
+  const kpi = document.querySelector('#tab-dashboard .kpi-grid');
+  if(!kpi) return;
+  // salva posizione originale
+  window.__kpiOriginalParent = kpi.parentNode;
+  window.__kpiOriginalNext = kpi.nextSibling;
+
+  function adjustKpiPlacement(){
+    const isMobile = window.matchMedia('(max-width:900px)').matches;
+    const mobileSlot = document.getElementById('mobileRunner3DSlot');
+    if(isMobile){
+      if(mobileSlot && kpi.parentNode !== mobileSlot.parentNode){
+        mobileSlot.parentNode.insertBefore(kpi, mobileSlot.nextSibling);
+        kpi.style.gridColumn = '1 / -1';
+        // override desktop CSS that hides .kpi-grid on mobile
+        try { kpi.style.setProperty('display','grid','important'); } catch(e) { kpi.style.display = 'grid'; }
+        kpi.style.marginTop = '8px';
+      }
+    } else {
+      if(kpi.parentNode !== window.__kpiOriginalParent){
+        if(window.__kpiOriginalNext && window.__kpiOriginalNext.parentNode === window.__kpiOriginalParent){
+          window.__kpiOriginalParent.insertBefore(kpi, window.__kpiOriginalNext);
+        } else {
+          window.__kpiOriginalParent.appendChild(kpi);
+        }
+        kpi.style.gridColumn = '';
+        // remove inline override
+        try { kpi.style.removeProperty('display'); } catch(e) { /* ignore */ }
+        kpi.style.marginTop = '';
+      }
+    }
+  }
+  window.addEventListener('resize', adjustKpiPlacement);
+  window.addEventListener('orientationchange', adjustKpiPlacement);
+  setTimeout(adjustKpiPlacement, 150);
+})();
+</script>
+
+<!-- MODAL MOBILE: TOP 3 OverTraining -->
+<div id="mobileInjuryModal" class="modal" style="display:none;position:fixed;z-index:100200;left:0;top:0;width:100vw;height:100vh;background:rgba(15,23,42,0.6);backdrop-filter:blur(4px);justify-content:center;align-items:center;">
+  <div class="modal-content" style="max-width:360px;padding:16px;border-radius:12px;position:relative;">
+    <button style="position:absolute;top:8px;right:10px;font-size:1.2rem;background:none;border:none;color:#6366f1;" onclick="closeMobileInjuryModal()">&times;</button>
+    <h3 style="margin:0 0 8px 0;color:#ef4444;">OverTraining — Top 3</h3>
+    <div id="mobileInjuryList" style="font-weight:700;line-height:1.25;color:#0f172a;padding-top:6px;"></div>
+    <div style="margin-top:10px;text-align:right;">
+      <button onclick="closeMobileInjuryModal()" style="padding:8px 12px;border-radius:8px;background:#6b7280;color:#fff;border:none;">Chiudi</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function openMobileInjuryModal(){
+  const m = document.getElementById('mobileInjuryModal');
+  const listEl = document.getElementById('mobileInjuryList');
+  if(!m || !listEl) return;
+  const lines = [];
+  ['kpiInjuryAthlete1','kpiInjuryAthlete2','kpiInjuryAthlete3'].forEach(id => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    const txt = (el.textContent || '').trim();
+    if(!txt || txt === '-') return;
+    const mch = txt.match(/^(.*)\s*\(ACWR\s*([0-9\.]+)\)$/i);
+    if(mch){ lines.push({name: mch[1].trim(), acwr: Number(mch[2])}); }
+    else lines.push({name: txt, acwr: null});
+  });
+  if(lines.length === 0){ listEl.innerHTML = '<div style="color:#64748b;">Nessun atleta a rischio in questa finestra.</div>'; }
+  else {
+    listEl.innerHTML = lines.map((it,idx)=>{
+      const pct = it.acwr != null ? (Math.round(it.acwr*100)/100).toFixed(2) : '-';
+      return `<div style="display:flex;justify-content:space-between;padding:8px 6px;border-bottom:1px solid rgba(0,0,0,0.06);"><div style=\"font-weight:800;\">${idx+1}. ${it.name}</div><div style=\"color:#ef4444;font-weight:900;\">${pct}</div></div>`;
+    }).join('');
+  }
+  m.classList.add('show');
+}
+function closeMobileInjuryModal(){ const m=document.getElementById('mobileInjuryModal'); if(m) m.classList.remove('show'); }
+document.addEventListener('click', function(e){
+  if(window.innerWidth > 900) return;
+  const chip = e.target.closest && e.target.closest('#mobileKpiInjury');
+  if(chip) { openMobileInjuryModal(); }
+});
 </script>
 
 <!-- MODAL SPIEGAZIONE KPI/ALGORITMI -->
@@ -2545,6 +2655,12 @@ document.getElementById('dateTo').addEventListener('change', updateMobileCharts)
         <li><b>Predizione velocità</b>: usa una regressione lineare pesata nel tempo su velocità normalizzata per distanza; applica filtro outlier robusto (MAD) e una curva monotona distanza→velocità con vincolo maratona.</li>
         <li><b>Output</b>: serie di km e velocità previsti per i giorni futuri selezionati, con confidenza basata su robustezza mediana (km) e R² della regressione (velocità).</li>
       </ul>
+      <strong>Dettaglio calcolo Score e intervallo primo grafico:</strong>
+      <ul>
+        <li><b>Calcolo Score (riga):</b> per ogni attività la formula è <i>score = km × velocità (km/h) × multiplier</i>, dove la velocità è km diviso (minuti/60) e <i>multiplier</i> = <i>getAthleteScoreMultiplier(atleta, sport)</i>. Il multiplier è composto da una base legata al sesso (1 + pct/100, pct = malePct/femalePct/otherPct nelle Regole Score) moltiplicata per l'equivalenza sportiva definita nella tabella equivalenze.</li>
+        <li><b>Aggregato / Classifica Top:</b> il `topScore` per atleta usa la stessa logica (es. km totale × speedRef × multiplier) e viene usato per ordinare la classifica e per la visualizzazione 3D.</li>
+        <li><b>Primo grafico (`kmChart`) — intervallo:</b> mostra i dati filtrati da `dateFrom` e `dateTo`. Il pulsante <b>All time</b> è un toggle: se i filtri sono vuoti imposta l'intervallo agli ultimi 7 giorni (oggi -6 → oggi); se i filtri sono impostati li svuota per mostrare l'intervallo completo. La modalità <b>Fastest</b> calcola i migliori tempi su tutto il dataset (all‑time), indipendentemente dai filtri temporali.</li>
+      </ul>
       <strong>Maratona (Calcolo previsione maratona):</strong>
       <ul>
         <li><b>Stima tempo maratona</b>: combina una stima da velocità media storica con una stima Riegel (se presenti 21k/10k), con media pesata tra i due modelli.</li>
@@ -2571,6 +2687,14 @@ document.getElementById('dateTo').addEventListener('change', updateMobileCharts)
       <div class="kpi-card"><div class="kpi-title" id="kpiTrimpWeekTitle">TRIMP</div><div class="kpi-value" id="kpiTrimpWeek">0</div><div class="kpi-delta" id="kpiTrimpWeekDelta"></div></div>
       <div class="kpi-card"><div class="kpi-title">Top atleta</div><div class="kpi-value" id="kpiTopAthlete">-</div><div class="kpi-delta" id="kpiTopAthleteLoad"></div></div>
       <div class="kpi-card" id="kpiRiskCard"><div class="kpi-title">% a rischio</div><div class="kpi-value" id="kpiRiskPercent">0%</div><div class="kpi-delta" id="kpiRiskInfo"></div></div>
+      <div class="kpi-card" id="kpiInjuryCard">
+        <div class="kpi-title">OverTraining</div>
+        <div class="kpi-value" id="kpiInjuryList" style="line-height:1.05;">
+          <div id="kpiInjuryAthlete1" style="font-size:1.05em;font-weight:700">-</div>
+          <div id="kpiInjuryAthlete2" style="font-size:0.95em;opacity:0.9"></div>
+          <div id="kpiInjuryAthlete3" style="font-size:0.85em;opacity:0.8"></div>
+        </div>
+      </div>
     </div>
 
     <div class="grid">
@@ -2627,7 +2751,7 @@ document.getElementById('dateTo').addEventListener('change', updateMobileCharts)
 
     <table id="dataTable">
       <thead>
-        <tr><th>Data</th><th>Atleta</th><th>Km</th><th>Min</th><th>RPE</th><th>FC</th><th>Sport</th><th>Tipo / Gara km</th><th>Note</th><th>Azioni</th><th>Min/km</th></tr>
+        <tr><th>Data</th><th>Atleta</th><th>Km</th><th>Min</th><th>RPE</th><th>FC</th><th>Sport</th><th>Tipo / Gara km</th><th>Note</th><th>Azioni</th><th>Score</th><th>Min/km</th></tr>
       </thead>
       <tbody>
       </tbody>
@@ -2664,7 +2788,7 @@ document.getElementById('dateTo').addEventListener('change', updateMobileCharts)
           <input id="mobileSessionHr" type="number" min="0" step="1" placeholder="0" style="width:100%;">
         </label>
         <label>RPE
-          <input id="mobileSessionRpe" type="number" min="0" max="10" step="1" placeholder="0" style="width:100%;">
+          <input id="mobileSessionRpe" type="number" min="3" max="10" step="1" placeholder="3" style="width:100%;">
         </label>
         <label style="grid-column:1 / -1;">Sport
           <select id="mobileSessionSport" style="width:100%;"></select>
@@ -2759,7 +2883,7 @@ document.getElementById('dateTo').addEventListener('change', updateMobileCharts)
             <input id="mobileRipRest" type="number" min="0" step="0.01" value="1.00" style="width:100%;">
           </label>
           <label>RPE
-            <input id="mobileRipRpe" type="number" min="0" max="10" step="1" value="7" style="width:100%;">
+            <input id="mobileRipRpe" type="number" min="3" max="10" step="1" value="7" style="width:100%;">
           </label>
           <label>FC
             <input id="mobileRipHr" type="number" min="0" step="1" value="170" style="width:100%;">
@@ -2784,7 +2908,7 @@ document.getElementById('dateTo').addEventListener('change', updateMobileCharts)
               <button onclick="addRipRow()">➕ Aggiungi Rip</button>
               <button onclick="computeRipSession()">⚖️ Calcola</button>
               <button onclick="saveRipSession()">💾 Salva Sessione</button>
-              <button onclick="explodeRipToMainTable()">➡️ Esporta in Dati Storici</button>
+              <button onclick="explodeRipToMainTable()">💾 Salva direttamente</button>
             </div>
             <div id="ripRowsContainer" style="overflow:auto;">
               <table style="width:100%;border-collapse:collapse;min-width:760px;">
@@ -2936,8 +3060,10 @@ document.getElementById('dateTo').addEventListener('change', updateMobileCharts)
           <option value="daily">Giornaliero</option>
           <option value="weekly">Settimanale</option>
           <option value="monthly">Mensile</option>
-        </select>
+        <hr style="margin:18px 0 10px 0;">
+        <div style="margin-bottom:10px;font-size:0.95em;color:#334155;">La Tabella di Equivalenza Sport è disponibile in <strong>Regole Score</strong>. Apri il modal ⚙️ Regole Score per modificarla.</div>
         <button onclick="generateTrendChart()">Genera</button>
+          <br>Ogni sport è moltiplicato per la sua equivalenza.</div>
       </div>
     </div>
 
@@ -3033,10 +3159,235 @@ document.getElementById('dateTo').addEventListener('change', updateMobileCharts)
         <button type="button" onclick="saveScoreRules()">💾 Salva regole</button>
       </div>
     </div>
+    
+    <div class="trend-section" style="margin-top:12px;">
+      <h3>Regola 2 — Tabella di Equivalenza Sport</h3>
+      <div style="margin-bottom:10px;font-size:0.95em;color:#334155;">Imposta la percentuale di equivalenza di ciascuno sport rispetto alla corsa (100%). Es: bici 40%, nuoto 60%...</div>
+      <div id="sportEquivalenceTableWrap" style="margin-bottom:10px;">
+        <table id="sportEquivalenceTable" style="width:100%;border-collapse:collapse;background:#f1f5f9;border-radius:10px;box-shadow:0 2px 8px #0001;">
+          <thead><tr style="background:#6366f1;color:#fff;"><th style="text-align:left;padding:8px 10px;">Sport</th><th style="text-align:left;padding:8px 10px;">Equivalenza (%)</th></tr></thead>
+          <tbody id="sportEquivalenceTbody"></tbody>
+        </table>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:4px;justify-content:flex-end;">
+        <button type="button" onclick="resetSportEquivalence()" style="background:#64748b;color:#fff;padding:8px 12px;border-radius:8px;border:none;">Reset Equivalenze</button>
+        <button type="button" onclick="saveSportEquivalence()" style="background:#6366f1;color:#fff;padding:8px 12px;border-radius:8px;border:none;">💾 Salva equivalenze</button>
+      </div>
+    </div>
   </div>
 </div>
 
-<script>
+    <!-- Floating save confirmation style -->
+    <style>
+      .save-float {
+        position: fixed;
+        background: #10b981;
+        color: #fff;
+        padding: 8px 12px;
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(2,6,23,0.18);
+        font-weight:700;
+        z-index: 100500;
+        transform: translateY(0);
+        opacity: 1;
+        transition: transform 1000ms cubic-bezier(.2,.8,.2,1), opacity 1000ms;
+        pointer-events: none;
+      }
+      .save-float.up {
+        transform: translateY(-38px);
+        opacity: 0;
+      }
+    </style>
+
+    <script>
+    // Reusable floating save badge shown near a button or at bottom-right
+    function showSaveBadge(targetBtn) {
+      try {
+        const btn = (typeof targetBtn === 'string') ? document.querySelector(targetBtn) : targetBtn instanceof Element ? targetBtn : null;
+        const rect = btn ? btn.getBoundingClientRect() : null;
+        const badge = document.createElement('div');
+        badge.className = 'save-float';
+        badge.textContent = 'Salvato';
+        document.body.appendChild(badge);
+        // Position: try near button, otherwise bottom-right
+        if (rect) {
+          // adjust left after appended so offsetWidth is known
+          badge.style.left = (rect.left + rect.width - badge.offsetWidth) + 'px';
+          badge.style.top = (rect.top - 6) + 'px';
+        } else {
+          badge.style.right = '18px';
+          badge.style.bottom = '18px';
+        }
+        // trigger animation
+        window.getComputedStyle(badge).opacity;
+        setTimeout(() => badge.classList.add('up'), 40);
+        setTimeout(() => { try { badge.remove(); } catch(e){} }, 1200);
+      } catch(e) { /* ignore */ }
+    }
+
+    // Global delegation: show badge for any button with text containing "salva" when clicked
+    document.addEventListener('click', function(e) {
+      const b = e.target.closest && e.target.closest('button');
+      if (!b) return;
+      const txt = (b.textContent || '').trim().toLowerCase();
+      if (txt.includes('salva') || txt.includes('💾')) {
+        // show near clicked button
+        showSaveBadge(b);
+      }
+    });
+// --- Sport Equivalence Table Logic ---
+const SPORT_EQUIV_KEY = 'sportEquivalence';
+let sportEquivalence = {};
+
+function loadSportEquivalence() {
+  try {
+    const raw = localStorage.getItem(SPORT_EQUIV_KEY);
+    if (!raw) {
+      // Default: corsa=100, altri=50
+      sportEquivalence = {};
+      (sports||[]).forEach(s => { sportEquivalence[s] = (s==='corsa') ? 100 : 50; });
+      return;
+    }
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object') sportEquivalence = parsed;
+  } catch(e) { sportEquivalence = {}; }
+}
+
+function saveSportEquivalence() {
+  // Read from table
+  const tbody = document.getElementById('sportEquivalenceTbody');
+  if (!tbody) return;
+  const rows = tbody.querySelectorAll('tr');
+  rows.forEach(row => {
+    const sport = row.querySelector('td').textContent.trim();
+    const val = parseFloat(row.querySelector('input').value);
+    if (sport) sportEquivalence[sport] = isNaN(val) ? 0 : val;
+  });
+  localStorage.setItem(SPORT_EQUIV_KEY, JSON.stringify(sportEquivalence));
+  if(typeof updateCharts==='function') updateCharts();
+  window.mostraNotificaSalvataggio && window.mostraNotificaSalvataggio();
+  if (typeof saveToFirebase === 'function') saveToFirebase();
+
+  // badge displayed via global delegation (showSaveBadge)
+}
+
+function resetSportEquivalence() {
+  sportEquivalence = {};
+  (sports||[]).forEach(s => { sportEquivalence[s] = (s==='corsa') ? 100 : 50; });
+  renderSportEquivalenceTable();
+}
+
+function renderSportEquivalenceTable() {
+  const tbody = document.getElementById('sportEquivalenceTbody');
+  if (!tbody) return;
+  try {
+    // Ensure sportEquivalence is in sync with current sports
+    syncSportEquivalenceWithSports();
+    if (Array.isArray(sports) && sports.length > 0) {
+      tbody.innerHTML = sports.map(s => `
+        <tr>
+          <td>${s}</td>
+          <td><input type="number" min="0" max="200" step="1" value="${sportEquivalence[s] !== undefined ? sportEquivalence[s] : (s === 'corsa' ? 100 : 50)}" style="width:80px;"></td>
+        </tr>
+      `).join('');
+      const wrap = document.getElementById('sportEquivalenceTableWrap');
+      if (wrap) wrap.style.display = 'block';
+    } else {
+      tbody.innerHTML = '<tr><td colspan="2" style="color:#ef4444;font-weight:700;padding:10px;">Nessuno sport trovato. Aggiungi sport dalla Gestione Sport.</td></tr>';
+    }
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="2" style="color:#ef4444;font-weight:700;padding:10px;">Errore caricamento tabella equivalenza sport.</td></tr>';
+  }
+}
+
+function syncSportEquivalenceWithSports() {
+  if (!Array.isArray(sports)) return;
+  // Add defaults for missing sports
+  sports.forEach(s => {
+    if (sportEquivalence[s] === undefined) {
+      sportEquivalence[s] = (s === 'corsa') ? 100 : 50;
+    }
+  });
+  // Remove entries for deleted sports
+  Object.keys(sportEquivalence).forEach(k => {
+    if (!sports.includes(k)) delete sportEquivalence[k];
+  });
+}
+
+function openScoreRulesModal() {
+  const m = document.getElementById('scoreRulesModal');
+  if (!m) return;
+  const maleInput = document.getElementById('scoreRuleMalePct');
+  const femaleInput = document.getElementById('scoreRuleFemalePct');
+  const otherInput = document.getElementById('scoreRuleOtherPct');
+  if (maleInput) maleInput.value = String(Number(topScoreRules.malePct || 0));
+  if (femaleInput) femaleInput.value = String(Number(topScoreRules.femalePct || 0));
+  if (otherInput) otherInput.value = String(Number(topScoreRules.otherPct || 0));
+  // Always reload and render equivalence table
+  function pollSportEquivalenceTable(attempts=0) {
+    loadSportEquivalence();
+    if (typeof loadSportEquivalenceFromFirebase === 'function' && FIREBASE_URL) loadSportEquivalenceFromFirebase();
+    syncSportEquivalenceWithSports();
+    renderSportEquivalenceTable();
+    const tbody = document.getElementById('sportEquivalenceTbody');
+    if (tbody && Array.isArray(sports) && sports.length === 0 && attempts < 10) {
+      setTimeout(() => pollSportEquivalenceTable(attempts+1), 1000);
+    }
+  }
+  setTimeout(() => pollSportEquivalenceTable(), 0);
+  m.classList.add('show');
+}
+
+// When sports are added/removed, keep equivalence table in sync
+const _oldUpdateSportsUI = window.updateSportsUI;
+window.updateSportsUI = function() {
+  if (_oldUpdateSportsUI) _oldUpdateSportsUI.apply(this, arguments);
+  loadSportEquivalence();
+  syncSportEquivalenceWithSports();
+  renderSportEquivalenceTable();
+};
+
+// --- Patch score calculation to use equivalence ---
+// Helper: determine primary sport from a set of rows (by km or frequency)
+function getPrimarySportForRows(rows) {
+  if (!Array.isArray(rows) || rows.length === 0) return undefined;
+  const bySport = {};
+  rows.forEach(r => {
+    const s = r.sport || r.type || 'corsa';
+    const km = Number(r.km || 0);
+    if (!bySport[s]) bySport[s] = { count: 0, km: 0 };
+    bySport[s].count += 1;
+    bySport[s].km += km;
+  });
+  // Prefer sport with highest total km, fallback to highest count
+  const entries = Object.entries(bySport);
+  entries.sort((a,b) => (b[1].km - a[1].km) || (b[1].count - a[1].count));
+  return entries.length ? entries[0][0] : undefined;
+}
+
+function getSportEquivalence(sport) {
+  if (!sportEquivalence || typeof sportEquivalence !== 'object') return 1;
+  const val = sportEquivalence[sport];
+  return (typeof val === 'number' && !isNaN(val)) ? (val/100) : 1;
+}
+
+// Patch getAthleteScoreMultiplier to include sport equivalence
+function getAthleteScoreMultiplier(athleteName, sport) {
+  const sex = getAthleteSexValue(athleteName);
+  let pct = Number(topScoreRules.otherPct || 0);
+  if(sex === 'M' || sex === 'MASCHIO') pct = Number(topScoreRules.malePct || 0);
+  if(sex === 'F' || sex === 'FEMMINA') pct = Number(topScoreRules.femalePct || 0);
+  const base = 1 + (pct / 100);
+  const sportMult = getSportEquivalence(sport);
+  return base * sportMult;
+}
+
+// If any code uses getAthleteScoreMultiplier without sport, fallback to 1
+// (for backward compatibility)
+
+// Patch updateCharts or wherever score is calculated to use the new multiplier
+// (Assume updateCharts uses getAthleteScoreMultiplier(athlete, sport) now)
+
 window.toggleCeremony = function(){
   window.__forceCeremonyPreview = !window.__forceCeremonyPreview;
   window.__ceremonyAutoStop = false; // manuale: non si ferma da solo
@@ -3263,6 +3614,7 @@ function saveToFirebase() {
       femalePct: Number(topScoreRules.femalePct || 0),
       otherPct: Number(topScoreRules.otherPct || 0)
     },
+    sportEquivalence: sportEquivalence || {},
     kpiTargets: { km: MOBILE_KPI_TARGETS.km, carico: MOBILE_KPI_TARGETS.carico, trimp: MOBILE_KPI_TARGETS.trimp, risk: MOBILE_KPI_TARGETS.risk },
     athletesToRemove: Array.isArray(athletesToRemove) ? athletesToRemove : [],
     audioEnabled: window.__audioEnabled !== false,
@@ -3288,6 +3640,29 @@ function saveToFirebase() {
       console.error('Errore salvataggio Firebase:', err);
       alert('Errore salvataggio su Firebase: ' + (err && err.message ? err.message : err));
     });
+}
+
+// Load sport equivalence (and optional topScoreRules) from remote Firebase
+async function loadSportEquivalenceFromFirebase() {
+  if (!FIREBASE_URL || typeof fetch !== 'function') return;
+  try {
+    const res = await fetch(FIREBASE_URL, { method: 'GET', cache: 'no-cache' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const payload = await res.json().catch(() => null);
+    if (!payload) return;
+    if (payload.sportEquivalence && typeof payload.sportEquivalence === 'object') {
+      sportEquivalence = Object.assign({}, sportEquivalence || {}, payload.sportEquivalence);
+      try { localStorage.setItem(SPORT_EQUIV_KEY, JSON.stringify(sportEquivalence)); } catch(e){}
+      renderSportEquivalenceTable();
+    }
+    if (payload.topScoreRules && typeof payload.topScoreRules === 'object') {
+      applyTopScoreRulesPayload(payload.topScoreRules);
+      try { localStorage.setItem(TOP_SCORE_RULES_KEY, JSON.stringify(topScoreRules)); } catch(e){}
+    }
+    if (typeof updateCharts === 'function') updateCharts();
+  } catch (err) {
+    console.warn('Impossibile caricare equivalenze da Firebase:', err && err.message ? err.message : err);
+  }
 }
 
 // Mostra una notifica discreta in alto a destra
@@ -3589,13 +3964,7 @@ function getAthleteSexValue(athleteName){
   return String((athleteDetails && athleteDetails[athleteName] && athleteDetails[athleteName].sex) || '').trim().toUpperCase();
 }
 
-function getAthleteScoreMultiplier(athleteName){
-  const sex = getAthleteSexValue(athleteName);
-  let pct = Number(topScoreRules.otherPct || 0);
-  if(sex === 'M' || sex === 'MASCHIO') pct = Number(topScoreRules.malePct || 0);
-  if(sex === 'F' || sex === 'FEMMINA') pct = Number(topScoreRules.femalePct || 0);
-  return 1 + (pct / 100);
-}
+
 
 function loadTopScoreRules(){
   try {
@@ -4082,6 +4451,21 @@ function bindRaceDistanceRowBehavior(row){
     const kmInput = cells[2]?.querySelector('input');
     const minInput = cells[3]?.querySelector('input');
     const paceInput = cells[10]?.querySelector('input');
+    const athleteSel = cells[1]?.querySelector('select');
+    const sportSel = cells[6]?.querySelector('select');
+    // ensure a score cell exists (insert before last cell which is min/km)
+    (function ensureScoreCell(){
+      try{
+        if(row.querySelector('.row-score')) return;
+        const scoreTd = document.createElement('td');
+        scoreTd.className = 'row-score';
+        scoreTd.style.fontWeight = '700';
+        // insert before last cell (min/km)
+        const last = row.children[row.children.length-1];
+        row.insertBefore(scoreTd, last);
+      }catch(e){}
+    })();
+    const scoreCell = row.querySelector('.row-score');
     let _lastEditedField = null;
     const syncFromField = (source) => {
       _lastEditedField = source;
@@ -4113,7 +4497,35 @@ function bindRaceDistanceRowBehavior(row){
       paceInput.addEventListener('input', () => syncFromField('pace'));
       paceInput.dataset.paceBound = '1';
     }
+    // update row score when relevant fields change
+    const recompute = () => updateRowScore(row);
+    if(athleteSel && !athleteSel.dataset.scoreBound){ athleteSel.addEventListener('change', recompute); athleteSel.dataset.scoreBound='1'; }
+    if(sportSel && !sportSel.dataset.scoreBound){ sportSel.addEventListener('change', recompute); sportSel.dataset.scoreBound='1'; }
+    if(kmInput && !kmInput.dataset.scoreBound){ kmInput.addEventListener('input', recompute); kmInput.dataset.scoreBound='1'; }
+    if(minInput && !minInput.dataset.scoreBound){ minInput.addEventListener('input', recompute); minInput.dataset.scoreBound='1'; }
+    // compute immediately
+    updateRowScore(row);
   }catch(e){ console.warn('bind pace sync failed', e); }
+}
+
+// Compute and render per-row score: km * speed (km/h) * athleteMultiplier
+function updateRowScore(row){
+  try{
+    if(!row) return;
+    const cells = row.children;
+    const athlete = cells[1]?.querySelector('select')?.value || '';
+    const km = Number(cells[2]?.querySelector('input')?.value || 0);
+    const minutes = Number(cells[3]?.querySelector('input')?.value || 0);
+    const sport = cells[6]?.querySelector('select')?.value || '';
+    const scoreCell = row.querySelector('.row-score') || (() => {
+      const td = document.createElement('td'); td.className='row-score'; row.insertBefore(td, row.children[row.children.length-1]); return td; })();
+    if(km <= 0 || minutes <= 0){ scoreCell.textContent = '-'; return; }
+    const timeH = minutes / 60;
+    const speed = timeH > 0 ? (km / timeH) : 0; // km/h
+    const multiplier = (typeof getAthleteScoreMultiplier === 'function') ? getAthleteScoreMultiplier(athlete, sport) : 1;
+    const rowScore = km * speed * multiplier;
+    scoreCell.textContent = isFinite(rowScore) ? Number(rowScore).toFixed(2) : '-';
+  }catch(e){ try{ row.querySelector('.row-score').textContent='-'; }catch(e){} }
 }
 
 function updateActivityTypesUI(){
@@ -4153,7 +4565,7 @@ function appendTableRowsFromObjects(arr){
       <td><select class="athlete-select"><option value="">-- Seleziona --</option>${athleteOptions}</select></td>
       <td><input type="number" value="${kmVal !== '' ? Number(kmVal).toFixed(3) : ''}"></td>
       <td><input type="number" value="${minutesVal !== '' ? minutesVal : ''}"></td>
-      <td><input type="number" value="${x.rpe || ''}"></td>
+      <td><input type="number" min="3" max="10" step="1" placeholder="3" value="${x.rpe || ''}"></td>
       <td><input type="number" value="${x.hr || ''}"></td>
       <td><select class="sport-select">${sportOptions}</select></td>
       <td>${activityCellHtml}</td>
@@ -4976,34 +5388,82 @@ function convertRipetuteToDataEntries(ripSessions){
 function explodeRipToMainTable(){
   const session = readRipSessionFromForm();
   if(!session || !session.reps.length){ alert('Nessuna ripetuta definita'); return; }
+  // Build map of existing ripetute rows to avoid duplicates
+  const existing = getDataRaw();
+  const isRipRow = (row) => {
+    const t = String(row.activityType || row.type || '').toLowerCase();
+    const n = String(row.note || '').toLowerCase();
+    return t.includes('ripetute') || n.includes('rip:');
+  };
+  const ripKey = (row) => [
+    row.date || '',
+    row.athlete || '',
+    Number(row.km || 0).toFixed(3),
+    String(Math.round(Number(row.minutes || ((Number(row.time)||0) * 60) || 0))),
+    String(Math.round(Number(row.rpe || 0))),
+    String(Math.round(Number(row.hr || 0))),
+    String((row.activityType || row.type || 'Ripetute')).toLowerCase()
+  ].join('|');
+
+  const tableRipCounts = new Map();
+  existing.forEach((row) => {
+    if(!isRipRow(row)) return;
+    const key = ripKey(row);
+    tableRipCounts.set(key, (tableRipCounts.get(key) || 0) + 1);
+  });
+
   const tb = document.querySelector('#dataTable tbody');
+  let added = 0, skipped = 0;
   session.reps.forEach(r => {
-    const tr = document.createElement('tr');
     const minutes = Math.round((r.time_s || 0) / 60);
+    const km = ((r.distance||0)/1000);
+    const rowObj = {
+      date: session.date,
+      athlete: session.athlete,
+      km: Number(km),
+      minutes: Number(minutes),
+      time: Number(minutes)/60,
+      rpe: Number(r.rpe || session.rpe || 0),
+      hr: Number(r.hr || 0),
+      type: 'Ripetute',
+      activityType: session.type || 'Ripetute',
+      note: `Rip: ${r.label||''} rec ${((r.rest_s||0)/60).toFixed(2)}min latt:${r.lactate||''}`
+    };
+    const key = ripKey(rowObj);
+    const existingCount = tableRipCounts.get(key) || 0;
+    if(existingCount > 0){
+      tableRipCounts.set(key, existingCount - 1);
+      skipped++;
+      return;
+    }
+
+    const tr = document.createElement('tr');
     const activityCellHtml = buildActivityTypeWithRaceHtml('Ripetute', '');
-    const paceVal = ((r.time_s||0)/60) && ((r.distance||0)/1000) ? formatMinutesToPaceDisplay(((r.time_s||0)/60) / ((r.distance||0)/1000)) : '';
+    const paceVal = (rowObj.time && rowObj.km) ? formatMinutesToPaceDisplay((rowObj.minutes) / (rowObj.km)) : '';
     tr.innerHTML = `
-      <td><input type="date" value="${session.date}"></td>
-      <td><select class="athlete-select"><option value="">-- Seleziona --</option>${athletes.map(a=>`<option value="${a}" ${a===session.athlete?'selected':''}>${a}</option>`).join('')}</select></td>
-      <td><input type="number" value="${((r.distance||0)/1000).toFixed(3)}"></td>
-      <td><input type="number" value="${minutes}"></td>
-      <td><input type="number" value="${r.rpe||0}"></td>
-      <td><input type="number" value="${r.hr||0}"></td>
+      <td><input type="date" value="${rowObj.date}"></td>
+      <td><select class="athlete-select"><option value="">-- Seleziona --</option>${athletes.map(a=>`<option value="${a}" ${a===rowObj.athlete?'selected':''}>${a}</option>`).join('')}</select></td>
+      <td><input type="number" value="${rowObj.km.toFixed(3)}"></td>
+      <td><input type="number" value="${rowObj.minutes}"></td>
+      <td><input type="number" value="${rowObj.rpe}"></td>
+      <td><input type="number" value="${rowObj.hr}"></td>
       <td><select class="sport-select">${sports.map(s=>`<option value="${s}">${s}</option>`).join('')}</select></td>
       <td>${activityCellHtml}</td>
-      <td><input type="text" value="Rip: ${r.label||''} | rec ${((r.rest_s||0)/60).toFixed(2)}min | latt:${r.lactate||''}"></td>
+      <td><input type="text" value="${rowObj.note}"></td>
       <td><button onclick="deleteRow(this)" style="padding:4px 8px;font-size:0.75rem;background:#ef4444;">🗑️</button></td>
       <td><input type="number" value="${paceVal}"></td>
     `;
     tb.insertBefore(tr, tb.firstChild);
     bindRaceDistanceRowBehavior(tr);
+    added++;
   });
+
   updateTableFilters();
   sortTableByDate(false);
   updateCharts();
   if(typeof updateSaveFirebaseBtn === 'function') updateSaveFirebaseBtn();
   if(typeof saveToFirebase === 'function') saveToFirebase();
-  alert('Sessione esplosa in dati storici (ogni ripetuta è stata aggiunta come riga).');
+  alert(`Sessione salvata: ${added} nuove righe aggiunte, ${skipped} duplicate ignorate.`);
 }
 
 /* import/export ripetute */
@@ -5057,7 +5517,9 @@ function getDataRaw(){
     const athlete = cells[1]?.querySelector('select')?.value || '';
     const km = +(cells[2]?.querySelector('input')?.value || 0);
     const minutes = +(cells[3]?.querySelector('input')?.value || 0);
-    const rpe = +(cells[4]?.querySelector('input')?.value || 0);
+    const rawRpe = cells[4]?.querySelector('input')?.value;
+    const parsedRpe = +(rawRpe);
+    const rpe = (rawRpe === undefined || rawRpe === null || String(rawRpe).trim() === '' || isNaN(parsedRpe)) ? 3 : parsedRpe;
     const hr = +(cells[5]?.querySelector('input')?.value || 0);
     const type = cells[6]?.querySelector('select')?.value || '';
     const activityType = cells[7]?.querySelector('.activity-type-select')?.value || '';
@@ -6696,8 +7158,9 @@ function updateKPI(data, acwr){
     .map(([ath,rows])=>{
       const kmTot = (rows || []).reduce((s,v)=> s + (Number(v.km) || 0), 0);
       const speedRef = speedWeightedByKm(rows);
-      const multiplier = getAthleteScoreMultiplier(ath);
-      return { athlete: ath, kmTot, speedRef, score: kmTot * speedRef * multiplier };
+      const primarySport = getPrimarySportForRows(rows);
+      const multiplier = getAthleteScoreMultiplier(ath, primarySport);
+      return { athlete: ath, kmTot, speedRef, score: kmTot * speedRef * multiplier, sport: primarySport };
     })
     .sort((a,b)=> (b.score - a.score) || (b.kmTot - a.kmTot) || (b.speedRef - a.speedRef))[0] || { athlete:'-', kmTot:0, speedRef:0 };
   if($id('kpiTopAthlete')) $id('kpiTopAthlete').textContent = top.athlete;
@@ -6711,6 +7174,24 @@ function updateKPI(data, acwr){
   if(riskCard) riskCard.style.border = (risky>0 ? '3px solid #ef4444' : '3px solid #10b981');
   if($id('kpiRiskPercent')) $id('kpiRiskPercent').textContent = perc + "%";
   if($id('kpiRiskInfo')) $id('kpiRiskInfo').textContent = risky>0 ? `${risky} ⚠️` : '✅ Ok';
+  // Top 3 athletes by ACWR > threshold (show progressively smaller text)
+  try {
+    const acwrEntries = Object.entries(acwr || {}).map(([n,v])=>[n, Number(v)]).filter(([n,v]) => Number.isFinite(v) && n);
+    acwrEntries.sort((a,b) => b[1] - a[1]);
+    const top3 = acwrEntries.filter(([n,v]) => v > 1.3).slice(0,3);
+    const a1 = $id('kpiInjuryAthlete1');
+    const a2 = $id('kpiInjuryAthlete2');
+    const a3 = $id('kpiInjuryAthlete3');
+    if(top3.length > 0){
+      if(a1) a1.textContent = `${top3[0][0]} (ACWR ${top3[0][1].toFixed(2)})`;
+      if(top3[1]) { if(a2) a2.textContent = `${top3[1][0]} (ACWR ${top3[1][1].toFixed(2)})`; } else if(a2) a2.textContent = '';
+      if(top3[2]) { if(a3) a3.textContent = `${top3[2][0]} (ACWR ${top3[2][1].toFixed(2)})`; } else if(a3) a3.textContent = '';
+      const injCard = $id('kpiInjuryCard'); if(injCard){ injCard.style.border = '3px solid #ef4444'; injCard.style.backgroundColor = '#7f1d1d'; }
+    } else {
+      if(a1) a1.textContent = '-'; if(a2) a2.textContent = ''; if(a3) a3.textContent = '';
+      const injCard = $id('kpiInjuryCard'); if(injCard){ injCard.style.border = '3px solid #10b981'; injCard.style.backgroundColor = '#064e3b'; }
+    }
+  } catch(e) { console.warn('kpi injury update failed', e); }
 }
 function updateCharts(){
   const topRankingTarget = (window.innerWidth <= 900 && $id('mobileKmTopRankingOverlay'))
@@ -6840,7 +7321,7 @@ function updateCharts(){
       speedRef: speedWeightedByKm(byA[ath] || []),
       topScore: 0,
       load: loadWeightedByKm(byA[ath] || [])
-    })).map(r => ({ ...r, topScore: r.km * r.speedRef * getAthleteScoreMultiplier(r.athlete) }))
+    })).map(r => ({ ...r, topScore: r.km * r.speedRef * getAthleteScoreMultiplier(r.athlete, getPrimarySportForRows(byA[r.athlete] || [])) }))
       .sort((a,b)=> (b.topScore - a.topScore) || (b.km - a.km) || (b.speedRef - a.speedRef));
   }
   const athletesForKm = kmRanking.map(r => r.athlete);
