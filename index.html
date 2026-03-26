@@ -2460,6 +2460,8 @@ function saveMobileKpiTargets() {
   closeMobileKpiTargetModal();
   syncMobileKpiCompact();
   if(typeof saveToFirebase === 'function') saveToFirebase();
+  // Recompute charts and KPIs so all reports reflect new targets
+  try{ if(typeof updateCharts === 'function') updateCharts(); }catch(e){}
 }
 function resetMobileKpiTargets() {
   Object.assign(MOBILE_KPI_TARGETS, _kpiTargetDefaults);
@@ -2469,6 +2471,7 @@ function resetMobileKpiTargets() {
   document.getElementById('kpiTargetTrimp').value = _kpiTargetDefaults.trimp;
   document.getElementById('kpiTargetRisk').value = _kpiTargetDefaults.risk;
   syncMobileKpiCompact();
+  try{ if(typeof updateCharts === 'function') updateCharts(); }catch(e){}
 }
 function _setMobileKpiBar(barId, value, target, invert) {
   const el = document.getElementById(barId);
@@ -4449,7 +4452,9 @@ function bindRaceDistanceRowBehavior(row){
   try{
     const cells = row.children;
     const kmInput = cells[2]?.querySelector('input');
-    const minInput = cells[3]?.querySelector('input');
+    const hInput = cells[3]?.querySelector('.time-h');
+    const mInput = cells[3]?.querySelector('.time-m');
+    const sInput = cells[3]?.querySelector('.time-s');
     const paceInput = cells[10]?.querySelector('input');
     const athleteSel = cells[1]?.querySelector('select');
     const sportSel = cells[6]?.querySelector('select');
@@ -4467,13 +4472,27 @@ function bindRaceDistanceRowBehavior(row){
     })();
     const scoreCell = row.querySelector('.row-score');
     let _lastEditedField = null;
+    const hVal = () => Number(hInput?.value || 0);
+    const mVal = () => Number(mInput?.value || 0);
+    const sVal = () => Number(sInput?.value || 0);
+    const hmsToMinutes = () => (hVal() * 60) + (mVal()) + (sVal() / 60);
+    const setHmsFromMinutes = (totalMinutes) => {
+      const totSec = Math.round((Number(totalMinutes) || 0) * 60);
+      const hh = Math.floor(totSec / 3600);
+      const mm = Math.floor((totSec % 3600) / 60);
+      const ss = totSec % 60;
+      if(hInput) hInput.value = hh;
+      if(mInput) mInput.value = mm;
+      if(sInput) sInput.value = ss;
+    };
+
     const syncFromField = (source) => {
       _lastEditedField = source;
       const km = Number(kmInput?.value || 0);
-      const minutes = Number(minInput?.value || 0);
+      const minutes = hmsToMinutes();
       const paceMinutes = parsePaceDisplayToMinutes(paceInput?.value || '');
       if(source === 'km' && km > 0){
-        if(paceMinutes > 0){ minInput.value = Number((paceMinutes * km).toFixed(2)); }
+        if(paceMinutes > 0){ setHmsFromMinutes(Number((paceMinutes * km).toFixed(2))); }
         else if(minutes > 0){ paceInput.value = formatMinutesToPaceDisplay(minutes / km); }
       }
       if(source === 'min' && minutes > 0){
@@ -4481,7 +4500,7 @@ function bindRaceDistanceRowBehavior(row){
         else if(paceMinutes > 0){ kmInput.value = Number((minutes / paceMinutes).toFixed(2)); }
       }
       if(source === 'pace' && paceMinutes > 0){
-        if(km > 0){ minInput.value = Number((paceMinutes * km).toFixed(2)); }
+        if(km > 0){ setHmsFromMinutes(Number((paceMinutes * km).toFixed(2))); }
         else if(minutes > 0){ kmInput.value = Number((minutes / paceMinutes).toFixed(2)); }
       }
     };
@@ -4489,10 +4508,9 @@ function bindRaceDistanceRowBehavior(row){
       kmInput.addEventListener('input', () => syncFromField('km'));
       kmInput.dataset.paceBound = '1';
     }
-    if(minInput && !minInput.dataset.paceBound){
-      minInput.addEventListener('input', () => syncFromField('min'));
-      minInput.dataset.paceBound = '1';
-    }
+    if(hInput && !hInput.dataset.paceBound){ hInput.addEventListener('input', () => syncFromField('min')); hInput.dataset.paceBound='1'; }
+    if(mInput && !mInput.dataset.paceBound){ mInput.addEventListener('input', () => syncFromField('min')); mInput.dataset.paceBound='1'; }
+    if(sInput && !sInput.dataset.paceBound){ sInput.addEventListener('input', () => syncFromField('min')); sInput.dataset.paceBound='1'; }
     if(paceInput && !paceInput.dataset.paceBound){
       paceInput.addEventListener('input', () => syncFromField('pace'));
       paceInput.dataset.paceBound = '1';
@@ -4515,7 +4533,10 @@ function updateRowScore(row){
     const cells = row.children;
     const athlete = cells[1]?.querySelector('select')?.value || '';
     const km = Number(cells[2]?.querySelector('input')?.value || 0);
-    const minutes = Number(cells[3]?.querySelector('input')?.value || 0);
+    const h = Number(cells[3]?.querySelector('.time-h')?.value || 0);
+    const m = Number(cells[3]?.querySelector('.time-m')?.value || 0);
+    const s = Number(cells[3]?.querySelector('.time-s')?.value || 0);
+    const minutes = (h * 60) + m + (s / 60);
     const sport = cells[6]?.querySelector('select')?.value || '';
     const scoreCell = row.querySelector('.row-score') || (() => {
       const td = document.createElement('td'); td.className='row-score'; row.insertBefore(td, row.children[row.children.length-1]); return td; })();
@@ -4555,6 +4576,11 @@ function appendTableRowsFromObjects(arr){
     const athleteVal = x.athlete || '';
     const kmVal = (typeof x.km === 'number') ? x.km : (x.distance ? Number(x.distance)/1000 : '');
     const minutesVal = (x.minutes !== undefined) ? x.minutes : (x.time ? Math.round(x.time*60) : '');
+    // derive hh/mm/ss from minutesVal
+    const totalSecondsVal = Math.round((Number(minutesVal) || 0) * 60);
+    const hoursVal = Math.floor(totalSecondsVal / 3600);
+    const minsOnlyVal = Math.floor((totalSecondsVal % 3600) / 60);
+    const secsOnlyVal = totalSecondsVal % 60;
     const athleteOptions = athletes.map(a=>`<option value="${a}" ${a===athleteVal?'selected':''}>${a}</option>`).join('');
     const sportOptions = sports.map(s=>`<option value="${s}" ${s===x.type?'selected':''}>${s}</option>`).join('');
     const activityCellHtml = buildActivityTypeWithRaceHtml(x.activityType || '', x.raceDistance || x.garaDistance || '');
@@ -4564,7 +4590,13 @@ function appendTableRowsFromObjects(arr){
       <td><input type="date" value="${dateVal}"></td>
       <td><select class="athlete-select"><option value="">-- Seleziona --</option>${athleteOptions}</select></td>
       <td><input type="number" value="${kmVal !== '' ? Number(kmVal).toFixed(3) : ''}"></td>
-      <td><input type="number" value="${minutesVal !== '' ? minutesVal : ''}"></td>
+      <td>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input class="time-h" type="number" min="0" value="${hoursVal}" placeholder="hh" style="width:48px;"> :
+          <input class="time-m" type="number" min="0" max="59" value="${minsOnlyVal}" placeholder="mm" style="width:48px;"> :
+          <input class="time-s" type="number" min="0" max="59" value="${secsOnlyVal}" placeholder="ss" style="width:48px;">
+        </div>
+      </td>
       <td><input type="number" min="3" max="10" step="1" placeholder="3" value="${x.rpe || ''}"></td>
       <td><input type="number" value="${x.hr || ''}"></td>
       <td><select class="sport-select">${sportOptions}</select></td>
@@ -5247,7 +5279,7 @@ function _removeTableRowsForRipSession(session){
       date: cells[0]?.querySelector('input')?.value || '',
       athlete: cells[1]?.querySelector('select')?.value || '',
       km: +(cells[2]?.querySelector('input')?.value || 0),
-      minutes: +(cells[3]?.querySelector('input')?.value || 0),
+      minutes: +((Number(cells[3]?.querySelector('.time-h')?.value || 0) * 60) + (Number(cells[3]?.querySelector('.time-m')?.value || 0)) + (Number(cells[3]?.querySelector('.time-s')?.value || 0) / 60)),
       rpe: +(cells[4]?.querySelector('input')?.value || 0),
       hr: +(cells[5]?.querySelector('input')?.value || 0),
       note: cells[8]?.querySelector('input')?.value || '' ,
@@ -5440,11 +5472,21 @@ function explodeRipToMainTable(){
     const tr = document.createElement('tr');
     const activityCellHtml = buildActivityTypeWithRaceHtml('Ripetute', '');
     const paceVal = (rowObj.time && rowObj.km) ? formatMinutesToPaceDisplay((rowObj.minutes) / (rowObj.km)) : '';
+    const totSec = Math.round((Number(rowObj.minutes) || 0) * 60);
+    const hhVal = Math.floor(totSec / 3600);
+    const mmVal = Math.floor((totSec % 3600) / 60);
+    const ssVal = totSec % 60;
     tr.innerHTML = `
       <td><input type="date" value="${rowObj.date}"></td>
       <td><select class="athlete-select"><option value="">-- Seleziona --</option>${athletes.map(a=>`<option value="${a}" ${a===rowObj.athlete?'selected':''}>${a}</option>`).join('')}</select></td>
       <td><input type="number" value="${rowObj.km.toFixed(3)}"></td>
-      <td><input type="number" value="${rowObj.minutes}"></td>
+      <td>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input class="time-h" type="number" min="0" value="${hhVal}" placeholder="hh" style="width:48px;"> :
+          <input class="time-m" type="number" min="0" max="59" value="${mmVal}" placeholder="mm" style="width:48px;"> :
+          <input class="time-s" type="number" min="0" max="59" value="${ssVal}" placeholder="ss" style="width:48px;">
+        </div>
+      </td>
       <td><input type="number" value="${rowObj.rpe}"></td>
       <td><input type="number" value="${rowObj.hr}"></td>
       <td><select class="sport-select">${sports.map(s=>`<option value="${s}">${s}</option>`).join('')}</select></td>
@@ -5516,7 +5558,10 @@ function getDataRaw(){
     const date = cells[0]?.querySelector('input')?.value || '';
     const athlete = cells[1]?.querySelector('select')?.value || '';
     const km = +(cells[2]?.querySelector('input')?.value || 0);
-    const minutes = +(cells[3]?.querySelector('input')?.value || 0);
+    const h = +(cells[3]?.querySelector('.time-h')?.value || 0);
+    const m = +(cells[3]?.querySelector('.time-m')?.value || 0);
+    const s = +(cells[3]?.querySelector('.time-s')?.value || 0);
+    const minutes = (h * 60) + m + (s / 60);
     const rawRpe = cells[4]?.querySelector('input')?.value;
     const parsedRpe = +(rawRpe);
     const rpe = (rawRpe === undefined || rawRpe === null || String(rawRpe).trim() === '' || isNaN(parsedRpe)) ? 3 : parsedRpe;
@@ -5695,6 +5740,10 @@ function popolaTabellaDaJSON(d){
       else if(x.distance && typeof x.distance === 'string' && !isNaN(Number(x.distance))) kmVal = Number(x.distance)/1000;
 
       const minutesVal = (x.minutes !== undefined) ? x.minutes : (x.time ? Math.round(x.time * 60) : (x.min !== undefined ? x.min : ''));
+      const totalSeconds = Math.round((Number(minutesVal) || 0) * 60);
+      const hoursOnly = Math.floor(totalSeconds / 3600);
+      const minsOnly = Math.floor((totalSeconds % 3600) / 60);
+      const secsOnly = totalSeconds % 60;
 
       const dateVal = x.date || x.day || x.datetime || '';
 
@@ -5709,7 +5758,13 @@ function popolaTabellaDaJSON(d){
         <td><input type="date" value="${dateVal}"></td>
         <td><select class="athlete-select"><option value="">-- Seleziona --</option>${athleteOptions}</select></td>
         <td><input type="number" value="${kmVal !== '' ? Number(kmVal).toFixed(3) : ''}"></td>
-        <td><input type="number" value="${minutesVal !== undefined ? minutesVal : ''}"></td>
+        <td>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <input class="time-h" type="number" min="0" value="${hoursOnly}" placeholder="hh" style="width:48px;"> :
+            <input class="time-m" type="number" min="0" max="59" value="${minsOnly}" placeholder="mm" style="width:48px;"> :
+            <input class="time-s" type="number" min="0" max="59" value="${secsOnly}" placeholder="ss" style="width:48px;">
+          </div>
+        </td>
         <td><input type="number" value="${x.rpe || ''}"></td>
         <td><input type="number" value="${x.hr || ''}"></td>
         <td><select class="sport-select">${sportOptions}</select></td>
@@ -5738,6 +5793,10 @@ function popolaTabellaDaJSON(d){
       const athleteVal = x.athlete || '';
       const kmVal = x.km || (x.distance ? x.distance/1000 : '');
       const minutesVal = x.minutes || (x.time ? Math.round(x.time*60) : '');
+      const totalSeconds = Math.round((Number(minutesVal) || 0) * 60);
+      const hoursOnly = Math.floor(totalSeconds / 3600);
+      const minsOnly = Math.floor((totalSeconds % 3600) / 60);
+      const secsOnly = totalSeconds % 60;
       const athleteOptions = athletes.map(a=>`<option value="${a}" ${a===athleteVal?'selected':''}>${a}</option>`).join('');
       const sportOptions = sports.map(s=>`<option value="${s}" ${s===x.type?'selected':''}>${s}</option>`).join('');
       const activityCellHtml = buildActivityTypeWithRaceHtml(x.activityType || '', x.raceDistance || x.garaDistance || inferRaceDistanceFromRow(x));
@@ -5747,7 +5806,13 @@ function popolaTabellaDaJSON(d){
         <td><input type="date" value="${dateVal}"></td>
         <td><select class="athlete-select"><option value="">-- Seleziona --</option>${athleteOptions}</select></td>
         <td><input type="number" value="${kmVal !== '' ? Number(kmVal).toFixed(3) : ''}"></td>
-        <td><input type="number" value="${minutesVal !== undefined ? minutesVal : ''}"></td>
+        <td>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <input class="time-h" type="number" min="0" value="${hoursOnly}" placeholder="hh" style="width:48px;"> :
+            <input class="time-m" type="number" min="0" max="59" value="${minsOnly}" placeholder="mm" style="width:48px;"> :
+            <input class="time-s" type="number" min="0" max="59" value="${secsOnly}" placeholder="ss" style="width:48px;">
+          </div>
+        </td>
         <td><input type="number" value="${x.rpe || ''}"></td>
         <td><input type="number" value="${x.hr || ''}"></td>
         <td><select class="sport-select">${sportOptions}</select></td>
@@ -7458,7 +7523,13 @@ function addRow(){
     <td><input type="date" value="${dateVal}"></td>
     <td><select class="athlete-select"><option value="">-- Seleziona Atleta --</option>${athletes.map(a=>`<option value="${a}" ${a===athleteVal?'selected':''}>${a}</option>`).join('')}</select></td>
     <td><input type="number" placeholder="0" value="${kmVal}"></td>
-    <td><input type="number" placeholder="0" value="${minVal}"></td>
+    <td>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <input class="time-h" type="number" min="0" placeholder="hh" value="${Math.floor((Number(minVal)||0)/60)}" style="width:48px;"> :
+        <input class="time-m" type="number" min="0" max="59" placeholder="mm" value="${Math.floor((Number(minVal)||0)%60)}" style="width:48px;"> :
+        <input class="time-s" type="number" min="0" max="59" placeholder="ss" value="0" style="width:48px;">
+      </div>
+    </td>
     <td><input type="number" placeholder="0" value="${rpeVal}"></td>
     <td><input type="number" placeholder="0" value="${hrVal}"></td>
     <td><select class="sport-select">${sports.map(s=>`<option value="${s}" ${s===sportVal?'selected':''}>${s}</option>`).join('')}</select></td>
@@ -7479,14 +7550,14 @@ function deleteRow(btn){
     date: cells[0]?.querySelector('input')?.value || '',
     athlete: cells[1]?.querySelector('select')?.value || '',
     km: +(cells[2]?.querySelector('input')?.value || 0),
-    minutes: +(cells[3]?.querySelector('input')?.value || 0),
+    minutes: +((Number(cells[3]?.querySelector('.time-h')?.value || 0) * 60) + (Number(cells[3]?.querySelector('.time-m')?.value || 0)) + (Number(cells[3]?.querySelector('.time-s')?.value || 0) / 60)),
     rpe: +(cells[4]?.querySelector('input')?.value || 0),
     hr: +(cells[5]?.querySelector('input')?.value || 0),
     type: cells[6]?.querySelector('select')?.value || '',
     activityType: cells[7]?.querySelector('.activity-type-select')?.value || '',
     raceDistance: normalizeRaceDistance(cells[7]?.querySelector('.race-distance-select')?.value || ''),
     note: cells[8]?.querySelector('input')?.value || '',
-    time: (+(cells[3]?.querySelector('input')?.value || 0)) / 60,
+    time: (+((Number(cells[3]?.querySelector('.time-h')?.value || 0) * 60) + (Number(cells[3]?.querySelector('.time-m')?.value || 0)) + (Number(cells[3]?.querySelector('.time-s')?.value || 0) / 60))) / 60,
     pace_min_per_km: +(cells[10]?.querySelector('input')?.value || 0)
   };
   const wasRipetuta = _isRipetuteRowFromTable(rowData);
@@ -7575,7 +7646,10 @@ function openMobileSessionModal(row = null){
     const rowDate = cells[0]?.querySelector('input')?.value || '';
     const rowAthlete = cells[1]?.querySelector('select')?.value || '';
     const rowKm = cells[2]?.querySelector('input')?.value || '';
-    const rowMin = cells[3]?.querySelector('input')?.value || '';
+    const rowH = Number(cells[3]?.querySelector('.time-h')?.value || 0);
+    const rowM = Number(cells[3]?.querySelector('.time-m')?.value || 0);
+    const rowS = Number(cells[3]?.querySelector('.time-s')?.value || 0);
+    const rowMin = (rowH * 60) + rowM + (rowS / 60);
     const rowRpe = cells[4]?.querySelector('input')?.value || '';
     const rowHr = cells[5]?.querySelector('input')?.value || '';
     const rowSport = cells[6]?.querySelector('select')?.value || '';
@@ -7716,7 +7790,15 @@ function saveMobileSession(){
     if(cells[0]?.querySelector('input')) cells[0].querySelector('input').value = data.date;
     if(cells[1]?.querySelector('select')) setMobileModalSelectValue(cells[1].querySelector('select'), data.athlete);
     if(cells[2]?.querySelector('input')) cells[2].querySelector('input').value = data.km;
-    if(cells[3]?.querySelector('input')) cells[3].querySelector('input').value = data.minutes;
+    if(cells[3]){
+      const totSec = Math.round((Number(data.minutes || 0)) * 60);
+      const hh = Math.floor(totSec / 3600);
+      const mm = Math.floor((totSec % 3600) / 60);
+      const ss = totSec % 60;
+      if(cells[3]?.querySelector('.time-h')) cells[3].querySelector('.time-h').value = hh;
+      if(cells[3]?.querySelector('.time-m')) cells[3].querySelector('.time-m').value = mm;
+      if(cells[3]?.querySelector('.time-s')) cells[3].querySelector('.time-s').value = ss;
+    }
     if(cells[4]?.querySelector('input')) cells[4].querySelector('input').value = data.rpe;
     if(cells[5]?.querySelector('input')) cells[5].querySelector('input').value = data.hr;
     if(cells[6]?.querySelector('select')) setMobileModalSelectValue(cells[6].querySelector('select'), data.type);
@@ -8875,7 +8957,15 @@ function migrateExistingPaceFields(){
   rows.forEach(row=>{
     const cells = row.children;
     const km = Number(cells[2]?.querySelector('input')?.value || 0);
-    const minutes = Number(cells[3]?.querySelector('input')?.value || 0);
+    let minutes = 0;
+    if(cells[3]?.querySelector('.time-h')){
+      const hh = Number(cells[3]?.querySelector('.time-h')?.value || 0);
+      const mm = Number(cells[3]?.querySelector('.time-m')?.value || 0);
+      const ss = Number(cells[3]?.querySelector('.time-s')?.value || 0);
+      minutes = (hh * 60) + mm + (ss / 60);
+    } else {
+      minutes = Number(cells[3]?.querySelector('input')?.value || 0);
+    }
     const paceInput = cells[10]?.querySelector('input');
     if(km > 0 && minutes > 0 && paceInput && (!paceInput.value || Number(paceInput.value) === 0)){
       paceInput.value = formatMinutesToPaceDisplay(minutes / km);
