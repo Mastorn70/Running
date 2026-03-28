@@ -1886,8 +1886,37 @@ body.dark-mode .prediction-chart-container {
 </nav>
 <!-- Notifica e barra Firebase rimangono ma sono nascosti su mobile -->
 <div id="notificaSalvataggio" style="display:none;position:fixed;top:24px;right:24px;z-index:99999;background:#10b981;color:#fff;padding:12px 24px;border-radius:8px;box-shadow:0 2px 8px #0002;font-size:1.1em;transition:opacity 0.4s;opacity:0;">Dati sincronizzati!</div>
-<div style="position:fixed;top:10px;right:10px;z-index:9999;">
-  <button onclick="importFromFirebase()" style="padding:6px 14px;margin-right:8px;">Importa da Firebase</button>
+
+<div style="position:fixed;top:10px;right:10px;z-index:9999;display:flex;gap:8px;">
+  <button onclick="saveLocalBackup()" style="padding:6px 14px;background:#10b981;color:#fff;">Salva backup locale</button>
+  <button onclick="openLocalBackupFile()" style="padding:6px 14px;background:#6366f1;color:#fff;">Importa backup locale</button>
+  <script>
+  // Salva un backup locale dei dati (data e athletesProfile)
+  function saveLocalBackup() {
+    try {
+      const data = localStorage.getItem('data');
+      const athletesProfile = localStorage.getItem('athletesProfile');
+      const backup = {
+        data: data ? JSON.parse(data) : [],
+        athletesProfile: athletesProfile ? JSON.parse(athletesProfile) : []
+      };
+      const blob = new Blob([JSON.stringify(backup, null, 2)], {type: 'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'backup_squadra_' + new Date().toISOString().slice(0,19).replace(/[:T]/g,'-') + '.json';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+    } catch (e) {
+      alert('Errore durante il salvataggio del backup: ' + e.message);
+    }
+  }
+  </script>
+  <button onclick="importFromFirebase()" style="padding:6px 14px;">Importa da Firebase</button>
   <button id="saveFirebaseBtn" onclick="saveToFirebase()" style="padding:6px 14px;">Salva su Firebase</button>
 </div>
 
@@ -2074,6 +2103,106 @@ body.dark-mode .prediction-chart-container {
   </div>
 </div>
 <script>
+// Funzione globale per restore local backup (richiama input file nascosto)
+function openLocalBackupFile() {
+  var input = document.getElementById('openFileInput');
+  if (!input) return;
+  input.value = '';
+  input.click();
+}
+// Funzione per importare e gestire diversi formati di backup
+function handleLocalBackupImport(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    let json;
+    try {
+      json = JSON.parse(e.target.result);
+    } catch (err) {
+      alert('File non valido: errore di parsing JSON');
+      return;
+    }
+
+    let importedData = null;
+    // Recupera dati già presenti
+    let existingData = [];
+    try {
+      existingData = JSON.parse(localStorage.getItem('data') || '[]');
+      if (!Array.isArray(existingData)) existingData = [];
+    } catch (e) { existingData = []; }
+
+
+    // Funzione per evitare duplicati (per data+athlete+type)
+    function mergeNoDuplicates(...arrays) {
+      const key = x => `${x.date || ''}|${x.athlete || ''}|${x.type || ''}`;
+      const map = new Map();
+      arrays.flat().forEach(x => map.set(key(x), x));
+      return Array.from(map.values());
+    }
+
+    // Raccogli tutti i dati possibili dal file
+    let importedArr = [];
+    // 1. Dati con chiavi numeriche di primo livello
+    const numerics = Object.keys(json).filter(k => /^\d+$/.test(k));
+    if (numerics.length > 0) {
+      importedArr = importedArr.concat(numerics.sort((a,b)=>a-b).map(k => json[k]));
+    }
+    // 2. Dati in json.data.data
+    if (json.data && Array.isArray(json.data.data)) {
+      importedArr = importedArr.concat(json.data.data);
+    }
+    // 3. Dati in json.data (se array)
+    if (Array.isArray(json.data)) {
+      importedArr = importedArr.concat(json.data);
+    }
+    // 4. Dati in json (se array classico)
+    if (Array.isArray(json)) {
+      importedArr = importedArr.concat(json);
+    }
+    // 5. Dati in json.data (se oggetto con proprietà data)
+    if (json.athletesProfile && Array.isArray(json.data)) {
+      importedArr = importedArr.concat(json.data);
+    }
+
+    // Se non abbiamo trovato nulla, segnala errore
+    if (importedArr.length === 0) {
+      alert('Formato backup non riconosciuto o nessun dato trovato.');
+      return;
+    }
+
+    // Gestione atleti
+    if (json.data && Array.isArray(json.data.athletesProfile)) {
+      localStorage.setItem('athletesProfile', JSON.stringify(json.data.athletesProfile));
+    } else if (Array.isArray(json.athletesProfile)) {
+      localStorage.setItem('athletesProfile', JSON.stringify(json.athletesProfile));
+    }
+
+    importedData = mergeNoDuplicates(existingData, importedArr);
+    localStorage.setItem('data', JSON.stringify(importedData));
+    alert('Backup importato correttamente! Dati uniti e aggiornati.');
+
+    // Aggiorna subito la tabella senza reload
+    if (typeof popolaTabellaDaJSON === 'function' && Array.isArray(importedData)) {
+      popolaTabellaDaJSON(importedData);
+      try { updateCharts && updateCharts(); } catch(e){}
+    }
+  };
+  reader.readAsText(file);
+}
+
+// Associa l'handler all'input file nascosto (crealo se non esiste)
+if (!document.getElementById('openFileInput')) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.id = 'openFileInput';
+  input.accept = '.json,application/json';
+  input.style.display = 'none';
+  input.addEventListener('change', handleLocalBackupImport);
+  document.body.appendChild(input);
+} else {
+  document.getElementById('openFileInput').addEventListener('change', handleLocalBackupImport);
+}
 // Modal Config Strava - funzioni globali
 function openStravaConfigModal() {
   document.getElementById('stravaConfigModal').style.display = 'flex';
@@ -2824,6 +2953,52 @@ document.addEventListener('click', function(e){
       <button id="manageActivityTypesBtn">🏷️ Tipi Attività</button>
       <!-- <button onclick="apriFileDiretto()">📂 Apri File</button>-->
       <input type="file" id="openFileInput" accept=".json" style="display:none;">
+      <button id="backupLocalBtn" type="button" onclick="saveLocalBackupWithPicker()" style="background:linear-gradient(135deg,#10b981 0%,#059669 100%);">💾 Backup Local</button>
+      <script>
+      // Salva backup locale permettendo all'utente di scegliere nome e posizione file (dove supportato)
+      async function saveLocalBackupWithPicker() {
+        const data = localStorage.getItem('data');
+        const athletesProfile = localStorage.getItem('athletesProfile');
+        const backup = {
+          data: data ? JSON.parse(data) : [],
+          athletesProfile: athletesProfile ? JSON.parse(athletesProfile) : []
+        };
+        const json = JSON.stringify(backup, null, 2);
+        // Usa File System Access API se disponibile
+        if (window.showSaveFilePicker) {
+          try {
+            const opts = {
+              suggestedName: 'backup_squadra_' + new Date().toISOString().slice(0,19).replace(/[:T]/g,'-') + '.json',
+              types: [{
+                description: 'JSON file',
+                accept: {'application/json': ['.json']}
+              }]
+            };
+            const handle = await window.showSaveFilePicker(opts);
+            const writable = await handle.createWritable();
+            await writable.write(json);
+            await writable.close();
+            alert('Backup salvato con successo!');
+          } catch(e) {
+            if (e.name !== 'AbortError') alert('Errore durante il salvataggio: ' + e.message);
+          }
+        } else {
+          // Fallback: download classico
+          const blob = new Blob([json], {type: 'application/json'});
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'backup_squadra_' + new Date().toISOString().slice(0,19).replace(/[:T]/g,'-') + '.json';
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          }, 100);
+        }
+      }
+      </script>
+      <button id="restoreLocalBtn" type="button" onclick="openLocalBackupFile()" style="background:linear-gradient(135deg,#0ea5e9 0%,#2563eb 100%);">♻️ Restore Local Data</button>
       <button id="refreshTableBtn">🔄 Aggiorna Tabella</button>
       <!-- <button id="exportJsonBtn">⬇️ Esporta JSON</button>-->
     </div>
