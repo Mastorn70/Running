@@ -1886,37 +1886,8 @@ body.dark-mode .prediction-chart-container {
 </nav>
 <!-- Notifica e barra Firebase rimangono ma sono nascosti su mobile -->
 <div id="notificaSalvataggio" style="display:none;position:fixed;top:24px;right:24px;z-index:99999;background:#10b981;color:#fff;padding:12px 24px;border-radius:8px;box-shadow:0 2px 8px #0002;font-size:1.1em;transition:opacity 0.4s;opacity:0;">Dati sincronizzati!</div>
-
-<div style="position:fixed;top:10px;right:10px;z-index:9999;display:flex;gap:8px;">
-  <button onclick="saveLocalBackup()" style="padding:6px 14px;background:#10b981;color:#fff;">Salva backup locale</button>
-  <button onclick="openLocalBackupFile()" style="padding:6px 14px;background:#6366f1;color:#fff;">Importa backup locale</button>
-  <script>
-  // Salva un backup locale dei dati (data e athletesProfile)
-  function saveLocalBackup() {
-    try {
-      const data = localStorage.getItem('data');
-      const athletesProfile = localStorage.getItem('athletesProfile');
-      const backup = {
-        data: data ? JSON.parse(data) : [],
-        athletesProfile: athletesProfile ? JSON.parse(athletesProfile) : []
-      };
-      const blob = new Blob([JSON.stringify(backup, null, 2)], {type: 'application/json'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'backup_squadra_' + new Date().toISOString().slice(0,19).replace(/[:T]/g,'-') + '.json';
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, 100);
-    } catch (e) {
-      alert('Errore durante il salvataggio del backup: ' + e.message);
-    }
-  }
-  </script>
-  <button onclick="importFromFirebase()" style="padding:6px 14px;">Importa da Firebase</button>
+<div style="position:fixed;top:10px;right:10px;z-index:9999;">
+  <button onclick="importFromFirebase()" style="padding:6px 14px;margin-right:8px;">Importa da Firebase</button>
   <button id="saveFirebaseBtn" onclick="saveToFirebase()" style="padding:6px 14px;">Salva su Firebase</button>
 </div>
 
@@ -2103,106 +2074,6 @@ body.dark-mode .prediction-chart-container {
   </div>
 </div>
 <script>
-// Funzione globale per restore local backup (richiama input file nascosto)
-function openLocalBackupFile() {
-  var input = document.getElementById('openFileInput');
-  if (!input) return;
-  input.value = '';
-  input.click();
-}
-// Funzione per importare e gestire diversi formati di backup
-function handleLocalBackupImport(evt) {
-  const file = evt.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    let json;
-    try {
-      json = JSON.parse(e.target.result);
-    } catch (err) {
-      alert('File non valido: errore di parsing JSON');
-      return;
-    }
-
-    let importedData = null;
-    // Recupera dati già presenti
-    let existingData = [];
-    try {
-      existingData = JSON.parse(localStorage.getItem('data') || '[]');
-      if (!Array.isArray(existingData)) existingData = [];
-    } catch (e) { existingData = []; }
-
-
-    // Funzione per evitare duplicati (per data+athlete+type)
-    function mergeNoDuplicates(...arrays) {
-      const key = x => `${x.date || ''}|${x.athlete || ''}|${x.type || ''}`;
-      const map = new Map();
-      arrays.flat().forEach(x => map.set(key(x), x));
-      return Array.from(map.values());
-    }
-
-    // Raccogli tutti i dati possibili dal file
-    let importedArr = [];
-    // 1. Dati con chiavi numeriche di primo livello
-    const numerics = Object.keys(json).filter(k => /^\d+$/.test(k));
-    if (numerics.length > 0) {
-      importedArr = importedArr.concat(numerics.sort((a,b)=>a-b).map(k => json[k]));
-    }
-    // 2. Dati in json.data.data
-    if (json.data && Array.isArray(json.data.data)) {
-      importedArr = importedArr.concat(json.data.data);
-    }
-    // 3. Dati in json.data (se array)
-    if (Array.isArray(json.data)) {
-      importedArr = importedArr.concat(json.data);
-    }
-    // 4. Dati in json (se array classico)
-    if (Array.isArray(json)) {
-      importedArr = importedArr.concat(json);
-    }
-    // 5. Dati in json.data (se oggetto con proprietà data)
-    if (json.athletesProfile && Array.isArray(json.data)) {
-      importedArr = importedArr.concat(json.data);
-    }
-
-    // Se non abbiamo trovato nulla, segnala errore
-    if (importedArr.length === 0) {
-      alert('Formato backup non riconosciuto o nessun dato trovato.');
-      return;
-    }
-
-    // Gestione atleti
-    if (json.data && Array.isArray(json.data.athletesProfile)) {
-      localStorage.setItem('athletesProfile', JSON.stringify(json.data.athletesProfile));
-    } else if (Array.isArray(json.athletesProfile)) {
-      localStorage.setItem('athletesProfile', JSON.stringify(json.athletesProfile));
-    }
-
-    importedData = mergeNoDuplicates(existingData, importedArr);
-    localStorage.setItem('data', JSON.stringify(importedData));
-    alert('Backup importato correttamente! Dati uniti e aggiornati.');
-
-    // Aggiorna subito la tabella senza reload
-    if (typeof popolaTabellaDaJSON === 'function' && Array.isArray(importedData)) {
-      popolaTabellaDaJSON(importedData);
-      try { updateCharts && updateCharts(); } catch(e){}
-    }
-  };
-  reader.readAsText(file);
-}
-
-// Associa l'handler all'input file nascosto (crealo se non esiste)
-if (!document.getElementById('openFileInput')) {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.id = 'openFileInput';
-  input.accept = '.json,application/json';
-  input.style.display = 'none';
-  input.addEventListener('change', handleLocalBackupImport);
-  document.body.appendChild(input);
-} else {
-  document.getElementById('openFileInput').addEventListener('change', handleLocalBackupImport);
-}
 // Modal Config Strava - funzioni globali
 function openStravaConfigModal() {
   document.getElementById('stravaConfigModal').style.display = 'flex';
@@ -2953,52 +2824,6 @@ document.addEventListener('click', function(e){
       <button id="manageActivityTypesBtn">🏷️ Tipi Attività</button>
       <!-- <button onclick="apriFileDiretto()">📂 Apri File</button>-->
       <input type="file" id="openFileInput" accept=".json" style="display:none;">
-      <button id="backupLocalBtn" type="button" onclick="saveLocalBackupWithPicker()" style="background:linear-gradient(135deg,#10b981 0%,#059669 100%);">💾 Backup Local</button>
-      <script>
-      // Salva backup locale permettendo all'utente di scegliere nome e posizione file (dove supportato)
-      async function saveLocalBackupWithPicker() {
-        const data = localStorage.getItem('data');
-        const athletesProfile = localStorage.getItem('athletesProfile');
-        const backup = {
-          data: data ? JSON.parse(data) : [],
-          athletesProfile: athletesProfile ? JSON.parse(athletesProfile) : []
-        };
-        const json = JSON.stringify(backup, null, 2);
-        // Usa File System Access API se disponibile
-        if (window.showSaveFilePicker) {
-          try {
-            const opts = {
-              suggestedName: 'backup_squadra_' + new Date().toISOString().slice(0,19).replace(/[:T]/g,'-') + '.json',
-              types: [{
-                description: 'JSON file',
-                accept: {'application/json': ['.json']}
-              }]
-            };
-            const handle = await window.showSaveFilePicker(opts);
-            const writable = await handle.createWritable();
-            await writable.write(json);
-            await writable.close();
-            alert('Backup salvato con successo!');
-          } catch(e) {
-            if (e.name !== 'AbortError') alert('Errore durante il salvataggio: ' + e.message);
-          }
-        } else {
-          // Fallback: download classico
-          const blob = new Blob([json], {type: 'application/json'});
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'backup_squadra_' + new Date().toISOString().slice(0,19).replace(/[:T]/g,'-') + '.json';
-          document.body.appendChild(a);
-          a.click();
-          setTimeout(() => {
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-          }, 100);
-        }
-      }
-      </script>
-      <button id="restoreLocalBtn" type="button" onclick="openLocalBackupFile()" style="background:linear-gradient(135deg,#0ea5e9 0%,#2563eb 100%);">♻️ Restore Local Data</button>
       <button id="refreshTableBtn">🔄 Aggiorna Tabella</button>
       <!-- <button id="exportJsonBtn">⬇️ Esporta JSON</button>-->
     </div>
@@ -3320,10 +3145,11 @@ document.addEventListener('click', function(e){
           <option value="daily">Giornaliero</option>
           <option value="weekly">Settimanale</option>
           <option value="monthly">Mensile</option>
+        </select>
         <hr style="margin:18px 0 10px 0;">
         <div style="margin-bottom:10px;font-size:0.95em;color:#334155;">La Tabella di Equivalenza Sport è disponibile in <strong>Regole Score</strong>. Apri il modal ⚙️ Regole Score per modificarla.</div>
-        <button onclick="generateTrendChart()">Genera</button>
-          <br>Ogni sport è moltiplicato per la sua equivalenza.</div>
+        <button id="trendGenerateBtn" type="button" onclick="generateTrendChart()">Genera</button>
+        <br>Ogni sport è moltiplicato per la sua equivalenza.
       </div>
     </div>
 
@@ -3353,16 +3179,16 @@ document.addEventListener('click', function(e){
     </div>
     <div class="trend-section">
       <h3>Seleziona atleta e parametri</h3>
-      <div class="trend-controls">
-        <label>Atleta:</label>
-        <select id="marathonAthlete"></select>
-        <label>Tempo obiettivo:</label>
-        <input type="time" id="marathonTargetTime" step="1" value="03:30:00" style="width:110px;">
-        <label>Distanza:</label>
-        <input type="number" id="marathonDistance" value="42.195" min="1" step="0.001" style="width:90px;">
-        <label>Preparazione (giorni):</label>
-        <input type="number" id="marathonPrepDays" value="90" min="1" style="width:80px;">
-        <button onclick="calculateMarathonProbability()">🧮 Calcola</button>
+      <div class="trend-controls" style="flex-direction:column;align-items:flex-start;gap:10px;">
+        <label style="width:100%;">Atleta:
+          <select id="marathonAthlete" style="width:100%;margin-bottom:8px;"></select>
+        </label>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;width:100%;align-items:center;">
+          <label>Tempo obiettivo:<br><input type="time" id="marathonTargetTime" step="1" value="03:30:00" style="width:110px;"></label>
+          <label>Distanza:<br><input type="number" id="marathonDistance" value="42.195" min="1" step="0.001" style="width:90px;"></label>
+          <label>Preparazione (giorni):<br><input type="number" id="marathonPrepDays" value="90" min="1" style="width:80px;"></label>
+        </div>
+        <button id="marathonCalculateBtn" type="button" onclick="calculateMarathonProbability()" style="margin-top:12px;width:100%;font-size:1.1em;background:#10b981;color:#fff;font-weight:700;border-radius:8px;padding:12px 0;">🧮 Calcola</button>
       </div>
     </div>
     <div id="marathonResults"></div>
@@ -3942,16 +3768,92 @@ window.mostraNotificaSalvataggio = function(){
   setTimeout(()=>{ n.style.display = 'none'; }, 2200);
 }
 // Modal Marathon
+// Modal Marathon
 window.openMarathon = function(){
-  document.getElementById('marathonModal').classList.add('show');
-  // Popola select atleta
-  const sel = document.getElementById('marathonAthlete');
-  if(sel && window.athletes){
-    sel.innerHTML = window.athletes.map((a,i)=>`<option value="${a}" ${i===0?'selected':''}>${a}</option>`).join('');
-  }
+  try{
+    const modal = document.getElementById('marathonModal');
+    if(!modal){ console.warn('openMarathon: marathonModal not found'); return; }
+    // Move to body to avoid stacking-context issues
+    if(modal.parentElement !== document.body) document.body.appendChild(modal);
+    modal.classList.add('show');
+    modal.style.display = 'flex';
+    modal.style.zIndex = '200300';
+    // Ensure the select exists (re-create if missing)
+    let sel = document.getElementById('marathonAthlete');
+    if(!sel) {
+      // Try to find the label and insert the select
+      const label = modal.querySelector('label');
+      if(label) {
+        sel = document.createElement('select');
+        sel.id = 'marathonAthlete';
+        label.appendChild(sel);
+      } else {
+        // fallback: insert at top of modal
+        sel = document.createElement('select');
+        sel.id = 'marathonAthlete';
+        modal.querySelector('.trend-controls')?.prepend(sel);
+      }
+    }
+    // populate athlete select robustly (multiple fallbacks)
+    let list = [];
+    if(Array.isArray(window.athletes) && window.athletes.length) list = window.athletes;
+    else if(typeof athletes !== 'undefined' && Array.isArray(athletes) && athletes.length) list = athletes;
+    // fallback: extract unique athlete names from table data
+    if((!list || list.length === 0) && typeof getData === 'function'){
+      try{
+        const d = getData() || [];
+        const names = Array.from(new Set(d.map(x=>String(x.athlete||'').trim()).filter(Boolean)));
+        if(names.length) list = names;
+      }catch(e){ /* ignore */ }
+    }
+    // fallback: read from main athleteFilter select options
+    if((!list || list.length === 0)){
+      const mainSel = document.getElementById('athleteFilter');
+      if(mainSel && mainSel.options && mainSel.options.length > 1){
+        list = Array.from(mainSel.options).map(o=>o.value).filter(v=>v && v!=='all');
+      }
+    }
+    // fallback: try reading directly from localStorage
+    if((!list || list.length === 0)){
+      try{
+        const raw = localStorage.getItem('athletes');
+        if(raw){
+          const parsed = JSON.parse(raw);
+          if(Array.isArray(parsed)) list = parsed.map(p => (typeof p === 'object' && p.name) ? p.name : String(p));
+        }
+      }catch(e){ /* ignore */ }
+    }
+    // fallback: call loadAthletes (which repopulates global `athletes`) and re-evaluate
+    if((!list || list.length === 0) && typeof loadAthletes === 'function'){
+      try{ loadAthletes(); }catch(e){}
+      if(Array.isArray(window.athletes) && window.athletes.length) list = window.athletes;
+      else if(typeof athletes !== 'undefined' && Array.isArray(athletes) && athletes.length) list = athletes;
+    }
+    // final fallback: create a temporary sample list so UI is testable
+    if((!list || list.length === 0)){
+      console.warn('openMarathon: nessun atleta trovato; inserisco lista di esempio temporanea.');
+      list = ['Atleta Esempio'];
+    }
+    if(sel){
+      if(list && list.length){
+        sel.innerHTML = list.map((a,i)=>`<option value="${a}" ${i===0? 'selected' : ''}>${a}</option>`).join('');
+        sel.disabled = false;
+      } else {
+        sel.innerHTML = '<option value="">-- Nessun atleta disponibile --</option>';
+        sel.disabled = true;
+        console.warn('Marathon modal: nessun atleta disponibile per la selezione.');
+      }
+    }
+    // Listener dinamico rimosso: wiring diretto via onclick nell'HTML
+  }catch(err){ console.error('openMarathon error', err); }
 }
 function closeMarathon(){
-  document.getElementById('marathonModal').classList.remove('show');
+  try{
+    const modal = document.getElementById('marathonModal');
+    if(!modal) return;
+    modal.classList.remove('show');
+    modal.style.display = 'none';
+  }catch(e){ console.error('closeMarathon error', e); }
 }
 function calculateMarathonProbability(){
   const athlete = document.getElementById('marathonAthlete').value;
@@ -9191,6 +9093,8 @@ window.addEventListener('load', ()=>{
 
   loadSports();
   loadAthletes();
+  // Ensure global window.athletes mirrors internal `athletes` array for older code/fallbacks
+  try{ if(!Array.isArray(window.athletes) || window.athletes.length === 0) window.athletes = Array.isArray(athletes) ? athletes.slice() : []; }catch(e){}
   loadAthletesToRemove();
   loadActivityTypes();
   loadRipetuteFromStorage();
