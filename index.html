@@ -1844,13 +1844,39 @@ body.dark-mode .prediction-chart-container {
   background: linear-gradient(135deg, #2a5298 0%, #1e3c72 100%);
 }
 
+/* Trend mobile floating button */
+#trendMobileBtn {
+  display: none;
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 10050;
+  background: linear-gradient(135deg, #6366f1 0%, #3b82f6 100%);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 58px;
+  height: 58px;
+  box-shadow: 0 4px 18px #0005;
+  font-size: 2.1em;
+  font-weight: 900;
+  align-items: center;
+  justify-content: center;
+  display: flex;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+@media (max-width: 900px) {
+  #trendMobileBtn { display: flex; }
+}
 </style>
+<button id="trendMobileBtn" title="Trend" onclick="openTrend()">📈</button>
 </head>
 <body ontouchstart="">
 <div id="appSplash" class="app-splash" role="dialog" aria-label="Schermata iniziale app">
   <img id="appSplashImage" src="./icona.svg" alt="Immagine iniziale app">
   <div id="appSplashFallback" class="app-splash-fallback">🏃 Dashboard Squadra 5:50</div>
-  <div class="app-splash-tip">5:50 Tiratisù</div>
+  <div class="app-splash-tip">5:50 Tritarisù</div>
 </div>
 <div id="mobileQuickActions">
   <button type="button" class="quick-btn quick-top" onclick="openMobileSessionModal()">Add sessione</button>
