@@ -5752,7 +5752,15 @@ function loadRipSessionsFromFile(){
 function getDataRaw(){
   return Array.from(document.querySelectorAll('#dataTable tbody tr')).map(r=>{
     const cells = r.children;
-    const date = cells[0]?.querySelector('input')?.value || '';
+    let dateRaw = cells[0]?.querySelector('input')?.value || '';
+    let date = dateRaw;
+    // Se formato DD-MM-YYYY, converti in YYYY-MM-DD
+    if (/^\d{2}-\d{2}-\d{4}$/.test(dateRaw)) {
+      const [d, m, y] = dateRaw.split('-');
+      date = `${y}-${m}-${d}`;
+    }
+    // Se formato YYYY-MM-DD, lascia invariato
+    // Altri formati: lascia invariato
     const athlete = cells[1]?.querySelector('select')?.value || '';
     const km = +(cells[2]?.querySelector('input')?.value || 0);
     const h = +(cells[3]?.querySelector('.time-h')?.value || 0);
@@ -8268,14 +8276,25 @@ function formatDurationFromMinutes(totalMinutes){
 }
 
 function getWeekStartKey(dateStr){
-  const d = new Date(dateStr);
+  // Supporta formato DD-MM-YYYY come locale
+  let d;
+  if (/^\d{2}-\d{2}-\d{4}$/.test(dateStr)) {
+    const [day, month, year] = dateStr.split('-').map(Number);
+    d = new Date(year, month - 1, day);
+  } else {
+    d = new Date(dateStr);
+  }
   d.setHours(0,0,0,0);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  const dayOfWeek = d.getDay();
+  const diff = d.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
   const monday = new Date(d);
   monday.setDate(diff);
   monday.setHours(0,0,0,0);
-  return monday.toISOString().slice(0,10);
+  // Ritorna YYYY-MM-DD
+  const yyyy = monday.getFullYear();
+  const mm = String(monday.getMonth() + 1).padStart(2, '0');
+  const dd = String(monday.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
 }
 
 /* -----------------------------
