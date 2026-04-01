@@ -3279,6 +3279,8 @@ document.addEventListener('click', function(e){
       <div class="trend-controls">
         <label>Atleta 1:</label><select id="trendAthlete1"></select>
         <label>Atleta 2:</label><select id="trendAthlete2"></select>
+        <label>Sport:</label>
+        <select id="trendSport"></select>
         <label>Metrica:</label><select id="trendMetric">
           <option value="km">Km totali</option>
           <option value="carico">Carico (RPE×min)</option>
@@ -3293,6 +3295,68 @@ document.addEventListener('click', function(e){
         <hr style="margin:18px 0 10px 0;">
         <div style="margin-bottom:10px;font-size:0.95em;color:#334155;">La Tabella di Equivalenza Sport è disponibile in <strong>Regole Score</strong>. Apri il modal ⚙️ Regole Score per modificarla.</div>
         <button id="trendGenerateBtn" type="button" onclick="generateTrendChart()">Genera</button>
+        <script>
+        // Popola dinamicamente il select trendSport leggendo i tipi di sport effettivamente presenti nei dati salvati
+        function populateTrendSportSelect(selectedSport) {
+          const sel = document.getElementById('trendSport');
+          if (!sel) return;
+          let data = [];
+          if (typeof getData === 'function') {
+            try { data = getData(); } catch(e) { data = []; }
+          }
+          // Estrai tutti i tipi di sport presenti nei dati (campo 'type'), unici e non vuoti
+          let sportsList = Array.from(new Set(data.map(d => String(d.type || '').trim()).filter(Boolean)));
+          // Fallback: se non ci sono sport nei dati, usa la lista gestione sport
+          if (!sportsList.length && window.sports && Array.isArray(window.sports)) {
+            sportsList = window.sports;
+          }
+          if (!sportsList.length) {
+            sel.innerHTML = '<option value="">-</option>';
+            return;
+          }
+          let html = sportsList.map(s => `<option value="${s}" ${selectedSport && selectedSport === s ? 'selected' : ''}>${s}</option>`).join('');
+          sel.innerHTML = html;
+          // Se non c'è selectedSport, seleziona il primo
+          if (!selectedSport && sportsList.length > 0) sel.value = sportsList[0];
+        }
+
+        // Popola anche su DOMContentLoaded
+        document.addEventListener('DOMContentLoaded', function() {
+          if (document.getElementById('trendSport')) populateTrendSportSelect();
+        });
+
+        // Hook: quando si apre il modal trend, popola il select (sia con evento show che con classList.add)
+        const trendModal = document.getElementById('trendModal');
+        if (trendModal) {
+          trendModal.addEventListener('show', function() {
+            populateTrendSportSelect();
+          });
+          // Aggancia anche a classList.add('show')
+          const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(m) {
+              if (m.attributeName === 'class' && trendModal.classList.contains('show')) {
+                populateTrendSportSelect();
+              }
+            });
+          });
+          observer.observe(trendModal, { attributes: true });
+        }
+        // Fallback: se openTrend viene chiamato, popola sempre
+        if (!window._patchedOpenTrend) {
+          const oldOpenTrend = window.openTrend;
+          window.openTrend = function() {
+            populateTrendSportSelect();
+            if (typeof oldOpenTrend === 'function') oldOpenTrend();
+            else if (document.getElementById('trendModal')) {
+              document.getElementById('trendModal').classList.add('show');
+              setTimeout(()=>generateTrendChart(),200);
+            }
+          }
+          window._patchedOpenTrend = true;
+        }
+        // All'avvio, se già visibile, popola
+        if (document.getElementById('trendSport')) populateTrendSportSelect();
+        </script>
         <br>Ogni sport è moltiplicato per la sua equivalenza.
       </div>
     </div>
@@ -4163,7 +4227,7 @@ const colors=['#ff6384','#36a2eb','#ffcd56','#4bc0c0','#9966ff','#ff9f40','#00b8
 let charts = {};
 let fileHandle = null;
 
-let sports=['corsa','bici','palestra','nuoto','sci'];
+window.sports = window.sports || ['corsa','bici','palestra','nuoto','sci'];
 let athletes=['Max'];
 let athleteDetails = {};
 let athletesToRemove = [];
@@ -8423,6 +8487,8 @@ function formatDurationFromMinutes(totalMinutes){
 
 function getWeekStartKey(dateStr){
   // Supporta formato DD-MM-YYYY come locale
+  // Restituisce la data del lunedì della settimana (ISO) a cui appartiene dateStr (lunedì compreso, domenica compresa)
+  // Esempio: lunedì 2026-04-06 → 2026-04-06, domenica 2026-04-12 → 2026-04-06
   let d;
   if (/^\d{2}-\d{2}-\d{4}$/.test(dateStr)) {
     const [day, month, year] = dateStr.split('-').map(Number);
@@ -8430,13 +8496,17 @@ function getWeekStartKey(dateStr){
   } else {
     d = new Date(dateStr);
   }
+  // Normalizza a mezzanotte locale
   d.setHours(0,0,0,0);
+  // getDay(): 0=Dom, 1=Lun, ..., 6=Sab
+  // Calcola quanti giorni togliere per arrivare al lunedì
   const dayOfWeek = d.getDay();
-  const diff = d.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+  // Se lunedì (1), daysToMonday=0; se domenica (0), daysToMonday=6
+  const daysToMonday = (dayOfWeek + 6) % 7;
   const monday = new Date(d);
-  monday.setDate(diff);
+  monday.setDate(d.getDate() - daysToMonday);
   monday.setHours(0,0,0,0);
-  // Ritorna YYYY-MM-DD
+  // Formatta YYYY-MM-DD
   const yyyy = monday.getFullYear();
   const mm = String(monday.getMonth() + 1).padStart(2, '0');
   const dd = String(monday.getDate()).padStart(2, '0');
@@ -8453,9 +8523,25 @@ function generateTrendChart(){
     const a2 = $id('trendAthlete2') ? $id('trendAthlete2').value : null;
     const metric = $id('trendMetric') ? $id('trendMetric').value : 'km';
     const period = $id('trendPeriod') ? $id('trendPeriod').value : 'daily';
+    const sport = $id('trendSport') ? $id('trendSport').value : 'Corsa';
     if(!a1 || !a2){ alert('Seleziona due atleti per il confronto.'); return; }
-    const dat1_all = data.filter(d => d.athlete === a1).sort((x,y)=>x.date.localeCompare(y.date));
-    const dat2_all = data.filter(d => d.athlete === a2).sort((x,y)=>x.date.localeCompare(y.date));
+    // Considera tutte le attività di corsa: 'Corsa', 'Allenamento', 'Ripetute' (case-insensitive)
+    const sportLc = sport ? sport.toLowerCase() : '';
+    // Definisci i tipi di attività da includere
+    const runningTypes = ['corsa', 'allenamento', 'ripetute'];
+    // Se l'utente seleziona uno di questi, includi tutte le attività di corsa
+    const includeAllRunning = runningTypes.includes(sportLc);
+    const dat1_all = data.filter(d => d.athlete === a1 && d.type && (
+      (includeAllRunning ? runningTypes.includes(d.type.toLowerCase()) : d.type.toLowerCase() === sportLc)
+    )).sort((x,y)=>x.date.localeCompare(y.date));
+    const dat2_all = data.filter(d => d.athlete === a2 && d.type && (
+      (includeAllRunning ? runningTypes.includes(d.type.toLowerCase()) : d.type.toLowerCase() === sportLc)
+    )).sort((x,y)=>x.date.localeCompare(y.date));
+    // Aggiorna il grafico trend al cambio sport
+    document.addEventListener('DOMContentLoaded', function() {
+      const sportSel = document.getElementById('trendSport');
+      if(sportSel) sportSel.addEventListener('change', generateTrendChart);
+    });
     function aggregateByPeriod(rows, period){
       const map = {};
       rows.forEach(r=>{
@@ -8474,8 +8560,26 @@ function generateTrendChart(){
     }
     const agg1 = aggregateByPeriod(dat1_all, period);
     const agg2 = aggregateByPeriod(dat2_all, period);
-    const allKeys = Array.from(new Set([ ...Object.keys(agg1), ...Object.keys(agg2) ]));
+    let allKeys = Array.from(new Set([ ...Object.keys(agg1), ...Object.keys(agg2) ]));
     allKeys.sort((a,b)=> a > b ? 1 : (a < b ? -1 : 0));
+
+    // For weekly: ensure all 7 days are represented for each week
+    if(period === 'weekly' && allKeys.length > 0) {
+      // Fill missing weeks if any gap
+      const first = new Date(allKeys[0]);
+      const last = new Date(allKeys[allKeys.length-1]);
+      let cur = new Date(first);
+      const weekList = [];
+      while(cur <= last) {
+        const yyyy = cur.getFullYear();
+        const mm = String(cur.getMonth() + 1).padStart(2, '0');
+        const dd = String(cur.getDate()).padStart(2, '0');
+        weekList.push(`${yyyy}-${mm}-${dd}`);
+        cur.setDate(cur.getDate() + 7);
+      }
+      allKeys = weekList;
+    }
+
     function computeMetricForKey(aggMap, key, metric){
       const bucket = aggMap[key];
       if(!bucket) return 0;
@@ -8496,8 +8600,11 @@ function generateTrendChart(){
       { label: a1, data: vals1, borderColor:'#3b82f6', backgroundColor:'#3b82f688', fill:false, borderWidth:3, tension:0.3, pointRadius:3 },
       { label: a2, data: vals2, borderColor:'#ec4899', backgroundColor:'#ec489988', fill:false, borderWidth:3, tension:0.3, pointRadius:3 }
     ], { maintainAspectRatio:false });
-    const avg1 = vals1.length ? (vals1.reduce((s,v)=>s+v,0)/vals1.length) : 0;
-    const avg2 = vals2.length ? (vals2.reduce((s,v)=>s+v,0)/vals2.length) : 0;
+    // Media solo sulle attività effettive (valori > 0)
+    const nonZeroVals1 = vals1.filter(v => v > 0);
+    const nonZeroVals2 = vals2.filter(v => v > 0);
+    const avg1 = nonZeroVals1.length ? (nonZeroVals1.reduce((s,v)=>s+v,0)/nonZeroVals1.length) : 0;
+    const avg2 = nonZeroVals2.length ? (nonZeroVals2.reduce((s,v)=>s+v,0)/nonZeroVals2.length) : 0;
     const max1 = vals1.length ? Math.max(...vals1) : 0;
     const max2 = vals2.length ? Math.max(...vals2) : 0;
     const total1 = vals1.reduce((s,v)=>s+v,0);
