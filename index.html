@@ -5454,10 +5454,29 @@ function renderRipAnalysis(session, stats){
     const km = (Number(r.distance || 0) / 1000) || 0;
     return (time_s > 0 && km > 0) ? ((time_s / 60) / km) : 0; // minutes per km
   });
-  try{ createChart('ripPaceChart','line',labels, [{ label:'Pace (min/km)', data: paceData, borderColor:'#3b82f6', fill:false, tension:0.2 }], { maintainAspectRatio:false, plugins:{ tooltip:{ callbacks:{ label: ctx => {
-    const v = ctx.parsed.y !== undefined ? ctx.parsed.y : (ctx.parsed.x !== undefined ? ctx.parsed.x : 0);
-    return `Pace: ${formatMinutesFloatToMMSS(v)} /km`;
-  }}}}}); }catch(e){ console.warn(e); }
+  try{ createChart('ripPaceChart','line',labels, [{ label:'Pace (min/km)', data: paceData, borderColor:'#3b82f6', fill:false, tension:0.2 }], {
+    maintainAspectRatio:false,
+    plugins:{
+      tooltip:{
+        callbacks:{
+          label: ctx => {
+            const v = ctx.parsed.y !== undefined ? ctx.parsed.y : (ctx.parsed.x !== undefined ? ctx.parsed.x : 0);
+            return `Pace: ${formatMinutesFloatToMMSS(v)} /km`;
+          }
+        }
+      }
+    },
+    scales: {
+      y: {
+        ticks: {
+          callback: function(value) {
+            return formatMinutesFloatToMMSS(value);
+          }
+        },
+        title: { display: true, text: 'min/km (mm:ss)' }
+      }
+    }
+  }); }catch(e){ console.warn(e); }
   // --- ripPaceBoxChart: box-like IQR + median (single-box per session) ---
 try {
   const speeds = reps
