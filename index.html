@@ -2017,6 +2017,7 @@ function addRowFromImportedData(row) {
   <button style="display:block;width:100%;margin-bottom:8px;font-size:1.1em;" data-section="dashboard">📊 Dashboard</button>
   <button style="display:block;width:100%;margin-bottom:8px;font-size:1.1em;" data-section="data">📋 Inserimento Dati</button>
   <button style="display:block;width:100%;font-size:1.1em;" data-section="ripetute">🏃‍♂️ Ripetute</button>
+  <button style="display:block;width:100%;margin-top:8px;font-size:1.1em;" data-section="chat">💬 Chat</button>
   <button style="display:block;width:100%;margin-top:8px;font-size:1.1em;" data-section="predizione">🔮 Predizione</button>
   <button style="display:block;width:100%;margin-top:8px;font-size:1.1em;" data-section="maratona">🧮 Maratona</button>
   <button style="display:block;width:100%;margin-top:8px;font-size:1.1em;" data-section="confronto">🔄 Confronto</button>
@@ -2904,6 +2905,7 @@ document.addEventListener('click', function(e){
     <button class="tab-btn active" onclick="switchTab('dashboard', event)">📊 Dashboard</button>
     <button class="tab-btn" onclick="switchTab('data', event)">📋Inserimento Dati</button>
     <button class="tab-btn" onclick="switchTab('ripetute', event)">🏃‍♂️Inserimento Ripetute</button>
+    <button class="tab-btn" onclick="switchTab('chat', event)">💬 Chat</button>
   </div>
 
   <!-- TAB DASHBOARD -->
@@ -3099,8 +3101,12 @@ document.addEventListener('click', function(e){
           <label>Distanza (km)
             <input id="mobileRipDistanceKm" type="number" min="0" step="0.001" value="0.400" placeholder="0.200" style="width:100%;">
           </label>
-          <label>Tempo (min)
-            <input id="mobileRipPace" type="text" placeholder="es: 3:45" style="width:100%;">
+          <label>Tempo ripetuta
+            <div style="display:flex;gap:6px;align-items:center;">
+              <input id="mobileRipTimeH" type="number" min="0" step="1" value="0" placeholder="hh" style="width:33%;"> :
+              <input id="mobileRipTimeM" type="number" min="0" max="59" step="1" value="1" placeholder="mm" style="width:33%;"> :
+              <input id="mobileRipTimeS" type="number" min="0" max="59" step="1" value="30" placeholder="ss" style="width:33%;">
+            </div>
           </label>
           <label>Pace (min/km)
             <input id="mobileRipPace" type="text" placeholder="es: 3:45" style="width:100%;">
@@ -3137,7 +3143,6 @@ document.addEventListener('click', function(e){
               <button onclick="addRipRow()">➕ Aggiungi Rip</button>
               <button onclick="computeRipSession()">⚖️ Calcola</button>
               <button onclick="saveRipSession()">💾 Salva Sessione</button>
-              <button onclick="explodeRipToMainTable()">💾 Salva direttamente</button>
             </div>
             <div id="ripRowsContainer" style="overflow:auto;">
               <table style="width:100%;border-collapse:collapse;min-width:760px;">
@@ -3178,6 +3183,31 @@ document.addEventListener('click', function(e){
           </div>
           <div id="ripSummary" style="margin-top:12px;font-weight:700;"></div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-chat" class="tab-content">
+    <div class="card" style="display:flex;flex-direction:column;gap:12px;min-height:560px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div>
+          <h3 style="margin:0;">💬 Chat Team</h3>
+          <div style="font-size:0.92rem;color:#64748b;">Messaggi condivisi tra i membri del gruppo con aggiornamento automatico.</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <label style="font-weight:700;color:#334155;">Mittente
+            <select id="chatSender" style="min-width:150px;margin-left:6px;"></select>
+          </label>
+          <button type="button" onclick="refreshChatMessages()" style="background:linear-gradient(135deg,#0f766e 0%,#14b8a6 100%);">🔄 Aggiorna</button>
+        </div>
+      </div>
+      <div id="chatStatus" style="font-size:0.9rem;color:#64748b;min-height:20px;">Chat pronta.</div>
+      <div id="chatMessages" style="flex:1;min-height:320px;max-height:52vh;overflow:auto;padding:14px;border-radius:16px;background:linear-gradient(180deg,#f8fafc 0%,#eef2ff 100%);border:1px solid rgba(148,163,184,.25);"></div>
+      <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;">
+        <label style="display:block;font-weight:700;color:#334155;">Messaggio
+          <textarea id="chatMessageInput" rows="3" placeholder="Scrivi un messaggio per il team..." style="width:100%;resize:vertical;min-height:84px;"></textarea>
+        </label>
+        <button type="button" onclick="sendChatMessage()" style="height:46px;padding:0 20px;background:linear-gradient(135deg,#2563eb 0%,#1d4ed8 100%);">Invia</button>
       </div>
     </div>
   </div>
@@ -4481,6 +4511,89 @@ function onMobileRipRepTypeChange(){
     distInput.readOnly = false;
     distInput.style.background = '#ffffff';
   }
+  if(typeof syncMobileRipInputsFrom === 'function') syncMobileRipInputsFrom('km');
+}
+
+function syncMobileRipInputsFrom(source){
+  const distanceInput = document.getElementById('mobileRipDistanceKm');
+  const timeHInput = document.getElementById('mobileRipTimeH');
+  const timeMInput = document.getElementById('mobileRipTimeM');
+  const timeSInput = document.getElementById('mobileRipTimeS');
+  const paceInput = document.getElementById('mobileRipPace');
+  if(!distanceInput || !timeHInput || !timeMInput || !timeSInput || !paceInput) return;
+
+  const dist = Number(distanceInput.value || 0);
+  const h = Number(timeHInput.value || 0);
+  const m = Number(timeMInput.value || 0);
+  const s = Number(timeSInput.value || 0);
+  const totalMinutes = h * 60 + m + s / 60;
+  const paceMinutes = parsePaceDisplayToMinutes(paceInput.value || '');
+
+  if(source === 'pace') {
+    if(dist > 0 && paceMinutes > 0) {
+      const totalSeconds = Math.max(0, Math.round(paceMinutes * dist * 60));
+      timeHInput.value = Math.floor(totalSeconds / 3600);
+      timeMInput.value = Math.floor((totalSeconds % 3600) / 60);
+      timeSInput.value = totalSeconds % 60;
+    }
+    return;
+  }
+
+  if(dist > 0 && totalMinutes > 0) {
+    paceInput.value = formatMinutesToPaceDisplay(totalMinutes / dist);
+  }
+}
+
+function bindMobileRipModalInteractions(){
+  if(window.__mobileRipModalBound) return;
+  const bindInput = (id, handler) => {
+    const el = document.getElementById(id);
+    if(el) el.addEventListener('input', handler);
+  };
+  const bindChange = (id, handler) => {
+    const el = document.getElementById(id);
+    if(el) el.addEventListener('change', handler);
+  };
+
+  ['mobileRipTimeH','mobileRipTimeM','mobileRipTimeS','mobileRipDistanceKm'].forEach(id => {
+    bindInput(id, () => syncMobileRipInputsFrom('time'));
+  });
+  bindInput('mobileRipPace', () => syncMobileRipInputsFrom('pace'));
+  bindChange('mobileRipRepType', () => syncMobileRipInputsFrom('km'));
+
+  window.__mobileRipModalBound = true;
+}
+
+function bindMobileRipScoreInteractions(){
+  if(window.__mobileRipScoreBound) return;
+  function computeMobileRipSessionScore(){
+    try{
+      const count = Math.max(1, Number(document.getElementById('mobileRipCount')?.value || 1));
+      const dist = Number(document.getElementById('mobileRipDistanceKm')?.value || 0);
+      const h = Number(document.getElementById('mobileRipTimeH')?.value || 0);
+      const m = Number(document.getElementById('mobileRipTimeM')?.value || 0);
+      const s = Number(document.getElementById('mobileRipTimeS')?.value || 0);
+      const warm = Number(document.getElementById('mobileRipWarmup')?.value || 0);
+      const cool = Number(document.getElementById('mobileRipCooldown')?.value || 0);
+      const athlete = document.getElementById('mobileRipAthlete')?.value || '';
+      const out = document.getElementById('mobileRipSessionScore');
+      if(!out) return;
+      const repTime = (h * 60) + m + (s / 60);
+      const totalKm = count * dist;
+      const totalMinutes = warm + cool + (count * repTime);
+      if(totalKm <= 0 || totalMinutes <= 0){ out.value = '-'; return; }
+      const speed = totalKm / (totalMinutes / 60);
+      const multiplier = (typeof getAthleteScoreMultiplier === 'function') ? getAthleteScoreMultiplier(athlete, '') : 1;
+      const score = totalKm * speed * multiplier;
+      out.value = isFinite(score) ? Number(score).toFixed(2) : '-';
+    }catch(e){ console.warn('computeMobileRipSessionScore failed', e); }
+  }
+  ['mobileRipCount','mobileRipDistanceKm','mobileRipTimeH','mobileRipTimeM','mobileRipTimeS','mobileRipWarmup','mobileRipCooldown','mobileRipAthlete','mobileRipPace'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.addEventListener('input', computeMobileRipSessionScore);
+  });
+  window.computeMobileRipSessionScore = computeMobileRipSessionScore;
+  window.__mobileRipScoreBound = true;
 }
 // --- Helpers per import pulito: determina se una "rep" contiene dati utili ---
 function _isMeaningfulRep(r) {
@@ -5120,6 +5233,8 @@ function handleStartNewRipSession(){
 function openMobileRipSessionModal(){
   const modal = document.getElementById('mobileRipSessionModal');
   if(!modal) return;
+  bindMobileRipModalInteractions();
+  bindMobileRipScoreInteractions();
   const athleteSel = document.getElementById('mobileRipAthlete');
   if(athleteSel) athleteSel.innerHTML = '<option value="">-- Seleziona Atleta --</option>' + athletes.map(a=>`<option value="${a}">${a}</option>`).join('');
   const dateInput = document.getElementById('mobileRipDate');
@@ -5147,7 +5262,7 @@ function openMobileRipSessionModal(){
   if(timeM) timeM.value = '1';
   if(timeS) timeS.value = '30';
   const paceInput = document.getElementById('mobileRipPace');
-  if(paceInput) paceInput.value = '';
+  if(paceInput) paceInput.value = '3:45';
   const restInput = document.getElementById('mobileRipRest');
   if(restInput) restInput.value = '1.00';
   const rpeInput = document.getElementById('mobileRipRpe');
@@ -5157,35 +5272,8 @@ function openMobileRipSessionModal(){
   const lactateInput = document.getElementById('mobileRipLactate');
   if(lactateInput) lactateInput.value = '';
   modal.style.display = 'flex';
-  // bind and compute rip session score inside modal
-  function computeMobileRipSessionScore(){
-    try{
-      const count = Math.max(1, Number(document.getElementById('mobileRipCount')?.value || 1));
-      const dist = Number(document.getElementById('mobileRipDistanceKm')?.value || 0);
-      const h = Number(document.getElementById('mobileRipTimeH')?.value || 0);
-      const m = Number(document.getElementById('mobileRipTimeM')?.value || 0);
-      const s = Number(document.getElementById('mobileRipTimeS')?.value || 0);
-      const warm = Number(document.getElementById('mobileRipWarmup')?.value || 0);
-      const cool = Number(document.getElementById('mobileRipCooldown')?.value || 0);
-      const athlete = document.getElementById('mobileRipAthlete')?.value || '';
-      const out = document.getElementById('mobileRipSessionScore');
-      if(!out) return;
-      const repTime = (h * 60) + m + (s / 60);
-      const totalKm = count * dist;
-      const totalMinutes = warm + cool + (count * repTime);
-      if(totalKm <= 0 || totalMinutes <= 0){ out.value = '-'; return; }
-      const speed = (totalKm) / (totalMinutes / 60);
-      const multiplier = (typeof getAthleteScoreMultiplier === 'function') ? getAthleteScoreMultiplier(athlete, '') : 1;
-      const score = totalKm * speed * multiplier;
-      out.value = isFinite(score) ? Number(score).toFixed(2) : '-';
-    }catch(e){ console.warn('computeMobileRipSessionScore failed', e); }
-  }
-  ['mobileRipCount','mobileRipDistanceKm','mobileRipTimeH','mobileRipTimeM','mobileRipTimeS','mobileRipWarmup','mobileRipCooldown','mobileRipAthlete','mobileRipPace'].forEach(id=>{
-    const el = document.getElementById(id);
-    if(el) el.addEventListener('input', computeMobileRipSessionScore);
-  });
-  // run initial compute
-  computeMobileRipSessionScore();
+  syncMobileRipInputsFrom('time');
+  if(typeof window.computeMobileRipSessionScore === 'function') window.computeMobileRipSessionScore();
 }
 
 function closeMobileRipSessionModal(){
@@ -5234,44 +5322,6 @@ function saveMobileRipSession(){
       lactate: ripLactate
     });
   }
-  // Sincronizzazione tempo <-> passo
-  function updatePaceFromTime() {
-    const dist = +(document.getElementById('mobileRipDistanceKm')?.value || 0);
-    const h = +(document.getElementById('mobileRipTimeH')?.value || 0);
-    const m = +(document.getElementById('mobileRipTimeM')?.value || 0);
-    const s = +(document.getElementById('mobileRipTimeS')?.value || 0);
-    const totMin = h * 60 + m + s / 60;
-    const paceInput = document.getElementById('mobileRipPace');
-    if(dist > 0 && paceInput) {
-      const pace = totMin / dist;
-      const min = Math.floor(pace);
-      const sec = Math.round((pace - min) * 60);
-      paceInput.value = `${min}:${sec.toString().padStart(2,'0')}`;
-    }
-  }
-  function updateTimeFromPace() {
-    const dist = +(document.getElementById('mobileRipDistanceKm')?.value || 0);
-    const paceInput = document.getElementById('mobileRipPace');
-    if(dist > 0 && paceInput && paceInput.value) {
-      const [min, sec] = paceInput.value.split(':').map(Number);
-      const pace = (min || 0) + (sec || 0) / 60;
-      const totMin = pace * dist;
-      const h = Math.floor(totMin / 60);
-      const m = Math.floor(totMin % 60);
-      const s = Math.round((totMin - h * 60 - m) * 60);
-      document.getElementById('mobileRipTimeH').value = h;
-      document.getElementById('mobileRipTimeM').value = m;
-      document.getElementById('mobileRipTimeS').value = s;
-    }
-  }
-  // Event listeners
-  ['mobileRipTimeH','mobileRipTimeM','mobileRipTimeS','mobileRipDistanceKm'].forEach(id => {
-    const el = document.getElementById(id);
-    if(el) el.addEventListener('input', updatePaceFromTime);
-  });
-  const paceInput = document.getElementById('mobileRipPace');
-  if(paceInput) paceInput.addEventListener('input', updateTimeFromPace);
-
   const session = readRipSessionFromForm();
   const reps = Array.isArray(session.reps) ? session.reps.filter(r => _isMeaningfulRep(r)) : [];
   if(!reps.length){
@@ -5280,12 +5330,6 @@ function saveMobileRipSession(){
   }
 
   session.reps = reps;
-  session.id = 'rip_' + Date.now();
-  ripetuteSessions.unshift(session);
-  saveRipetuteToStorage();
-
-  // RIMOSSO: esportazione automatica delle ripetute nella tabella generale
-  // Ora l'esportazione avviene solo tramite il pulsante "Esporta in Dati Storici"
 
   try {
     const stats = computeRipMetrics(session);
@@ -5294,8 +5338,7 @@ function saveMobileRipSession(){
     console.warn('Mobile rip analysis render failed', e);
   }
 
-  if(typeof updateSaveFirebaseBtn === 'function') updateSaveFirebaseBtn();
-  if(typeof saveToFirebase === 'function') saveToFirebase();
+  upsertRipSessionIntoMainTable(session);
   closeMobileRipSessionModal();
 }
 
@@ -5602,12 +5645,8 @@ function saveRipSession(){
   }
   window.__lastRipSaveSig = sig;
   window.__lastRipSaveAt = nowMs;
-  session.id = 'rip_' + Date.now();
-  ripetuteSessions.unshift(session);
-  saveRipetuteToStorage();
   computeRipSession(); // optional compute
-  updateCharts();
-  alert('Sessione ripetute salvata');
+  upsertRipSessionIntoMainTable(session);
 }
 
 function _isRipetuteRowFromTable(row){
@@ -5642,6 +5681,37 @@ function _extractRepLabelFromNote(note){
   const txt = String(note || '');
   const m = txt.match(/rip\s*:\s*([^|]+)/i);
   return (m && m[1] ? m[1] : '').trim();
+}
+
+function _normalizeRipSessionType(value){
+  const normalized = String(value || '').trim();
+  return normalized || 'Ripetute';
+}
+
+function _getRipSessionGroupKey(sessionLike){
+  if(!sessionLike || typeof sessionLike !== 'object') return '';
+  const date = String(sessionLike.date || sessionLike.day || '').trim();
+  const athlete = String(sessionLike.athlete || '').trim();
+  const type = _normalizeRipSessionType(sessionLike.type || sessionLike.activityType || '').toLowerCase();
+  return [date, athlete, type].join('|');
+}
+
+function _buildRipTableNote(rep){
+  const label = String(rep.label || rep.repType || 'ripetuta').trim();
+  const restSeconds = Math.round(Number(rep.rest_s || 0));
+  const lactateValue = rep.lactate === null || rep.lactate === undefined || rep.lactate === '' ? '' : rep.lactate;
+  return `Rip: ${label} | rec ${restSeconds}s | latt:${lactateValue}`;
+}
+
+function _removeRipSessionFromStorage(session){
+  if(!Array.isArray(ripetuteSessions) || !ripetuteSessions.length) return false;
+  const targetKey = _getRipSessionGroupKey(session);
+  if(!targetKey) return false;
+  const before = ripetuteSessions.length;
+  ripetuteSessions = ripetuteSessions.filter(item => _getRipSessionGroupKey(item) !== targetKey);
+  if(ripetuteSessions.length === before) return false;
+  try { localStorage.setItem('ripetuteSessions', JSON.stringify(ripetuteSessions)); } catch(e){ console.warn('save ripetuteSessions after session overwrite failed', e); }
+  return true;
 }
 
 function _removeRipetutaFromSessionsByRow(row){
@@ -5727,17 +5797,91 @@ function _removeTableRowsForRipSession(session){
   return removed;
 }
 
+function _removeTableRowsForRipSessionGroup(session){
+  const tbody = document.querySelector('#dataTable tbody');
+  if(!tbody) return 0;
+  const targetKey = _getRipSessionGroupKey(session);
+  if(!targetKey) return 0;
+  let removed = 0;
+  Array.from(tbody.querySelectorAll('tr')).forEach(tr => {
+    const cells = tr.children || [];
+    const row = {
+      date: cells[0]?.querySelector('input')?.value || '',
+      athlete: cells[1]?.querySelector('select')?.value || '',
+      type: cells[7]?.querySelector('.activity-type-select')?.value || cells[6]?.querySelector('select')?.value || '',
+      activityType: cells[7]?.querySelector('.activity-type-select')?.value || '',
+      note: cells[8]?.querySelector('input')?.value || ''
+    };
+    if(!_isRipetuteRowFromTable(row)) return;
+    if(_getRipSessionGroupKey(row) !== targetKey) return;
+    tr.remove();
+    removed++;
+  });
+  return removed;
+}
+
+function _buildTableRowFromRipRep(session, rep){
+  const totalSeconds = Math.max(0, Math.round(Number(rep.time_s || 0)));
+  const minutes = totalSeconds / 60;
+  const km = Number((Number(rep.distance_km || 0) || ((Number(rep.distance || 0)) / 1000) || 0).toFixed(3));
+  return {
+    date: session.date || '',
+    athlete: session.athlete || '',
+    km,
+    minutes: Number(minutes.toFixed(4)),
+    total_seconds: totalSeconds,
+    time: Number((minutes / 60).toFixed(6)),
+    pace_min_per_km: km > 0 ? formatMinutesToPaceDisplay(minutes / km) : '',
+    rpe: Number(rep.rpe || session.rpe || 0),
+    hr: Number(rep.hr || 0),
+    type: 'Ripetute',
+    activityType: _normalizeRipSessionType(session.type),
+    note: _buildRipTableNote(rep)
+  };
+}
+
+function upsertRipSessionIntoMainTable(session, options = {}){
+  const normalizedSession = Object.assign({}, session, {
+    type: _normalizeRipSessionType(session?.type)
+  });
+  const reps = Array.isArray(normalizedSession.reps) ? normalizedSession.reps.filter(r => _isMeaningfulRep(r)) : [];
+  if(!normalizedSession.date || !normalizedSession.athlete || !reps.length) return null;
+
+  normalizedSession.reps = reps;
+  const replaced = _removeTableRowsForRipSessionGroup(normalizedSession);
+  _removeRipSessionFromStorage(normalizedSession);
+
+  reps.slice().reverse().forEach(rep => {
+    addRow(_buildTableRowFromRipRep(normalizedSession, rep));
+  });
+
+  try { renderRipSessionsList(); } catch(e){ console.warn('renderRipSessionsList after rip upsert failed', e); }
+  try { updateTableFilters(); } catch(e){ console.warn('updateTableFilters after rip upsert failed', e); }
+  try { sortTableByDate(false); } catch(e){ console.warn('sortTableByDate after rip upsert failed', e); }
+  try { updateCharts(); } catch(e){ console.warn('updateCharts after rip upsert failed', e); }
+  if(typeof updateSaveFirebaseBtn === 'function') updateSaveFirebaseBtn();
+  if(options.persist !== false && typeof saveToFirebase === 'function') saveToFirebase();
+  if(options.showAlert !== false){
+    const message = replaced > 0
+      ? `Sessione ripetute aggiornata nella tabella principale (${reps.length} righe salvate, ${replaced} sovrascritte).`
+      : `Sessione ripetute salvata nella tabella principale (${reps.length} righe).`;
+    alert(message);
+  }
+  return { added: reps.length, replaced };
+}
+
 function _getRipetuteSessionsFromTable(){
   const rows = getDataRaw().filter(_isRipetuteRowFromTable);
   const grouped = new Map();
   rows.forEach(row => {
-    const key = `${row.date || ''}__${row.athlete || ''}`;
+    const sessionType = _normalizeRipSessionType(row.activityType || row.type || 'Ripetute');
+    const key = `${row.date || ''}__${row.athlete || ''}__${sessionType}`;
     if(!grouped.has(key)){
       grouped.set(key, {
         id: `tblrip_${encodeURIComponent(key)}`,
         date: row.date || '',
         athlete: row.athlete || '',
-        type: row.activityType || row.type || 'Ripetute',
+        type: sessionType,
         warmup_min: 0,
         cooldown_min: 0,
         reps: [],
@@ -5750,12 +5894,13 @@ function _getRipetuteSessionsFromTable(){
 }
 
 function _getAllRipetuteSessionsForUI(){
+  const tableSessions = _getRipetuteSessionsFromTable();
+  const tableKeys = new Set(tableSessions.map(s => _getRipSessionGroupKey(s)));
   const localSessions = Array.isArray(ripetuteSessions)
     ? ripetuteSessions.filter(s => s && typeof s === 'object' && Array.isArray(s.reps) && s.reps.some(r => _isMeaningfulRep(r)))
     : [];
-  const localKeys = new Set(localSessions.map(s => `${s.date || ''}__${s.athlete || ''}`));
-  const fromTable = _getRipetuteSessionsFromTable().filter(s => !localKeys.has(`${s.date || ''}__${s.athlete || ''}`));
-  return [...localSessions, ...fromTable];
+  const fromStorage = localSessions.filter(s => !tableKeys.has(_getRipSessionGroupKey(s)));
+  return [...tableSessions, ...fromStorage];
 }
 
 function renderRipSessionsList(){
@@ -5782,9 +5927,7 @@ function renderRipSessionsList(){
     const date = s.date || '';
     const athlete = s.athlete || '—';
     const id = s.id || '';
-    const actions = s.__fromTable
-      ? `<button onclick="viewRipSession('${id}')">Apri</button>`
-      : `<button onclick="viewRipSession('${id}')">Apri</button><button onclick="deleteRipSession('${id}')" style="background:#ef4444;color:#fff">Elimina</button>`;
+    const actions = `<button onclick="viewRipSession('${id}')">Apri</button><button onclick="deleteRipSession('${id}')" style="background:#ef4444;color:#fff">Elimina</button>`;
     parts.push(`<div style="padding:10px;border-radius:10px;border:1px solid rgba(0,0,0,.08);margin-bottom:6px;"><div style="display:flex;justify-content:space-between;align-items:center;"><div><strong>${date}</strong> — ${athlete} — ${repsCount} rep — ${totalKm} km</div><div style="display:flex;gap:6px;">${actions}</div></div></div>`);
   }
   list.innerHTML = parts.join('') || '<div style="padding:10px;font-weight:700;color:#334155;">Nessuna sessione valida trovata.</div>';
@@ -5795,6 +5938,7 @@ function viewRipSession(id){
   if(!s) return;
   $id('ripDate').value = s.date || new Date().toISOString().slice(0,10);
   $id('ripAthlete').innerHTML = athletes.map(a=>`<option value="${a}" ${a===s.athlete?'selected':''}>${a}</option>`).join('');
+  if($id('ripType')) $id('ripType').value = _normalizeRipSessionType(s.type);
   $id('ripWarmup').value = s.warmup_min || 0;
   $id('ripCooldown').value = s.cooldown_min || 0;
   if($id('ripRowsBody')) $id('ripRowsBody').innerHTML = '';
@@ -5805,10 +5949,12 @@ function viewRipSession(id){
 
 function deleteRipSession(id){
   if(!confirm('Eliminare questa sessione?')) return;
-  const target = ripetuteSessions.find(x => x && x.id === id);
-  if(target) _removeTableRowsForRipSession(target);
-  ripetuteSessions = ripetuteSessions.filter(x => x.id !== id);
-  saveRipetuteToStorage();
+  const target = _getAllRipetuteSessionsForUI().find(x => x && x.id === id);
+  if(!target) return;
+  _removeTableRowsForRipSessionGroup(target);
+  ripetuteSessions = (ripetuteSessions || []).filter(x => x && x.id !== id && _getRipSessionGroupKey(x) !== _getRipSessionGroupKey(target));
+  try { localStorage.setItem('ripetuteSessions', JSON.stringify(ripetuteSessions)); } catch(e){ console.warn('save ripetuteSessions after delete failed', e); }
+  renderRipSessionsList();
   try { updateTableFilters(); } catch(e){}
   updateCharts();
   if(typeof updateSaveFirebaseBtn === 'function') updateSaveFirebaseBtn();
@@ -5843,95 +5989,7 @@ function convertRipetuteToDataEntries(ripSessions){
 
 /* explode ripetute into main table (each rep -> row) */
 function explodeRipToMainTable(){
-  const session = readRipSessionFromForm();
-  if(!session || !session.reps.length){ alert('Nessuna ripetuta definita'); return; }
-  // Build map of existing ripetute rows to avoid duplicates
-  const existing = getDataRaw();
-  const isRipRow = (row) => {
-    const t = String(row.activityType || row.type || '').toLowerCase();
-    const n = String(row.note || '').toLowerCase();
-    return t.includes('ripetute') || n.includes('rip:');
-  };
-  const ripKey = (row) => [
-    row.date || '',
-    row.athlete || '',
-    Number(row.km || 0).toFixed(3),
-    String(Math.round(Number(row.minutes || ((Number(row.time)||0) * 60) || 0))),
-    String(Math.round(Number(row.rpe || 0))),
-    String(Math.round(Number(row.hr || 0))),
-    String((row.activityType || row.type || 'Ripetute')).toLowerCase()
-  ].join('|');
-
-  const tableRipCounts = new Map();
-  existing.forEach((row) => {
-    if(!isRipRow(row)) return;
-    const key = ripKey(row);
-    tableRipCounts.set(key, (tableRipCounts.get(key) || 0) + 1);
-  });
-
-  const tb = document.querySelector('#dataTable tbody');
-  let added = 0, skipped = 0;
-  session.reps.forEach(r => {
-    const minutes = (r.time_s || 0) / 60;
-    const km = ((r.distance||0)/1000);
-    const rowObj = {
-      date: session.date,
-      athlete: session.athlete,
-      km: Number(km),
-      minutes: Number(minutes.toFixed(4)),
-      time: Number((minutes/60).toFixed(6)),
-      pace_min_per_km: km > 0 ? formatMinutesToPaceDisplay(minutes / km) : '',
-      rpe: Number(r.rpe || session.rpe || 0),
-      hr: Number(r.hr || 0),
-      type: 'Ripetute',
-      activityType: session.type || 'Ripetute',
-      note: `Rip: ${r.label||''} rec ${((r.rest_s||0)/60).toFixed(2)}min latt:${r.lactate||''}`
-    };
-    const key = ripKey(rowObj);
-    const existingCount = tableRipCounts.get(key) || 0;
-    if(existingCount > 0){
-      tableRipCounts.set(key, existingCount - 1);
-      skipped++;
-      return;
-    }
-
-    const tr = document.createElement('tr');
-    const activityCellHtml = buildActivityTypeWithRaceHtml('Ripetute', '');
-    const paceVal = (rowObj.time && rowObj.km) ? formatMinutesToPaceDisplay((rowObj.minutes) / (rowObj.km)) : '';
-    const totSec = Math.round((Number(rowObj.minutes) || 0) * 60);
-    const hhVal = Math.floor(totSec / 3600);
-    const mmVal = Math.floor((totSec % 3600) / 60);
-    const ssVal = totSec % 60;
-    tr.innerHTML = `
-      <td><input type="date" value="${rowObj.date}"></td>
-      <td><select class="athlete-select"><option value="">-- Seleziona --</option>${athletes.map(a=>`<option value="${a}" ${a===rowObj.athlete?'selected':''}>${a}</option>`).join('')}</select></td>
-      <td><input type="number" value="${rowObj.km.toFixed(3)}"></td>
-      <td>
-        <div style="display:flex;gap:6px;align-items:center;">
-          <input class="time-h" type="number" min="0" value="${hhVal}" placeholder="hh" style="width:48px;"> :
-          <input class="time-m" type="number" min="0" max="59" value="${mmVal}" placeholder="mm" style="width:48px;"> :
-          <input class="time-s" type="number" min="0" max="59" value="${ssVal}" placeholder="ss" style="width:48px;">
-        </div>
-      </td>
-      <td><input type="number" value="${rowObj.rpe}"></td>
-      <td><input type="number" value="${rowObj.hr}"></td>
-      <td><select class="sport-select">${sports.map(s=>`<option value="${s}">${s}</option>`).join('')}</select></td>
-      <td>${activityCellHtml}</td>
-      <td><input type="text" value="${rowObj.note}"></td>
-      <td><button onclick="deleteRow(this)" style="padding:4px 8px;font-size:0.75rem;background:#ef4444;">🗑️</button></td>
-      <td><input type="number" value="${paceVal}"></td>
-    `;
-    tb.insertBefore(tr, tb.firstChild);
-    bindRaceDistanceRowBehavior(tr);
-    added++;
-  });
-
-  updateTableFilters();
-  sortTableByDate(false);
-  updateCharts();
-  if(typeof updateSaveFirebaseBtn === 'function') updateSaveFirebaseBtn();
-  if(typeof saveToFirebase === 'function') saveToFirebase();
-  alert(`Sessione salvata: ${added} nuove righe aggiunte, ${skipped} duplicate ignorate.`);
+  saveRipSession();
 }
 
 /* import/export ripetute */
@@ -7994,6 +8052,9 @@ function addRow(){
   const athleteVal = preset.athlete || '';
   const kmVal = preset.km ?? '';
   const minVal = preset.minutes ?? '';
+  const totalSecondsVal = preset.total_seconds !== undefined && preset.total_seconds !== null
+    ? Math.max(0, Math.round(Number(preset.total_seconds) || 0))
+    : Math.max(0, Math.round((Number(minVal) || 0) * 60));
   const rpeVal = preset.rpe ?? '';
   const hrVal = preset.hr ?? '';
   const sportVal = preset.type || (sports[0] || 'Corsa');
@@ -8009,9 +8070,9 @@ function addRow(){
     <td><input type="number" placeholder="0" value="${kmVal}"></td>
     <td>
       <div style="display:flex;gap:6px;align-items:center;">
-        <input class="time-h" type="number" min="0" placeholder="hh" value="${Math.floor((Number(minVal)||0)/60)}" style="width:48px;"> :
-        <input class="time-m" type="number" min="0" max="59" placeholder="mm" value="${Math.floor((Number(minVal)||0)%60)}" style="width:48px;"> :
-        <input class="time-s" type="number" min="0" max="59" placeholder="ss" value="0" style="width:48px;">
+        <input class="time-h" type="number" min="0" placeholder="hh" value="${Math.floor(totalSecondsVal / 3600)}" style="width:48px;"> :
+        <input class="time-m" type="number" min="0" max="59" placeholder="mm" value="${Math.floor((totalSecondsVal % 3600) / 60)}" style="width:48px;"> :
+        <input class="time-s" type="number" min="0" max="59" placeholder="ss" value="${totalSecondsVal % 60}" style="width:48px;">
       </div>
     </td>
     <td><input type="number" placeholder="0" value="${rpeVal}"></td>
@@ -8047,6 +8108,9 @@ function deleteRow(btn){
   const wasRipetuta = _isRipetuteRowFromTable(rowData);
   tr.remove();
   if(wasRipetuta) _removeRipetutaFromSessionsByRow(rowData);
+  if(wasRipetuta) {
+    try { renderRipSessionsList(); } catch(e){}
+  }
   try { updateTableFilters(); } catch(e){}
   try { updateCharts(); } catch(e){}
   if(typeof updateSaveFirebaseBtn === 'function') updateSaveFirebaseBtn();
