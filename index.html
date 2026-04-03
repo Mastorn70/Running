@@ -148,6 +148,258 @@
   margin-top: 5px;
   overflow: hidden;
 }
+
+/* ---- Ghost Chat Feed (floating messages over 3D chart) ---- */
+#chatGhostFeed {
+  position: absolute;
+  right: 260px;
+  bottom: 0;
+  top: 44px;
+  width: 260px;
+  z-index: 7;
+  pointer-events: none;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column-reverse;
+  padding: 8px 0;
+}
+@keyframes ghostRise {
+  0%   { opacity: 0;    transform: translateY(0px); }
+  12%  { opacity: 1;    transform: translateY(-4px); }
+  75%  { opacity: 0.85; transform: translateY(-60px); }
+  100% { opacity: 0;    transform: translateY(-90px); }
+}
+.chat-ghost-msg {
+  display: inline-flex;
+  align-self: flex-end;
+  align-items: flex-start;
+  gap: 5px;
+  margin-bottom: 6px;
+  max-width: 100%;
+  animation: ghostRise 6s ease-out forwards;
+}
+.chat-ghost-bubble {
+  background: rgba(15,23,42,0.62);
+  border: 1px solid rgba(99,102,241,0.35);
+  border-radius: 10px;
+  padding: 5px 9px;
+  backdrop-filter: blur(8px);
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: #e2e8f0;
+  word-break: break-word;
+  max-width: 230px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.35);
+}
+.chat-ghost-bubble .cg-sender {
+  font-size: 0.63rem;
+  font-weight: 800;
+  color: #a5b4fc;
+  margin-bottom: 2px;
+}
+@media (max-width: 900px) { #chatGhostFeed { display: none; } }
+#chatGhostFeedMobile {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: 44px;
+  z-index: 945;
+  pointer-events: none;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column-reverse;
+  padding: 8px 6px;
+}
+@media (min-width: 901px) { #chatGhostFeedMobile { display: none; } }
+
+/* ---- Inline Chat Panel (inside 3D chart card) ---- */
+#chatInlinePanel {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  width: 240px;
+  max-height: 52%;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(160deg, #0f172a 0%, #1e293b 60%, #1e1b4b 100%);
+  border: 1px solid rgba(99,102,241,0.45);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.5);
+  backdrop-filter: blur(14px);
+}
+#chatInlinePanelHeader {
+  padding: 5px 8px;
+  background: linear-gradient(90deg, #4338ca 0%, #7c3aed 100%);
+  color: #fff;
+  font-size: 0.71rem;
+  font-weight: 800;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.ci-sender-select {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 6px;
+  outline: none;
+  cursor: pointer;
+  max-width: 110px;
+  flex-shrink: 0;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.ci-sender-select option { background: #1e1b4b; color: #e2e8f0; }
+#chatInlineMsgs {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 5px;
+  min-height: 60px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99,102,241,0.4) transparent;
+}
+.chat-inline-msg {
+  font-size: 0.71rem;
+  line-height: 1.35;
+  border-radius: 8px;
+  padding: 5px 8px;
+  max-width: 94%;
+  word-break: break-word;
+}
+.chat-inline-msg.ci-own {
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+  color: #fff;
+  align-self: flex-end;
+}
+.chat-inline-msg.ci-other {
+  background: rgba(255,255,255,0.09);
+  color: #e2e8f0;
+  align-self: flex-start;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.chat-inline-msg .ci-sender {
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: #a5b4fc;
+  margin-bottom: 2px;
+  opacity: 0.85;
+}
+#chatInlineSendArea {
+  display: flex;
+  padding: 5px 7px;
+  gap: 5px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  background: rgba(15,23,42,0.75);
+  flex-shrink: 0;
+}
+#chatInlineInput {
+  flex: 1;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(99,102,241,0.32);
+  border-radius: 7px;
+  color: #e2e8f0;
+  padding: 5px 8px;
+  font-size: 0.71rem;
+  outline: none;
+  min-width: 0;
+}
+#chatInlineInput::placeholder { color: rgba(255,255,255,0.28); }
+#chatInlineSendBtn {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  border: none;
+  border-radius: 7px;
+  color: #fff;
+  padding: 0 10px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  font-weight: 800;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+#chatInlineSendBtn:hover { opacity: 0.82; }
+@media (max-width: 900px) { #chatInlinePanel { display: none; } }
+#chatInlinePanelMobile {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(160deg, #0f172a 0%, #1e293b 60%, #1e1b4b 100%);
+  border: 1px solid rgba(99,102,241,0.45);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.5);
+  max-height: 260px;
+  margin-top: 6px;
+}
+#chatInlineMsgsMobile {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 5px;
+  min-height: 80px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99,102,241,0.4) transparent;
+}
+#chatInlinePanelMobile .ci-inline-header {
+  padding: 5px 8px;
+  background: linear-gradient(90deg, #4338ca 0%, #7c3aed 100%);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+#chatInlinePanelMobile .ci-send-area {
+  display: flex;
+  padding: 6px 8px;
+  gap: 6px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  background: rgba(15,23,42,0.75);
+  flex-shrink: 0;
+}
+#chatInlineMobileInput {
+  flex: 1;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(99,102,241,0.32);
+  border-radius: 7px;
+  color: #e2e8f0;
+  padding: 8px 10px;
+  font-size: 0.86rem;
+  outline: none;
+  min-width: 0;
+}
+#chatInlineMobileInput::placeholder { color: rgba(255,255,255,0.28); }
+#chatInlineMobileSendBtn {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  border: none;
+  border-radius: 7px;
+  color: #fff;
+  padding: 0 16px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+@media (min-width: 901px) { #chatInlinePanelMobile { display: none; } }
 .mobile-kpi-chip .chip-fill {
   height: 100%;
   border-radius: 2px;
@@ -2212,7 +2464,12 @@ function addRowFromImportedData(row) {
     <span id="mobileFastestDistanceLabel" style="position:absolute;top:12px;left:185px;color:#fff;font-size:0.9em;font-weight:800;z-index:951;text-shadow:0 1px 2px rgba(0,0,0,.45);"></span>
     <button id="openMobileFilterBtn" style="position:absolute;top:8px;right:10px;padding:6px 10px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:0.95em;font-weight:600;z-index:950;box-shadow:0 2px 8px #0002;">🔍 Filtra</button>
     <div id="mobileKmTopRankingOverlay" style="position:absolute;right:8px;bottom:8px;left:8px;max-height:34%;overflow:auto;padding:8px 10px;border:1px solid rgba(203,213,225,.55);border-radius:10px;background:rgba(255,255,255,0.22);font-size:0.72rem;line-height:1.35;color:#0f172a;z-index:940;box-shadow:0 4px 12px rgba(0,0,0,.12);"></div>
-    
+    <div id="chatGhostFeedMobile"></div>
+  </div>
+  <div id="chatInlinePanelMobile">
+    <div class="ci-inline-header"><span>💬 Chat Team <span id="chatOnlineBadgeMobile" style="font-size:0.68rem;font-weight:700;background:rgba(16,185,129,0.25);border:1px solid #10b981;border-radius:20px;padding:1px 6px;margin-left:3px;"></span></span><select id="chatInlineSenderMobile" class="ci-sender-select" onchange="syncInlineSender('mobile')"></select></div>
+    <div id="chatInlineMsgsMobile"></div>
+    <div class="ci-send-area"><input id="chatInlineMobileInput" type="text" placeholder="Scrivi un messaggio..." maxlength="200" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendInlineChatMessage('mobile');}"><button id="chatInlineMobileSendBtn" onclick="sendInlineChatMessage('mobile')">➤</button></div>
   </div>
   <div class="mobile-kpi-after" id="mobileKpiAfter3D">
     <div class="mobile-kpi-chip"><div class="chip-v" id="mobileKpiKmWeek">0</div><div class="chip-l" id="mobileKpiKmLabel">Km settimana</div><div class="chip-bar"><div class="chip-fill" id="mobileKpiKmBar" style="width:0%"></div></div><div class="chip-target" id="mobileKpiKmTarget">/ 50 km</div></div>
@@ -2591,6 +2848,9 @@ window.switchTab = function(tabName, ev) {
   if (tabName === 'data') {
     if (typeof sortTableByDate === 'function') sortTableByDate(false);
   }
+  if (tabName === 'chat' && typeof refreshChatMessages === 'function') {
+    refreshChatMessages();
+  }
   // Su mobile, scrolla in alto quando si cambia tab
   if(window.innerWidth <= 900) window.scrollTo({top:0,behavior:'smooth'});
   // Aggiorna anche il mobile menu per riflettere la tab attiva
@@ -2927,7 +3187,7 @@ document.addEventListener('click', function(e){
     </div>
 
     <div class="grid">
-      <div class="card" id="kmRunnerCard" style="position:relative;"><h3>🏃‍♂️ Classifica 3D atleti (avanzamento=score top atleta, dimensione=km)</h3><button id="allTimeBtn" onclick="applyAllTimeDateFilter()" style="position:absolute;top:12px;left:12px;padding:6px 10px;background:#111827;color:#fff;border:none;border-radius:8px;font-size:0.86rem;font-weight:700;z-index:9;box-shadow:0 2px 8px #0003;">All time</button><button id="fastestBtn" onclick="cycleFastestRaceDistance()" style="position:absolute;top:12px;left:94px;padding:6px 10px;background:#111827;color:#fff;border:none;border-radius:8px;font-size:0.86rem;font-weight:700;z-index:9;box-shadow:0 2px 8px #0003;">Fastest</button><span id="fastestDistanceLabel" style="position:absolute;top:18px;left:180px;color:#fff;font-size:0.83rem;font-weight:800;z-index:9;text-shadow:0 1px 2px rgba(0,0,0,.45);"></span><canvas id="kmChart"></canvas><div id="kmTopRankingOverlay" style="position:absolute;right:12px;bottom:12px;max-width:min(48%,420px);min-width:300px;max-height:42%;overflow:auto;margin-top:10px;padding:10px;border:1px solid rgba(203,213,225,.55);border-radius:10px;background:rgba(255,255,255,0.22);font-size:0.78rem;line-height:1.4;color:#0f172a;z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.12);"></div></div>
+      <div class="card" id="kmRunnerCard" style="position:relative;"><h3>🏃‍♂️ Classifica 3D atleti (avanzamento=score top atleta, dimensione=km)</h3><button id="allTimeBtn" onclick="applyAllTimeDateFilter()" style="position:absolute;top:12px;left:12px;padding:6px 10px;background:#111827;color:#fff;border:none;border-radius:8px;font-size:0.86rem;font-weight:700;z-index:9;box-shadow:0 2px 8px #0003;">All time</button><button id="fastestBtn" onclick="cycleFastestRaceDistance()" style="position:absolute;top:12px;left:94px;padding:6px 10px;background:#111827;color:#fff;border:none;border-radius:8px;font-size:0.86rem;font-weight:700;z-index:9;box-shadow:0 2px 8px #0003;">Fastest</button><span id="fastestDistanceLabel" style="position:absolute;top:18px;left:180px;color:#fff;font-size:0.83rem;font-weight:800;z-index:9;text-shadow:0 1px 2px rgba(0,0,0,.45);"></span><canvas id="kmChart"></canvas><div id="kmTopRankingOverlay" style="position:absolute;left:12px;bottom:12px;max-width:min(44%,380px);min-width:240px;max-height:42%;overflow:auto;margin-top:10px;padding:10px;border:1px solid rgba(203,213,225,.55);border-radius:10px;background:rgba(255,255,255,0.22);font-size:0.78rem;line-height:1.4;color:#0f172a;z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.12);"></div><div id="chatGhostFeed"></div><div id="chatInlinePanel"><div id="chatInlinePanelHeader"><span>💬 Chat Team <span id="chatOnlineBadge" style="font-size:0.65rem;font-weight:700;background:rgba(16,185,129,0.25);border:1px solid #10b981;border-radius:20px;padding:1px 6px;margin-left:3px;"></span></span><select id="chatInlineSender" class="ci-sender-select" onchange="syncInlineSender('desktop')"></select></div><div id="chatInlineMsgs"></div><div id="chatInlineSendArea"><input id="chatInlineInput" type="text" placeholder="Scrivi..." maxlength="200" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendInlineChatMessage();}"><button id="chatInlineSendBtn" onclick="sendInlineChatMessage()">➤</button></div></div></div>
       <div class="card" id="speedRunnerCard" style="position:relative;"><h3>Atleta più veloce (ripetute ultimi 10 gg)</h3><canvas id="speedChart"></canvas><div id="speedTopRankingOverlay" style="position:absolute;right:12px;bottom:12px;max-width:min(46%,360px);min-width:220px;max-height:42%;overflow:auto;margin-top:10px;padding:10px;border:1px solid rgba(203,213,225,.55);border-radius:10px;background:rgba(255,255,255,0.22);font-size:0.78rem;line-height:1.25;color:#0f172a;z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.12);"></div></div>
       <div class="card"><h3>📊 Km/settimana</h3><canvas id="weeklyChart"></canvas></div>
       <div class="card"><h3>⚡ Carico interno</h3><canvas id="loadChart"></canvas></div>
@@ -3191,12 +3451,12 @@ document.addEventListener('click', function(e){
     <div class="card" style="display:flex;flex-direction:column;gap:12px;min-height:560px;">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
         <div>
-          <h3 style="margin:0;">💬 Chat Team</h3>
+          <h3 style="margin:0;">💬 Chat Team <span id="chatTabOnlineBadge" style="font-size:0.72rem;font-weight:700;background:rgba(16,185,129,0.15);border:1px solid #10b981;border-radius:20px;padding:2px 8px;margin-left:4px;color:#10b981;vertical-align:middle;"></span></h3>
           <div style="font-size:0.92rem;color:#64748b;">Messaggi condivisi tra i membri del gruppo con aggiornamento automatico.</div>
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
           <label style="font-weight:700;color:#334155;">Mittente
-            <select id="chatSender" style="min-width:150px;margin-left:6px;"></select>
+            <select id="chatSender" style="min-width:180px;margin-left:6px;"></select>
           </label>
           <button type="button" onclick="refreshChatMessages()" style="background:linear-gradient(135deg,#0f766e 0%,#14b8a6 100%);">🔄 Aggiorna</button>
         </div>
@@ -4443,6 +4703,13 @@ function saveScoreRules(){
 
 // ripetute storage
 let ripetuteSessions = [];
+let chatMessages = [];
+const CHAT_STORAGE_KEY = 'teamChatMessages';
+const CHAT_FIREBASE_URL = FIREBASE_URL.replace(/\/data\.json$/i, '/chatMessages.json');
+const PRESENCE_FIREBASE_URL = FIREBASE_URL.replace(/\/data\.json$/i, '/presence.json');
+let chatPollTimer = null;
+let presenceTimer = null;
+let presenceId = null;
 const RIP_PRESET_TYPES = ['100m','150m','200m','300m','400m','500m','600m','800m','1000m','1200m','1600m','2000m','3000m','5000m','Custom'];
 const RIP_PRESET_KM = {
   '100m': 0.1,
@@ -4469,6 +4736,341 @@ function normalizeKmValue(km){
   const value = Number(km || 0);
   if(!isFinite(value) || value <= 0) return '';
   return Number(value.toFixed(3)).toString();
+}
+
+function escapeChatHtml(value){
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function setChatStatus(message, isError){
+  const el = document.getElementById('chatStatus');
+  if(!el) return;
+  el.textContent = message || '';
+  el.style.color = isError ? '#b91c1c' : '#64748b';
+}
+
+function saveChatMessagesToStorage(){
+  try { localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chatMessages)); } catch(e) { console.warn('save chatMessages localStorage failed', e); }
+}
+
+function loadChatMessagesFromStorage(){
+  try {
+    const raw = localStorage.getItem(CHAT_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    chatMessages = Array.isArray(parsed) ? parsed.filter(item => item && typeof item === 'object') : [];
+  } catch(e) {
+    console.warn('load chatMessages localStorage failed', e);
+    chatMessages = [];
+  }
+}
+
+function getCurrentChatSender(){
+  // Priority: inline panel visible on screen, then main tab select, then localStorage
+  const isMobile = window.innerWidth <= 900;
+  const inlineSel = document.getElementById(isMobile ? 'chatInlineSenderMobile' : 'chatInlineSender');
+  if(inlineSel && inlineSel.value) return String(inlineSel.value).trim();
+  const selectEl = document.getElementById('chatSender');
+  if(selectEl && selectEl.value) return String(selectEl.value).trim();
+  return String(localStorage.getItem('chatSender') || '').trim();
+}
+
+function syncInlineSender(source){
+  const ids = ['chatSender', 'chatInlineSender', 'chatInlineSenderMobile'];
+  const srcId = source === 'mobile' ? 'chatInlineSenderMobile' : source === 'desktop' ? 'chatInlineSender' : 'chatSender';
+  const srcEl = document.getElementById(srcId);
+  if(!srcEl) return;
+  const val = srcEl.value;
+  ids.forEach(id => {
+    if(id === srcId) return;
+    const el = document.getElementById(id);
+    if(el) el.value = val;
+  });
+  try { localStorage.setItem('chatSender', val); } catch(e){}
+  renderInlineChatMessages();
+}
+
+function populateChatSenderOptions(){
+  const current = String(localStorage.getItem('chatSender') || (Array.isArray(athletes) && athletes[0]) || 'Staff').trim();
+  const names = Array.from(new Set((Array.isArray(athletes) ? athletes : []).map(name => String(name || '').trim()).filter(Boolean)));
+  if(names.length === 0) names.push('Staff');
+  const hasCurrent = names.includes(current);
+  const val = hasCurrent ? current : names[0];
+  const optHtml = names.map(name => `<option value="${escapeChatHtml(name)}" ${name===val?'selected':''}>${escapeChatHtml(name)}</option>`).join('');
+  ['chatSender','chatInlineSender','chatInlineSenderMobile'].forEach(id => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.innerHTML = optHtml;
+    el.value = val;
+  });
+}
+
+function formatChatTimestamp(isoValue){
+  const date = isoValue ? new Date(isoValue) : new Date();
+  if(isNaN(date.getTime())) return '';
+  return date.toLocaleString('it-IT', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+function renderChatMessages(){
+  const box = document.getElementById('chatMessages');
+  if(!box) return;
+  if(!Array.isArray(chatMessages) || chatMessages.length === 0){
+    box.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:#64748b;font-weight:700;">Nessun messaggio. Inizia la conversazione.</div>';
+    return;
+  }
+  const currentSender = getCurrentChatSender();
+  box.innerHTML = chatMessages.slice().sort((a,b)=>new Date(a.createdAt||0)-new Date(b.createdAt||0)).map(msg => {
+    const mine = currentSender && msg.sender === currentSender;
+    const bubbleBg = mine ? 'linear-gradient(135deg,#2563eb 0%,#1d4ed8 100%)' : '#ffffff';
+    const bubbleColor = mine ? '#ffffff' : '#0f172a';
+    const align = mine ? 'flex-end' : 'flex-start';
+    return `
+      <div style="display:flex;justify-content:${align};margin-bottom:10px;">
+        <div style="max-width:min(78%,680px);padding:12px 14px;border-radius:16px;background:${bubbleBg};color:${bubbleColor};box-shadow:0 6px 18px rgba(15,23,42,.08);border:${mine?'none':'1px solid rgba(148,163,184,.22)'};">
+          <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:6px;">
+            <strong style="font-size:0.92rem;">${escapeChatHtml(msg.sender || 'Staff')}</strong>
+            <span style="font-size:0.78rem;opacity:${mine?'0.86':'0.68'};white-space:nowrap;">${escapeChatHtml(formatChatTimestamp(msg.createdAt))}</span>
+          </div>
+          <div style="font-size:0.96rem;line-height:1.45;white-space:pre-wrap;word-break:break-word;">${escapeChatHtml(msg.text || '')}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+  box.scrollTop = box.scrollHeight;
+}
+
+let __ghostLastSeen = null; // ISO timestamp of last ghost-rendered message
+
+function getPresenceId(){
+  if(!presenceId){
+    presenceId = localStorage.getItem('presenceId');
+    if(!presenceId){
+      presenceId = 'u_' + Date.now() + '_' + Math.floor(Math.random()*99999);
+      try{ localStorage.setItem('presenceId', presenceId); }catch(e){}
+    }
+  }
+  return presenceId;
+}
+
+async function updateMyPresence(){
+  if(!PRESENCE_FIREBASE_URL || typeof fetch !== 'function') return;
+  const uid = getPresenceId();
+  const name = getCurrentChatSender() || (Array.isArray(athletes) && athletes[0]) || 'Staff';
+  const payload = { name, lastSeen: new Date().toISOString() };
+  try{
+    await fetch(PRESENCE_FIREBASE_URL.replace('.json', '/' + uid + '.json'), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+  }catch(e){}
+}
+
+async function loadOnlineCount(){
+  if(!PRESENCE_FIREBASE_URL || typeof fetch !== 'function') return;
+  try{
+    const res = await fetch(PRESENCE_FIREBASE_URL, { cache: 'no-cache' });
+    if(!res.ok) return;
+    const data = await res.json();
+    if(!data || typeof data !== 'object'){ setOnlineBadge(1); return; }
+    const cutoff = Date.now() - 2 * 60 * 1000; // 2 minutes
+    const online = Object.values(data).filter(u => u && u.lastSeen && new Date(u.lastSeen).getTime() > cutoff).length;
+    setOnlineBadge(Math.max(1, online));
+  }catch(e){ setOnlineBadge(1); }
+}
+
+function setOnlineBadge(count){
+  const text = '🟢 ' + count + ' online';
+  ['chatOnlineBadge','chatOnlineBadgeMobile'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.textContent = text;
+  });
+  // Also update in the main chat tab
+  const tabBadge = document.getElementById('chatTabOnlineBadge');
+  if(tabBadge) tabBadge.textContent = text;
+}
+
+function spawnGhostMessage(msg){
+  const currentSender = getCurrentChatSender();
+  const isOwn = currentSender && msg.sender === currentSender;
+  const buildEl = () => {
+    const el = document.createElement('div');
+    el.className = 'chat-ghost-msg';
+    el.innerHTML = `<div class="chat-ghost-bubble">${isOwn ? '' : `<div class="cg-sender">${escapeChatHtml(msg.sender||'?')}</div>`}${escapeChatHtml(msg.text||'')}</div>`;
+    return el;
+  };
+  ['chatGhostFeed','chatGhostFeedMobile'].forEach(id => {
+    const feed = document.getElementById(id);
+    if(!feed) return;
+    const el = buildEl();
+    feed.insertBefore(el, feed.firstChild);
+    el.addEventListener('animationend', () => el.remove(), { once: true });
+  });
+}
+
+function replayGhostFeed(msgs){
+  // Show the last few messages staggered so they're all drifting when page loads
+  const recent = msgs.slice(-6);
+  recent.forEach((m, i) => {
+    setTimeout(() => spawnGhostMessage(m), i * 600);
+  });
+  if(recent.length > 0) __ghostLastSeen = recent[recent.length - 1].createdAt;
+}
+
+function renderInlineChatMessages(){
+  const currentSender = getCurrentChatSender();
+  const sorted = Array.isArray(chatMessages)
+    ? chatMessages.slice().sort((a,b)=>new Date(a.createdAt||0)-new Date(b.createdAt||0)).slice(-10)
+    : [];
+  const msgHtml = m => {
+    const isOwn = currentSender && m.sender === currentSender;
+    return `<div class="chat-inline-msg ${isOwn ? 'ci-own' : 'ci-other'}">${!isOwn ? `<div class="ci-sender">${escapeChatHtml(m.sender||'?')}</div>` : ''}${escapeChatHtml(m.text||'')}</div>`;
+  };
+  const empty = '<div style="color:rgba(255,255,255,0.28);font-size:0.69rem;text-align:center;padding:10px 0;">Nessun messaggio ancora</div>';
+  // Desktop box uses flex-direction:column-reverse → reverse sort so newest is at visual bottom
+  const box = document.getElementById('chatInlineMsgs');
+  if(box){
+    box.innerHTML = sorted.length === 0 ? empty : sorted.slice().reverse().map(msgHtml).join('');
+  }
+  // Mobile box uses flex-direction:column-reverse → reverse sort so newest is at visual bottom
+  const boxM = document.getElementById('chatInlineMsgsMobile');
+  if(boxM){
+    boxM.innerHTML = sorted.length === 0 ? empty : sorted.slice().reverse().map(msgHtml).join('');
+  }
+}
+
+function sendInlineChatMessage(source){
+  const inputId = source === 'mobile' ? 'chatInlineMobileInput' : 'chatInlineInput';
+  const input = document.getElementById(inputId);
+  if(!input) return;
+  const text = String(input.value || '').trim();
+  if(!text) return;
+  const sender = getCurrentChatSender();
+  if(!sender) return;
+  input.value = '';
+  const msg = {
+    id: 'chat_' + Date.now() + '_' + Math.floor(Math.random()*10000),
+    sender,
+    text,
+    createdAt: new Date().toISOString()
+  };
+  chatMessages = (Array.isArray(chatMessages) ? chatMessages : []).concat(msg).slice(-40);
+  __ghostLastSeen = msg.createdAt;
+  saveChatMessagesToStorage();
+  renderChatMessages();
+  renderInlineChatMessages();
+  spawnGhostMessage(msg);
+  saveChatMessagesToFirebase({ silent: true });
+}
+
+async function loadChatMessagesFromFirebase(options = {}){
+  if(!CHAT_FIREBASE_URL || typeof fetch !== 'function') return [];
+  try {
+    const res = await fetch(CHAT_FIREBASE_URL, { method: 'GET', cache: 'no-cache' });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const prevLastSeen = __ghostLastSeen;
+    chatMessages = Array.isArray(data) ? data.filter(item => item && typeof item === 'object') : [];
+    saveChatMessagesToStorage();
+    renderChatMessages();
+    renderInlineChatMessages();
+    // Spawn ghosts for messages newer than last seen
+    const newMsgs = chatMessages.filter(m => m.createdAt && (!prevLastSeen || m.createdAt > prevLastSeen));
+    if(newMsgs.length > 0){
+      newMsgs.forEach((m, i) => setTimeout(() => spawnGhostMessage(m), i * 500));
+      __ghostLastSeen = newMsgs[newMsgs.length - 1].createdAt;
+    }
+    if(!options.silent) setChatStatus(`Chat aggiornata alle ${new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}.`);
+    return chatMessages;
+  } catch(err) {
+    console.warn('loadChatMessagesFromFirebase failed', err);
+    if(!options.silent) setChatStatus('Impossibile aggiornare la chat da Firebase.', true);
+    return chatMessages;
+  }
+}
+
+async function saveChatMessagesToFirebase(options = {}){
+  if(!CHAT_FIREBASE_URL || typeof fetch !== 'function') return;
+  const payload = Array.isArray(chatMessages) ? chatMessages.slice(-40) : [];
+  try {
+    const res = await fetch(CHAT_FIREBASE_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    if(!options.silent) setChatStatus('Messaggio inviato e sincronizzato.');
+  } catch(err) {
+    console.warn('saveChatMessagesToFirebase failed', err);
+    if(!options.silent) setChatStatus('Messaggio salvato localmente, sync Firebase non riuscita.', true);
+  }
+}
+
+function refreshChatMessages(){
+  loadChatMessagesFromFirebase();
+}
+
+function sendChatMessage(){
+  const senderSel = document.getElementById('chatSender');
+  const input = document.getElementById('chatMessageInput');
+  const sender = senderSel ? String(getCurrentChatSender() || '').trim() : '';
+  const text = input ? String(input.value || '').trim() : '';
+  if(!sender){ setChatStatus('Seleziona un mittente per inviare il messaggio.', true); return; }
+  if(!text){ setChatStatus('Scrivi un messaggio prima di inviare.', true); return; }
+  const msg = {
+    id: 'chat_' + Date.now() + '_' + Math.floor(Math.random()*10000),
+    sender,
+    text,
+    createdAt: new Date().toISOString()
+  };
+  chatMessages = (Array.isArray(chatMessages) ? chatMessages : []).concat(msg).slice(-40);
+  saveChatMessagesToStorage();
+  renderChatMessages();
+  if(input) input.value = '';
+  try { localStorage.setItem('chatSender', sender); } catch(e){}
+  setChatStatus('Invio messaggio...');
+  saveChatMessagesToFirebase();
+}
+
+function initChatFeature(){
+  loadChatMessagesFromStorage();
+  populateChatSenderOptions();
+  renderChatMessages();
+  renderInlineChatMessages();
+  setTimeout(() => replayGhostFeed(Array.isArray(chatMessages) ? chatMessages : []), 800);
+  const senderSel = document.getElementById('chatSender');
+  if(senderSel && !senderSel.dataset.chatBound){
+    senderSel.addEventListener('change', function(){ syncInlineSender('tab'); renderChatMessages(); });
+    senderSel.dataset.chatBound = '1';
+  }
+  const input = document.getElementById('chatMessageInput');
+  if(input && !input.dataset.chatBound){
+    input.addEventListener('keydown', function(e){
+      if(e.key === 'Enter' && !e.shiftKey){
+        e.preventDefault();
+        sendChatMessage();
+      }
+    });
+    input.dataset.chatBound = '1';
+  }
+  if(!chatPollTimer){
+    chatPollTimer = setInterval(() => { loadChatMessagesFromFirebase({ silent: true }); }, 15000);
+  }
+  if(!presenceTimer){
+    updateMyPresence();
+    loadOnlineCount();
+    presenceTimer = setInterval(() => { updateMyPresence(); loadOnlineCount(); }, 30000);
+  }
+  loadChatMessagesFromFirebase({ silent: true });
 }
 
 function inferRipTypeFromData(data){
@@ -4845,6 +5447,7 @@ function updateAthletesUI(){
   if(ta2) ta2.innerHTML = athletes.map((n,i)=>`<option value="${n}" ${i===1?'selected':''}>${n}</option>`).join('');
   if(pa) pa.innerHTML = athletes.map((n,i)=>`<option value="${n}" ${i===0?'selected':''}>${n}</option>`).join('');
   updateTableFilters();
+  if(typeof populateChatSenderOptions === 'function') populateChatSenderOptions();
 }
 function addNewAthlete(){
   const i=$id('newAthleteInput');
@@ -8449,6 +9052,7 @@ function applyTableFilter(){
     if(dateTo && rowDate && rowDate > dateTo) show = false;
     row.style.display = show ? '' : 'none';
   });
+  if(typeof populateChatSenderOptions === 'function') populateChatSenderOptions();
 }
 
 function resetTableFilter(){
@@ -9693,6 +10297,9 @@ window.addEventListener('DOMContentLoaded', function() {
   if (typeof importFromFirebase === 'function') {
     importFromFirebase();
   }
+  if (typeof initChatFeature === 'function') {
+    initChatFeature();
+  }
 });
 </script>
 <script>
@@ -9788,6 +10395,9 @@ function selectMobileSection(section) {
   // Mostra la sezione tab-content corrispondente
   if(document.getElementById('tab-' + section)) {
     document.getElementById('tab-' + section).classList.add('active');
+  }
+  if(section === 'chat' && typeof refreshChatMessages === 'function') {
+    refreshChatMessages();
   }
   // Mostra modali/section speciali sezione mobile
   if(section === 'predizione' && document.getElementById('predictionModal')) {
