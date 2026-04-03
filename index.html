@@ -427,6 +427,181 @@
   flex-shrink: 0;
 }
 @media (min-width: 901px) { #chatInlinePanelMobile { display: none; } }
+
+/* ---- Race Countdown Section ---- */
+#raceCountdownSection {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+#raceCountdownChips {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+.race-countdown-chip {
+  background: linear-gradient(135deg, #7c2d12 0%, #b45309 100%);
+  border: 2px solid rgba(255,255,255,0.18);
+  border-radius: 12px;
+  padding: 8px 7px;
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(0,0,0,.22);
+  position: relative;
+  overflow: hidden;
+}
+.race-countdown-chip.rcc-past {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  opacity: 0.7;
+}
+.race-countdown-chip .rcc-name {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.race-countdown-chip .rcc-where {
+  font-size: 0.63rem;
+  color: #fcd34d;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.race-countdown-chip .rcc-dist {
+  font-size: 0.63rem;
+  color: #fed7aa;
+  font-weight: 700;
+}
+.race-countdown-chip .rcc-timer {
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 0.5px;
+  margin-top: 5px;
+  line-height: 1;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+.race-countdown-chip .rcc-timer-label {
+  font-size: 0.61rem;
+  color: rgba(255,255,255,0.65);
+  margin-top: 2px;
+}
+.race-countdown-chip .rcc-athletes {
+  font-size: 0.61rem;
+  color: rgba(255,255,255,0.55);
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#raceManagementToggleBtn {
+  grid-column: 1 / -1;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  color: #94a3b8;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 7px 12px;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+#raceManagementPanel {
+  grid-column: 1 / -1;
+  background: linear-gradient(160deg, #0f172a 0%, #1e293b 100%);
+  border: 1px solid rgba(99,102,241,0.35);
+  border-radius: 12px;
+  padding: 12px;
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+}
+#raceManagementPanel.rmp-open { display: flex; }
+.rmp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.rmp-form input, .rmp-form select {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(99,102,241,0.35);
+  border-radius: 8px;
+  color: #e2e8f0;
+  padding: 7px 10px;
+  font-size: 0.83rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+.rmp-form input::placeholder { color: rgba(255,255,255,0.28); }
+.rmp-form label {
+  font-size: 0.73rem;
+  color: #94a3b8;
+  font-weight: 700;
+}
+.rmp-cancel-btn {
+  flex:0 0 auto;
+  padding:7px 12px;
+  background:rgba(100,116,139,0.18);
+  color:#94a3b8;
+  border:1px solid rgba(100,116,139,0.35);
+  border-radius:8px;
+  font-size:0.78rem;
+  cursor:pointer;
+  transition:background .2s;
+}
+.rmp-cancel-btn:hover { background:rgba(100,116,139,0.32); }
+.rmp-race-edit {
+  background:none;
+  border:none;
+  color:#a78bfa;
+  cursor:pointer;
+  font-size:0.82rem;
+  padding:2px 5px;
+  opacity:.8;
+  transition:opacity .15s;
+}
+.rmp-race-edit:hover { opacity:1; }
+.rmp-add-btn {
+  background: linear-gradient(135deg, #b45309 0%, #d97706 100%);
+  border: none;
+  border-radius: 9px;
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.85rem;
+  padding: 9px 0;
+  cursor: pointer;
+  width: 100%;
+}
+.rmp-race-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 0.76rem;
+  color: #e2e8f0;
+}
+.rmp-race-row .rmp-rname { flex: 1; font-weight: 700; }
+.rmp-race-row .rmp-rmeta { color: #94a3b8; font-size: 0.68rem; }
+.rmp-race-del {
+  background: #ef4444;
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  padding: 3px 8px;
+  font-size: 0.72rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
 .mobile-kpi-chip .chip-fill {
   height: 100%;
   border-radius: 2px;
@@ -2497,6 +2672,38 @@ function addRowFromImportedData(row) {
     <div class="ci-inline-header" onclick="toggleInlineChatPanel('mobile')" style="cursor:pointer;"><span>💬 Chat Team</span><div style="display:flex;align-items:center;gap:4px;"><select id="chatInlineSenderMobile" class="ci-sender-select" onchange="syncInlineSender('mobile')" onclick="event.stopPropagation()"></select><button class="ci-toggle-btn" onclick="event.stopPropagation();toggleInlineChatPanel('mobile')" title="Nascondi/Mostra">▼</button></div></div>
     <div id="chatInlineMsgsMobile"></div>
     <div class="ci-send-area"><input id="chatInlineMobileInput" type="text" placeholder="Scrivi un messaggio..." maxlength="200" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendInlineChatMessage('mobile');}"><button id="chatInlineMobileSendBtn" onclick="sendInlineChatMessage('mobile')">➤</button></div>
+  </div>
+  <!-- Race Countdown Section -->
+  <div id="raceCountdownSection">
+    <div id="raceCountdownChips"></div>
+    <button id="raceManagementToggleBtn" onclick="toggleRaceManagement()">
+      <span>🏁 Gestisci gare</span><span id="raceManagementArrow">▼</span>
+    </button>
+    <div id="raceManagementPanel">
+      <div class="rmp-form">
+        <label>Nome gara</label>
+        <input id="rmpName" type="text" placeholder="es. Maratona di Milano">
+        <label>Luogo</label>
+        <input id="rmpWhere" type="text" placeholder="es. Milano">
+        <label>Data</label>
+        <input id="rmpDate" type="date">
+        <label>Distanza</label>
+        <select id="rmpDistSel" onchange="toggleRmpCustomDist()">
+          <option value="42.195">Maratona (42,195 km)</option>
+          <option value="21.0975">Mezza maratona (21 km)</option>
+          <option value="10">10 km</option>
+          <option value="custom">Personalizzata…</option>
+        </select>
+        <input id="rmpDistCustom" type="number" min="0.1" step="0.1" placeholder="km personalizzati" style="display:none;">
+        <label>Atleti impegnati</label>
+        <select id="rmpAthletes" multiple style="min-height:80px;"></select>
+        <div style="display:flex;gap:6px;">
+          <button class="rmp-add-btn" id="rmpSubmitBtn" onclick="addRace()">➕ Aggiungi gara</button>
+          <button class="rmp-cancel-btn" id="rmpCancelBtn" onclick="cancelEditRace()" style="display:none;">✕ Annulla</button>
+        </div>
+      </div>
+      <div id="rmpRaceList"></div>
+    </div>
   </div>
   <div class="mobile-kpi-after" id="mobileKpiAfter3D">
     <div class="mobile-kpi-chip"><div class="chip-v" id="mobileKpiKmWeek">0</div><div class="chip-l" id="mobileKpiKmLabel">Km settimana</div><div class="chip-bar"><div class="chip-fill" id="mobileKpiKmBar" style="width:0%"></div></div><div class="chip-target" id="mobileKpiKmTarget">/ 50 km</div></div>
@@ -5000,6 +5207,250 @@ async function saveChatMessagesToFirebase(options = {}){
 
 function refreshChatMessages(){
   loadChatMessagesFromFirebase();
+}
+
+/* ============================================================
+   RACE COUNTDOWN
+   ============================================================ */
+let races = [];
+let editingRaceId = null;
+const RACES_KEY = 'raceCountdowns';
+const RACE_DIST_PRESETS = {'42.195':'Maratona','21.0975':'Mezza','10':'10 km'};
+let raceCountdownTimer = null;
+const RACES_FIREBASE_URL = FIREBASE_URL.replace(/\/data\.json$/i, '/races.json');
+
+function loadRaces(){
+  try { races = JSON.parse(localStorage.getItem(RACES_KEY) || '[]'); } catch(e){ races = []; }
+}
+function saveRaces(){
+  try { localStorage.setItem(RACES_KEY, JSON.stringify(races)); } catch(e){}
+}
+
+async function saveRacesToFirebase(){
+  if(!RACES_FIREBASE_URL || typeof fetch !== 'function') return;
+  try {
+    await fetch(RACES_FIREBASE_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(races)
+    });
+  } catch(e){ console.warn('saveRacesToFirebase failed', e); }
+}
+
+async function loadRacesFromFirebase(){
+  if(!RACES_FIREBASE_URL || typeof fetch !== 'function') return;
+  try {
+    const res = await fetch(RACES_FIREBASE_URL, { method: 'GET', cache: 'no-cache' });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if(Array.isArray(data) && data.length > 0){
+      races = data.filter(r => r && r.id && r.name && r.date);
+      saveRaces();
+      renderCountdownChips();
+      renderRaceManagementList();
+    }
+  } catch(e){ console.warn('loadRacesFromFirebase failed', e); }
+}
+
+function toggleRmpCustomDist(){
+  const sel = document.getElementById('rmpDistSel');
+  const custom = document.getElementById('rmpDistCustom');
+  if(!sel || !custom) return;
+  custom.style.display = sel.value === 'custom' ? '' : 'none';
+}
+
+function addRace(){
+  const name = (document.getElementById('rmpName')?.value || '').trim();
+  const where = (document.getElementById('rmpWhere')?.value || '').trim();
+  const date = document.getElementById('rmpDate')?.value || '';
+  const distSel = document.getElementById('rmpDistSel')?.value || '42.195';
+  const distCustom = parseFloat(document.getElementById('rmpDistCustom')?.value || '0');
+  const dist = distSel === 'custom' ? (distCustom > 0 ? distCustom : null) : parseFloat(distSel);
+  const athletesSel = document.getElementById('rmpAthletes');
+  const athletesChosen = athletesSel ? Array.from(athletesSel.selectedOptions).map(o => o.value) : [];
+  if(!name){ alert('Inserisci il nome della gara'); return; }
+  if(!date){ alert('Inserisci la data della gara'); return; }
+  if(!dist){ alert('Inserisci una distanza valida'); return; }
+  if(editingRaceId){
+    const idx = races.findIndex(r => r.id === editingRaceId);
+    if(idx !== -1) races[idx] = { id: editingRaceId, name, where: where || '', dist, date, athletes: athletesChosen };
+    editingRaceId = null;
+    const btn = document.getElementById('rmpSubmitBtn');
+    if(btn) btn.textContent = '➕ Aggiungi gara';
+    const cancel = document.getElementById('rmpCancelBtn');
+    if(cancel) cancel.style.display = 'none';
+  } else {
+    races.push({ id: 'race_' + Date.now(), name, where: where || '', dist, date, athletes: athletesChosen });
+  }
+  saveRaces();
+  saveRacesToFirebase();
+  renderCountdownChips();
+  renderRaceManagementList();
+  // reset form
+  ['rmpName','rmpWhere','rmpDate'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  const distSelEl = document.getElementById('rmpDistSel');
+  if(distSelEl) distSelEl.value = '42.195';
+  toggleRmpCustomDist();
+  if(athletesSel) Array.from(athletesSel.options).forEach(o => o.selected = false);
+}
+
+function editRace(id){
+  const r = races.find(r => r.id === id);
+  if(!r) return;
+  populateRmpAthletes();
+  const panel = document.getElementById('raceManagementPanel');
+  if(panel && !panel.classList.contains('rmp-open')){
+    panel.classList.add('rmp-open');
+    const arrow = document.getElementById('raceManagementArrow');
+    if(arrow) arrow.textContent = '▲';
+  }
+  const nameEl = document.getElementById('rmpName'); if(nameEl) nameEl.value = r.name;
+  const whereEl = document.getElementById('rmpWhere'); if(whereEl) whereEl.value = r.where || '';
+  const dateEl = document.getElementById('rmpDate'); if(dateEl) dateEl.value = r.date;
+  const distSel = document.getElementById('rmpDistSel');
+  const knownKey = Object.keys(RACE_DIST_PRESETS).find(k => parseFloat(k) === r.dist);
+  if(distSel){
+    if(knownKey){ distSel.value = knownKey; }
+    else { distSel.value = 'custom'; const dc = document.getElementById('rmpDistCustom'); if(dc){ dc.value = r.dist; dc.style.display = ''; } }
+    toggleRmpCustomDist();
+  }
+  const athletesSel = document.getElementById('rmpAthletes');
+  if(athletesSel){
+    Array.from(athletesSel.options).forEach(o => { o.selected = (r.athletes || []).includes(o.value); });
+  }
+  editingRaceId = id;
+  const btn = document.getElementById('rmpSubmitBtn'); if(btn) btn.textContent = '💾 Salva modifiche';
+  const cancel = document.getElementById('rmpCancelBtn'); if(cancel) cancel.style.display = '';
+  document.getElementById('rmpName')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function cancelEditRace(){
+  editingRaceId = null;
+  ['rmpName','rmpWhere','rmpDate'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  const distSelEl = document.getElementById('rmpDistSel'); if(distSelEl) distSelEl.value = '42.195';
+  toggleRmpCustomDist();
+  const athletesSel = document.getElementById('rmpAthletes');
+  if(athletesSel) Array.from(athletesSel.options).forEach(o => o.selected = false);
+  const btn = document.getElementById('rmpSubmitBtn'); if(btn) btn.textContent = '➕ Aggiungi gara';
+  const cancel = document.getElementById('rmpCancelBtn'); if(cancel) cancel.style.display = 'none';
+}
+
+function removeRace(id){
+  races = races.filter(r => r.id !== id);
+  saveRaces();
+  saveRacesToFirebase();
+  renderCountdownChips();
+  renderRaceManagementList();
+}
+
+function getRaceCountdownStr(dateStr){
+  const now = new Date();
+  const target = new Date(dateStr + 'T00:00:00');
+  const diff = target - now;
+  if(diff <= 0) return { label: 'Gara passata', past: true, short: '—' };
+  const days = Math.floor(diff / 86400000);
+  const hours = Math.floor((diff % 86400000) / 3600000);
+  const mins = Math.floor((diff % 3600000) / 60000);
+  if(days > 1) return { label: `tra ${days} giorni`, past: false, short: `${days}g ${hours}h` };
+  if(days === 1) return { label: 'domani', past: false, short: `1g ${hours}h ${mins}m` };
+  return { label: 'oggi!', past: false, short: `${hours}h ${mins}m` };
+}
+
+function renderCountdownChips(){
+  const box = document.getElementById('raceCountdownChips');
+  if(!box) return;
+  if(!races.length){
+    box.innerHTML = '<div style="color:rgba(255,255,255,0.3);font-size:0.75rem;text-align:center;padding:8px 0;grid-column:1/-1;">Nessuna gara programmata</div>';
+    return;
+  }
+  const sorted = races.slice().sort((a,b)=> new Date(a.date) - new Date(b.date));
+  box.innerHTML = sorted.map(r => {
+    const cd = getRaceCountdownStr(r.date);
+    const distLabel = RACE_DIST_PRESETS[String(r.dist)] || r.dist + ' km';
+    const athStr = r.athletes && r.athletes.length ? r.athletes.join(', ') : '';
+    return `<div class="race-countdown-chip${cd.past?' rcc-past':''}">
+      <div class="rcc-name" title="${r.name}">${r.name}</div>
+      ${r.where ? `<div class="rcc-where">📍 ${r.where}</div>` : ''}
+      <div class="rcc-dist">🏃 ${distLabel}</div>
+      <div class="rcc-timer" data-race-id="${r.id}">${cd.short}</div>
+      <div class="rcc-timer-label">${cd.label}</div>
+      ${athStr ? `<div class="rcc-athletes">👤 ${athStr}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function renderRaceManagementList(){
+  const box = document.getElementById('rmpRaceList');
+  if(!box) return;
+  if(!races.length){ box.innerHTML = '<div style="color:#64748b;font-size:0.76rem;text-align:center;padding:6px 0;">Nessuna gara</div>'; return; }
+  const sorted = races.slice().sort((a,b)=> new Date(a.date) - new Date(b.date));
+  box.innerHTML = sorted.map(r => {
+    const distLabel = RACE_DIST_PRESETS[String(r.dist)] || r.dist + ' km';
+    return `<div class="rmp-race-row">
+      <div><div class="rmp-rname">${r.name}</div><div class="rmp-rmeta">${r.date} · ${distLabel}${r.where?' · '+r.where:''}</div></div>
+      <div style="display:flex;gap:2px;align-items:center;">
+        <button class="rmp-race-edit" onclick="editRace('${r.id}')" title="Modifica">✏️</button>
+        <button class="rmp-race-del" onclick="removeRace('${r.id}')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function populateRmpAthletes(){
+  const sel = document.getElementById('rmpAthletes');
+  if(!sel) return;
+  const names = Array.isArray(athletes) ? athletes : [];
+  sel.innerHTML = names.map(a => `<option value="${a}">${a}</option>`).join('');
+}
+
+function toggleRaceManagement(){
+  const panel = document.getElementById('raceManagementPanel');
+  const arrow = document.getElementById('raceManagementArrow');
+  if(!panel) return;
+  const open = panel.classList.toggle('rmp-open');
+  if(arrow) arrow.textContent = open ? '▲' : '▼';
+  if(open){
+    populateRmpAthletes();
+    renderRaceManagementList();
+  }
+}
+
+function tickRaceCountdowns(){
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const before = races.length;
+  races = races.filter(r => {
+    const raceDay = new Date(r.date + 'T00:00:00');
+    raceDay.setHours(0,0,0,0);
+    return raceDay >= today; // rimuove se la data è già passata (giorno dopo)
+  });
+  if(races.length !== before){
+    saveRaces();
+    saveRacesToFirebase();
+    renderCountdownChips();
+    renderRaceManagementList();
+    return;
+  }
+  document.querySelectorAll('.rcc-timer[data-race-id]').forEach(el => {
+    const id = el.dataset.raceId;
+    const race = races.find(r => r.id === id);
+    if(!race) return;
+    const cd = getRaceCountdownStr(race.date);
+    el.textContent = cd.short;
+    const chip = el.closest('.race-countdown-chip');
+    if(chip){
+      chip.classList.toggle('rcc-past', cd.past);
+      const lbl = chip.querySelector('.rcc-timer-label');
+      if(lbl) lbl.textContent = cd.label;
+    }
+  });
+}
+
+function initRaceCountdowns(){
+  loadRaces();
+  renderCountdownChips();
+  loadRacesFromFirebase();
+  if(!raceCountdownTimer) raceCountdownTimer = setInterval(tickRaceCountdowns, 30000);
 }
 
 function sendChatMessage(){
@@ -10036,6 +10487,7 @@ window.addEventListener('load', ()=>{
 
   loadSports();
   loadAthletes();
+  initRaceCountdowns();
   // Ensure global window.athletes mirrors internal `athletes` array for older code/fallbacks
   try{ if(!Array.isArray(window.athletes) || window.athletes.length === 0) window.athletes = Array.isArray(athletes) ? athletes.slice() : []; }catch(e){}
   loadAthletesToRemove();
