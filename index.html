@@ -441,7 +441,6 @@
   gap: 6px;
 }
 .race-countdown-chip {
-  background: linear-gradient(135deg, #7c2d12 0%, #b45309 100%);
   border: 2px solid rgba(255,255,255,0.18);
   border-radius: 12px;
   padding: 8px 7px;
@@ -449,6 +448,33 @@
   box-shadow: 0 6px 16px rgba(0,0,0,.22);
   position: relative;
   overflow: hidden;
+  transition: background 0.5s;
+}
+/* colore dinamico via classi JS */
+.race-countdown-chip.rcc-far {
+  background: linear-gradient(135deg, #14532d 0%, #16a34a 100%);
+  border-color: rgba(74,222,128,0.35);
+  box-shadow: 0 6px 16px rgba(22,163,74,0.3);
+}
+.race-countdown-chip.rcc-mid {
+  background: linear-gradient(135deg, #713f12 0%, #ca8a04 100%);
+  border-color: rgba(250,204,21,0.35);
+  box-shadow: 0 6px 16px rgba(202,138,4,0.3);
+}
+.race-countdown-chip.rcc-close {
+  background: linear-gradient(135deg, #7f1d1d 0%, #dc2626 100%);
+  border-color: rgba(252,165,165,0.45);
+  box-shadow: 0 6px 16px rgba(220,38,38,0.4);
+}
+.race-countdown-chip.rcc-urgent {
+  background: linear-gradient(135deg, #7f1d1d 0%, #dc2626 100%);
+  border-color: rgba(252,165,165,0.6);
+  box-shadow: 0 6px 24px rgba(220,38,38,0.55);
+  animation: rcc-blink 1s ease-in-out infinite;
+}
+@keyframes rcc-blink {
+  0%, 100% { opacity: 1; box-shadow: 0 6px 24px rgba(220,38,38,0.55); }
+  50% { opacity: 0.65; box-shadow: 0 2px 8px rgba(220,38,38,0.2); }
 }
 .race-countdown-chip.rcc-past {
   background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
@@ -501,107 +527,139 @@
 }
 #raceManagementToggleBtn {
   grid-column: 1 / -1;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 10px;
-  color: #94a3b8;
-  font-size: 0.78rem;
-  font-weight: 700;
-  padding: 7px 12px;
+  background: linear-gradient(135deg, rgba(180,83,9,0.35) 0%, rgba(217,119,6,0.22) 100%);
+  border: 1px solid rgba(251,191,36,0.35);
+  border-radius: 12px;
+  color: #fcd34d;
+  font-size: 0.82rem;
+  font-weight: 800;
+  padding: 9px 13px;
   cursor: pointer;
   text-align: left;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  letter-spacing: 0.3px;
+  box-shadow: 0 2px 10px rgba(180,83,9,0.25);
+  transition: background .2s, box-shadow .2s;
+}
+#raceManagementToggleBtn:hover {
+  background: linear-gradient(135deg, rgba(180,83,9,0.55) 0%, rgba(217,119,6,0.38) 100%);
+  box-shadow: 0 4px 16px rgba(180,83,9,0.4);
 }
 #raceManagementPanel {
   grid-column: 1 / -1;
-  background: linear-gradient(160deg, #0f172a 0%, #1e293b 100%);
-  border: 1px solid rgba(99,102,241,0.35);
-  border-radius: 12px;
-  padding: 12px;
+  background: linear-gradient(160deg, #1c0f05 0%, #2d1a07 60%, #1e1a10 100%);
+  border: 1.5px solid rgba(251,191,36,0.28);
+  border-radius: 14px;
+  padding: 14px 13px;
   display: none;
   flex-direction: column;
-  gap: 10px;
+  gap: 11px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.45), inset 0 1px 0 rgba(251,191,36,0.1);
 }
 #raceManagementPanel.rmp-open { display: flex; }
 .rmp-form {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 6px;
+  background: rgba(0,0,0,0.18);
+  border-radius: 10px;
+  padding: 10px;
+  border: 1px solid rgba(251,191,36,0.12);
 }
 .rmp-form input, .rmp-form select {
-  background: rgba(255,255,255,0.07);
-  border: 1px solid rgba(99,102,241,0.35);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(251,191,36,0.28);
   border-radius: 8px;
-  color: #e2e8f0;
+  color: #fef3c7;
   padding: 7px 10px;
   font-size: 0.83rem;
   width: 100%;
   box-sizing: border-box;
+  transition: border-color .2s, background .2s;
 }
-.rmp-form input::placeholder { color: rgba(255,255,255,0.28); }
+.rmp-form input:focus, .rmp-form select:focus {
+  outline: none;
+  border-color: rgba(251,191,36,0.7);
+  background: rgba(255,255,255,0.1);
+}
+.rmp-form input::placeholder { color: rgba(253,224,132,0.3); }
+.rmp-form select option { background: #2d1a07; color: #fef3c7; }
 .rmp-form label {
-  font-size: 0.73rem;
-  color: #94a3b8;
-  font-weight: 700;
+  font-size: 0.71rem;
+  color: #fbbf24;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 .rmp-cancel-btn {
-  flex:0 0 auto;
-  padding:7px 12px;
-  background:rgba(100,116,139,0.18);
-  color:#94a3b8;
-  border:1px solid rgba(100,116,139,0.35);
-  border-radius:8px;
-  font-size:0.78rem;
-  cursor:pointer;
-  transition:background .2s;
+  flex: 0 0 auto;
+  padding: 8px 13px;
+  background: rgba(100,116,139,0.15);
+  color: #94a3b8;
+  border: 1px solid rgba(100,116,139,0.3);
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .2s, color .2s;
 }
-.rmp-cancel-btn:hover { background:rgba(100,116,139,0.32); }
+.rmp-cancel-btn:hover { background: rgba(100,116,139,0.3); color: #e2e8f0; }
 .rmp-race-edit {
-  background:none;
-  border:none;
-  color:#a78bfa;
-  cursor:pointer;
-  font-size:0.82rem;
-  padding:2px 5px;
-  opacity:.8;
-  transition:opacity .15s;
+  background: rgba(167,139,250,0.12);
+  border: 1px solid rgba(167,139,250,0.3);
+  border-radius: 6px;
+  color: #c4b5fd;
+  cursor: pointer;
+  font-size: 0.78rem;
+  padding: 3px 7px;
+  transition: background .15s;
 }
-.rmp-race-edit:hover { opacity:1; }
+.rmp-race-edit:hover { background: rgba(167,139,250,0.28); }
 .rmp-add-btn {
-  background: linear-gradient(135deg, #b45309 0%, #d97706 100%);
+  background: linear-gradient(135deg, #b45309 0%, #d97706 60%, #f59e0b 100%);
   border: none;
   border-radius: 9px;
   color: #fff;
-  font-weight: 800;
-  font-size: 0.85rem;
-  padding: 9px 0;
+  font-weight: 900;
+  font-size: 0.87rem;
+  padding: 10px 0;
   cursor: pointer;
   width: 100%;
+  box-shadow: 0 3px 12px rgba(180,83,9,0.4);
+  letter-spacing: 0.3px;
+  transition: box-shadow .2s, filter .2s;
 }
+.rmp-add-btn:hover { filter: brightness(1.1); box-shadow: 0 5px 18px rgba(180,83,9,0.6); }
 .rmp-race-row {
   display: flex;
   align-items: center;
-  gap: 6px;
-  background: rgba(255,255,255,0.04);
-  border-radius: 8px;
-  padding: 6px 8px;
-  font-size: 0.76rem;
-  color: #e2e8f0;
+  gap: 8px;
+  background: linear-gradient(135deg, rgba(124,45,18,0.32) 0%, rgba(180,83,9,0.18) 100%);
+  border: 1px solid rgba(251,191,36,0.18);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 0.78rem;
+  color: #fef3c7;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
 }
-.rmp-race-row .rmp-rname { flex: 1; font-weight: 700; }
-.rmp-race-row .rmp-rmeta { color: #94a3b8; font-size: 0.68rem; }
+.rmp-race-row .rmp-rname { flex: 1; font-weight: 800; color: #fff; }
+.rmp-race-row .rmp-rmeta { color: #fcd34d; font-size: 0.67rem; opacity: 0.8; }
 .rmp-race-del {
-  background: #ef4444;
+  background: linear-gradient(135deg, #b91c1c, #ef4444);
   border: none;
   border-radius: 6px;
   color: #fff;
-  padding: 3px 8px;
-  font-size: 0.72rem;
+  padding: 4px 9px;
+  font-size: 0.73rem;
+  font-weight: 700;
   cursor: pointer;
   flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(239,68,68,0.35);
+  transition: filter .15s;
 }
+.rmp-race-del:hover { filter: brightness(1.15); }
 .mobile-kpi-chip .chip-fill {
   height: 100%;
   border-radius: 2px;
@@ -2347,15 +2405,8 @@ body.dark-mode .prediction-chart-container {
 }
 </style>
 
-<!-- PULSANTI ESPORTA/IMPORTA: MOBILE (dopo i tab) -->
-<!-- PULSANTI ESPORTA/IMPORTA: DESKTOP (sopra la griglia kpi) -->
-<div id="dataExportImportBarDesktop" class="desktop-only" style="display:flex;gap:10px;margin:0 0 18px 0;align-items:center;">
-  <button onclick="exportAllData()">💾 Salva dati</button>
-  <label style="margin:0;cursor:pointer;">
-    <span style="display:inline-block;">📂 Importa dati</span>
-    <input type="file" id="importDataFileDesktop" accept="application/json" onchange="importAllDataFromFile(event)">
-  </label>
-</div>
+<!-- file input nascosto per desktop export/import nel header -->
+<input type="file" id="importDataFileDesktop" accept="application/json" onchange="importAllDataFromFile(event)" style="display:none;">
 <style>
 @media (max-width: 900px) {
   .mobile-only { display: flex !important; }
@@ -2369,18 +2420,34 @@ body.dark-mode .prediction-chart-container {
 </head>
 <script>
 function exportAllData() {
-  const data = getData();
-  const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+  let dati = [];
+  try {
+    dati = getDataRaw().map(x=>({ date:x.date, athlete:x.athlete, km:x.km, minutes:x.minutes, time:x.time, rpe:x.rpe, hr:x.hr, type:x.type, activityType:x.activityType, raceDistance:x.raceDistance||'', note:x.note }));
+  } catch(e) {}
+  const ripPayload = Array.isArray(ripetuteSessions)
+    ? ripetuteSessions.map(s => ({ id:s.id, date:s.date, athlete:s.athlete, type:s.type||'Ripetute', warmup_min:+(s.warmup_min||0), cooldown_min:+(s.cooldown_min||0), reps:Array.isArray(s.reps)?s.reps:[] }))
+    : [];
+  const payload = {
+    data: dati || [],
+    ripetuteSessions: ripPayload || [],
+    athletesProfile: (typeof getAthletesProfilePayload === 'function' ? getAthletesProfilePayload() : null) || [],
+    topScoreRules: { malePct: Number(topScoreRules?.malePct||0), femalePct: Number(topScoreRules?.femalePct||0), otherPct: Number(topScoreRules?.otherPct||0) },
+    sportEquivalence: (typeof sportEquivalence !== 'undefined' ? sportEquivalence : null) || {},
+    kpiTargets: { km: MOBILE_KPI_TARGETS?.km, carico: MOBILE_KPI_TARGETS?.carico, trimp: MOBILE_KPI_TARGETS?.trimp, risk: MOBILE_KPI_TARGETS?.risk },
+    kpiParams: (typeof KPI_PARAMS !== 'undefined' ? KPI_PARAMS : null) || {},
+    athletesToRemove: Array.isArray(athletesToRemove) ? athletesToRemove : [],
+    audioEnabled: window.__audioEnabled !== false,
+    races: Array.isArray(races) ? races : [],
+    savedAt: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type: 'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
   a.download = 'allenamenti_export.json';
   document.body.appendChild(a);
   a.click();
-  setTimeout(()=>{
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, 200);
+  setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
 }
 
 function importAllDataFromFile(event) {
@@ -2390,17 +2457,14 @@ function importAllDataFromFile(event) {
   reader.onload = function(e) {
     try {
       const imported = JSON.parse(e.target.result);
-      if (!Array.isArray(imported)) throw new Error('Formato dati non valido');
-      // Svuota la tabella e inserisci i dati importati
-      clearAllTableRows();
-      imported.forEach(addRowFromImportedData);
+      if (!imported || typeof imported !== 'object') throw new Error('Formato dati non valido');
+      applyImportedPayload(imported);
       alert('Dati importati correttamente!');
     } catch (err) {
       alert('Errore importazione dati: ' + err.message);
     }
   };
   reader.readAsText(file);
-  // Reset input file per permettere re-import multipli
   event.target.value = '';
 }
 
@@ -2465,7 +2529,7 @@ function addRowFromImportedData(row) {
   </div>
 </div>
 <div id="mobileMenuOverlay" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(30,41,59,0.45);z-index:10000;"></div>
-<nav id="mobileMenu" style="display:none;position:fixed;top:90px;left:18px;z-index:10002;background:#fff;border-radius:18px;box-shadow:0 4px 24px #0005;padding:18px 12px;min-width:180px;">
+<nav id="mobileMenu" style="display:none;position:fixed;top:90px;left:18px;z-index:10002;background:#fff;border-radius:18px;box-shadow:0 4px 24px #0005;padding:18px 12px;min-width:180px;max-height:calc(100vh - 100px);overflow-y:auto;">
     <!-- Pulsanti esporta/importa in fondo -->
 
   <button style="display:block;width:100%;margin-bottom:8px;font-size:1.1em;" data-section="dashboard">📊 Dashboard</button>
@@ -2519,6 +2583,11 @@ function addRowFromImportedData(row) {
     <button id="importStravaBtn" type="button" style="background:#0ea5e9;color:#fff;font-weight:700;">⬇️ Importa Strava</button>
     <button id="openStravaConfigBtn" type="button" style="background:#6366f1;color:#fff;font-weight:700;">⚙️ Configura Strava</button>
     <button id="kpiInfoBtn" type="button" style="background:#6366f1;color:#fff;font-weight:700;" onclick="openKpiModal()">❓ Spiegazione KPI/Algoritmi</button>
+    <button onclick="exportAllData()" style="background:#10b981;color:#fff;font-weight:700;">💾 Salva dati</button>
+    <label style="margin:0;cursor:pointer;">
+      <span style="display:inline-block;padding:6px 12px;background:#f59e0b;color:#fff;font-weight:700;border-radius:6px;font-size:0.95em;cursor:pointer;">📂 Importa dati</span>
+      <input type="file" id="importDataFileHeader" accept="application/json" onchange="importAllDataFromFile(event)" style="display:none;">
+    </label>
   </div>
 </header>
 
@@ -4290,120 +4359,105 @@ window.announceAthlete = function(athleteName, rank, sex) {
 
 const FIREBASE_URL = 'https://running-7a13f-default-rtdb.europe-west1.firebasedatabase.app/data.json';
 
+function applyImportedPayload(data) {
+  if (!data) { console.warn('Nessun dato trovato!'); return; }
+  try {
+    try { localStorage.setItem('importedData', JSON.stringify(data)); } catch(e){}
+    let tablePayload = null;
+    let hasRipPayload = false;
+    let ripPayload = [];
+    let athletesProfilePayload = null;
+    let topScoreRulesPayload = null;
+
+    if (Array.isArray(data)) {
+      tablePayload = data;
+    } else if (data && typeof data === 'object') {
+      if (Array.isArray(data.data)) tablePayload = data.data;
+      else if (Array.isArray(data.tableData)) tablePayload = data.tableData;
+      else if (Array.isArray(data.activities)) tablePayload = data.activities;
+
+      if (Array.isArray(data.athletesProfile)) athletesProfilePayload = data.athletesProfile;
+      else if (Array.isArray(data.athletes) && data.athletes.length && typeof data.athletes[0] === 'object') athletesProfilePayload = data.athletes;
+      if (data.topScoreRules && typeof data.topScoreRules === 'object') topScoreRulesPayload = data.topScoreRules;
+
+      if (data.kpiTargets && typeof data.kpiTargets === 'object') {
+        const kt = data.kpiTargets;
+        if (kt.km)     MOBILE_KPI_TARGETS.km     = Number(kt.km);
+        if (kt.carico) MOBILE_KPI_TARGETS.carico = Number(kt.carico);
+        if (kt.trimp)  MOBILE_KPI_TARGETS.trimp  = Number(kt.trimp);
+        if (kt.risk != null) MOBILE_KPI_TARGETS.risk = Number(kt.risk);
+        try { localStorage.setItem('mobileKpiTargets', JSON.stringify(MOBILE_KPI_TARGETS)); } catch(e){}
+      }
+      if (data.kpiParams && typeof data.kpiParams === 'object') {
+        try { Object.assign(KPI_PARAMS, data.kpiParams || {}); localStorage.setItem('kpiParams', JSON.stringify(KPI_PARAMS)); } catch(e){}
+      }
+      if (Object.prototype.hasOwnProperty.call(data, 'audioEnabled')) {
+        window.__audioEnabled = data.audioEnabled !== false;
+        try { localStorage.setItem('audioEnabled', window.__audioEnabled ? 'true' : 'false'); } catch(e){}
+        const btn = document.getElementById('mobileAudioToggleBtn');
+        if(btn) btn.textContent = window.__audioEnabled ? '🔊 Audio ON' : '🔇 Audio OFF';
+      }
+      if (Object.prototype.hasOwnProperty.call(data, 'ripetuteSessions')) {
+        hasRipPayload = true;
+        ripPayload = Array.isArray(data.ripetuteSessions) ? data.ripetuteSessions : [];
+      }
+      // Gare
+      if (Array.isArray(data.races) && data.races.length > 0) {
+        races = data.races.filter(r => r && r.id && r.name && r.date);
+        try { localStorage.setItem('raceCountdowns', JSON.stringify(races)); } catch(e){}
+        if (typeof renderCountdownChips === 'function') renderCountdownChips();
+        if (typeof renderRaceManagementList === 'function') renderRaceManagementList();
+      }
+    }
+
+    if (topScoreRulesPayload && typeof applyTopScoreRulesPayload === 'function') applyTopScoreRulesPayload(topScoreRulesPayload);
+    if (Array.isArray(athletesProfilePayload) && typeof applyAthletesProfilePayload === 'function') applyAthletesProfilePayload(athletesProfilePayload);
+    if (Array.isArray(data.athletesToRemove) && data.athletesToRemove.length > 0) {
+      if(typeof applyAthletesToRemove === 'function') applyAthletesToRemove(data.athletesToRemove);
+    }
+    if (typeof popolaTabellaDaJSON === 'function' && Array.isArray(tablePayload)) popolaTabellaDaJSON(tablePayload);
+
+    if (hasRipPayload) {
+      const normalizedRip = ripPayload
+        .filter(s => s && typeof s === 'object')
+        .map((s, idx) => ({
+          id: s.id || ('fb_rip_' + Date.now() + '_' + idx),
+          date: s.date || (new Date()).toISOString().slice(0,10),
+          athlete: s.athlete || '',
+          type: s.type || 'Ripetute',
+          warmup_min: +(s.warmup_min || 0),
+          cooldown_min: +(s.cooldown_min || 0),
+          reps: Array.isArray(s.reps) ? s.reps.filter(r => typeof _isMeaningfulRep === 'function' ? _isMeaningfulRep(r) : true) : []
+        }))
+        .filter(s => s.athlete && Array.isArray(s.reps) && s.reps.length > 0);
+      ripetuteSessions = normalizedRip;
+      try { localStorage.setItem('ripetuteSessions', JSON.stringify(ripetuteSessions)); } catch(e) {}
+      if (typeof renderRipSessionsList === 'function') renderRipSessionsList();
+    }
+
+    if(typeof updateCharts === 'function') updateCharts();
+    if(typeof updateCharts === 'function') {
+      setTimeout(()=>{
+        const combinedData = (typeof getData === 'function') ? getData() : [];
+        const fA = $id('athleteFilter') ? $id('athleteFilter').value : 'all';
+        const t = $id('typeFilter') ? $id('typeFilter').value : 'all';
+        const da = $id('dateFrom') ? $id('dateFrom').value : '';
+        const a = $id('dateTo') ? $id('dateTo').value : '';
+        const filt = combinedData.filter(d =>
+          (fA === 'all' || d.athlete === fA) &&
+          (t === 'all' || d.type === t || d.activityType === t) &&
+          (!da || d.date >= da) && (!a || d.date <= a)
+        );
+        if(typeof updateKPI === 'function') updateKPI(filt, computeACWR(combinedData));
+      }, 100);
+    }
+  } catch (e) { console.error('Errore applicazione payload importato', e); }
+}
+
 window.importFromFirebase = function() {
   fetch(FIREBASE_URL)
     .then(res => res.json())
-    .then(data => {
-      if (!data) { console.warn('Nessun dato trovato su Firebase!'); return; }
-      try {
-        localStorage.setItem('importedData', JSON.stringify(data));
-        let tablePayload = null;
-        let hasRipPayload = false;
-        let ripPayload = [];
-        let athletesProfilePayload = null;
-        let topScoreRulesPayload = null;
-
-        if (Array.isArray(data)) {
-          // formato legacy: solo tabella
-          tablePayload = data;
-        } else if (data && typeof data === 'object') {
-          if (Array.isArray(data.data)) tablePayload = data.data;
-          else if (Array.isArray(data.tableData)) tablePayload = data.tableData;
-          else if (Array.isArray(data.activities)) tablePayload = data.activities;
-
-          if (Array.isArray(data.athletesProfile)) athletesProfilePayload = data.athletesProfile;
-          else if (Array.isArray(data.athletes) && data.athletes.length && typeof data.athletes[0] === 'object') athletesProfilePayload = data.athletes;
-          if (data.topScoreRules && typeof data.topScoreRules === 'object') topScoreRulesPayload = data.topScoreRules;
-
-          if (data.kpiTargets && typeof data.kpiTargets === 'object') {
-            const kt = data.kpiTargets;
-            if (kt.km)     MOBILE_KPI_TARGETS.km     = Number(kt.km);
-            if (kt.carico) MOBILE_KPI_TARGETS.carico = Number(kt.carico);
-            if (kt.trimp)  MOBILE_KPI_TARGETS.trimp  = Number(kt.trimp);
-            if (kt.risk != null) MOBILE_KPI_TARGETS.risk = Number(kt.risk);
-            try { localStorage.setItem('mobileKpiTargets', JSON.stringify(MOBILE_KPI_TARGETS)); } catch(e){}
-          }
-          if (data.kpiParams && typeof data.kpiParams === 'object') {
-            try{
-              Object.assign(KPI_PARAMS, data.kpiParams || {});
-              localStorage.setItem('kpiParams', JSON.stringify(KPI_PARAMS));
-            }catch(e){}
-          }
-
-          if (Object.prototype.hasOwnProperty.call(data, 'audioEnabled')) {
-            window.__audioEnabled = data.audioEnabled !== false;
-            try { localStorage.setItem('audioEnabled', window.__audioEnabled ? 'true' : 'false'); } catch(e){}
-            const btn = document.getElementById('mobileAudioToggleBtn');
-            if(btn) btn.textContent = window.__audioEnabled ? '🔊 Audio ON' : '🔇 Audio OFF';
-          }
-
-          if (Object.prototype.hasOwnProperty.call(data, 'ripetuteSessions')) {
-            hasRipPayload = true;
-            ripPayload = Array.isArray(data.ripetuteSessions) ? data.ripetuteSessions : [];
-          }
-        }
-
-        if (topScoreRulesPayload && typeof applyTopScoreRulesPayload === 'function') {
-          applyTopScoreRulesPayload(topScoreRulesPayload);
-        }
-
-        if (Array.isArray(athletesProfilePayload) && typeof applyAthletesProfilePayload === 'function') {
-          applyAthletesProfilePayload(athletesProfilePayload);
-        }
-
-        // Cancellazione remota atleti
-        if (Array.isArray(data.athletesToRemove) && data.athletesToRemove.length > 0) {
-          if(typeof applyAthletesToRemove === 'function') applyAthletesToRemove(data.athletesToRemove);
-        }
-
-        if (typeof popolaTabellaDaJSON === 'function' && Array.isArray(tablePayload)) {
-          popolaTabellaDaJSON(tablePayload);
-        }
-
-        if (hasRipPayload) {
-          const normalizedRip = ripPayload
-            .filter(s => s && typeof s === 'object')
-            .map((s, idx) => ({
-              id: s.id || ('fb_rip_' + Date.now() + '_' + idx),
-              date: s.date || (new Date()).toISOString().slice(0,10),
-              athlete: s.athlete || '',
-              type: s.type || 'Ripetute',
-              warmup_min: +(s.warmup_min || 0),
-              cooldown_min: +(s.cooldown_min || 0),
-              reps: Array.isArray(s.reps)
-                ? s.reps.filter(r => typeof _isMeaningfulRep === 'function' ? _isMeaningfulRep(r) : true)
-                : []
-            }))
-            .filter(s => s.athlete && Array.isArray(s.reps) && s.reps.length > 0);
-
-          ripetuteSessions = normalizedRip;
-          try { localStorage.setItem('ripetuteSessions', JSON.stringify(ripetuteSessions)); } catch(e) { console.warn('Errore salvataggio ripetute importate', e); }
-          if (typeof renderRipSessionsList === 'function') renderRipSessionsList();
-        }
-
-        console.log('Dati importati da Firebase:', data);
-        if(typeof updateCharts === 'function') {
-          updateCharts();
-        }
-        // Forza il calcolo KPI dopo l'import usando i dati filtrati
-        if(typeof updateCharts === 'function') {
-          setTimeout(()=>{
-            const combinedData = (typeof getData === 'function') ? getData() : [];
-            const fA = $id('athleteFilter') ? $id('athleteFilter').value : 'all';
-            const t = $id('typeFilter') ? $id('typeFilter').value : 'all';
-            const da = $id('dateFrom') ? $id('dateFrom').value : '';
-            const a = $id('dateTo') ? $id('dateTo').value : '';
-            const filt = combinedData.filter(d =>
-              (fA === 'all' || d.athlete === fA) &&
-              (t === 'all' || d.type === t || d.activityType === t) &&
-              (!da || d.date >= da) &&
-              (!a || d.date <= a)
-            );
-            if(typeof updateKPI === 'function') updateKPI(filt, computeACWR(combinedData));
-          }, 100);
-        }
-      } catch (e) { console.error('Errore salvataggio dati importati', e); }
-    })
+    .then(data => applyImportedPayload(data))
     .catch(err => { console.error('Errore importazione Firebase:', err); });
 }
 
@@ -4443,6 +4497,7 @@ function saveToFirebase() {
     kpiParams: KPI_PARAMS || {},
     athletesToRemove: Array.isArray(athletesToRemove) ? athletesToRemove : [],
     audioEnabled: window.__audioEnabled !== false,
+    races: Array.isArray(races) ? races : [],
     savedAt: new Date().toISOString()
   };
   console.log('Dati inviati a Firebase:', payload);
@@ -5347,13 +5402,21 @@ function getRaceCountdownStr(dateStr){
   const now = new Date();
   const target = new Date(dateStr + 'T00:00:00');
   const diff = target - now;
-  if(diff <= 0) return { label: 'Gara passata', past: true, short: '—' };
+  if(diff <= 0) return { label: 'Gara passata', past: true, short: '—', days: -1 };
   const days = Math.floor(diff / 86400000);
   const hours = Math.floor((diff % 86400000) / 3600000);
   const mins = Math.floor((diff % 3600000) / 60000);
-  if(days > 1) return { label: `tra ${days} giorni`, past: false, short: `${days}g ${hours}h` };
-  if(days === 1) return { label: 'domani', past: false, short: `1g ${hours}h ${mins}m` };
-  return { label: 'oggi!', past: false, short: `${hours}h ${mins}m` };
+  if(days > 1) return { label: `tra ${days} giorni`, past: false, short: `${days}g ${hours}h`, days };
+  if(days === 1) return { label: 'domani', past: false, short: `1g ${hours}h ${mins}m`, days: 1 };
+  return { label: 'oggi!', past: false, short: `${hours}h ${mins}m`, days: 0 };
+}
+
+function _raceColorClass(days){
+  if(days < 0) return '';
+  if(days <= 2) return 'rcc-urgent';
+  if(days <= 7) return 'rcc-close';
+  if(days <= 30) return 'rcc-mid';
+  return 'rcc-far';
 }
 
 function renderCountdownChips(){
@@ -5366,9 +5429,10 @@ function renderCountdownChips(){
   const sorted = races.slice().sort((a,b)=> new Date(a.date) - new Date(b.date));
   box.innerHTML = sorted.map(r => {
     const cd = getRaceCountdownStr(r.date);
+    const colorCls = cd.past ? 'rcc-past' : _raceColorClass(cd.days);
     const distLabel = RACE_DIST_PRESETS[String(r.dist)] || r.dist + ' km';
     const athStr = r.athletes && r.athletes.length ? r.athletes.join(', ') : '';
-    return `<div class="race-countdown-chip${cd.past?' rcc-past':''}">
+    return `<div class="race-countdown-chip ${colorCls}">
       <div class="rcc-name" title="${r.name}">${r.name}</div>
       ${r.where ? `<div class="rcc-where">📍 ${r.where}</div>` : ''}
       <div class="rcc-dist">🏃 ${distLabel}</div>
@@ -5439,7 +5503,8 @@ function tickRaceCountdowns(){
     el.textContent = cd.short;
     const chip = el.closest('.race-countdown-chip');
     if(chip){
-      chip.classList.toggle('rcc-past', cd.past);
+      chip.classList.remove('rcc-past','rcc-far','rcc-mid','rcc-close','rcc-urgent');
+      chip.classList.add(cd.past ? 'rcc-past' : _raceColorClass(cd.days));
       const lbl = chip.querySelector('.rcc-timer-label');
       if(lbl) lbl.textContent = cd.label;
     }
