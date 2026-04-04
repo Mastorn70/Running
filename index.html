@@ -517,6 +517,12 @@
   color: rgba(255,255,255,0.65);
   margin-top: 2px;
 }
+.race-countdown-chip .rcc-time {
+  font-size: 0.63rem;
+  color: #bae6fd;
+  font-weight: 700;
+  margin-top: 1px;
+}
 .race-countdown-chip .rcc-athletes {
   font-size: 0.61rem;
   color: rgba(255,255,255,0.55);
@@ -2756,6 +2762,8 @@ function addRowFromImportedData(row) {
         <input id="rmpWhere" type="text" placeholder="es. Milano">
         <label>Data</label>
         <input id="rmpDate" type="date">
+        <label>Orario di partenza</label>
+        <input id="rmpTime" type="time" placeholder="es. 09:00">
         <label>Distanza</label>
         <select id="rmpDistSel" onchange="toggleRmpCustomDist()">
           <option value="42.195">Maratona (42,195 km)</option>
@@ -5321,6 +5329,7 @@ function addRace(){
   const distSel = document.getElementById('rmpDistSel')?.value || '42.195';
   const distCustom = parseFloat(document.getElementById('rmpDistCustom')?.value || '0');
   const dist = distSel === 'custom' ? (distCustom > 0 ? distCustom : null) : parseFloat(distSel);
+  const time = (document.getElementById('rmpTime')?.value || '').trim();
   const athletesSel = document.getElementById('rmpAthletes');
   const athletesChosen = athletesSel ? Array.from(athletesSel.selectedOptions).map(o => o.value) : [];
   if(!name){ alert('Inserisci il nome della gara'); return; }
@@ -5328,21 +5337,21 @@ function addRace(){
   if(!dist){ alert('Inserisci una distanza valida'); return; }
   if(editingRaceId){
     const idx = races.findIndex(r => r.id === editingRaceId);
-    if(idx !== -1) races[idx] = { id: editingRaceId, name, where: where || '', dist, date, athletes: athletesChosen };
+    if(idx !== -1) races[idx] = { id: editingRaceId, name, where: where || '', dist, date, time: time || '', athletes: athletesChosen };
     editingRaceId = null;
     const btn = document.getElementById('rmpSubmitBtn');
     if(btn) btn.textContent = '➕ Aggiungi gara';
     const cancel = document.getElementById('rmpCancelBtn');
     if(cancel) cancel.style.display = 'none';
   } else {
-    races.push({ id: 'race_' + Date.now(), name, where: where || '', dist, date, athletes: athletesChosen });
+    races.push({ id: 'race_' + Date.now(), name, where: where || '', dist, date, time: time || '', athletes: athletesChosen });
   }
   saveRaces();
   saveRacesToFirebase();
   renderCountdownChips();
   renderRaceManagementList();
   // reset form
-  ['rmpName','rmpWhere','rmpDate'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  ['rmpName','rmpWhere','rmpDate','rmpTime'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
   const distSelEl = document.getElementById('rmpDistSel');
   if(distSelEl) distSelEl.value = '42.195';
   toggleRmpCustomDist();
@@ -5362,6 +5371,7 @@ function editRace(id){
   const nameEl = document.getElementById('rmpName'); if(nameEl) nameEl.value = r.name;
   const whereEl = document.getElementById('rmpWhere'); if(whereEl) whereEl.value = r.where || '';
   const dateEl = document.getElementById('rmpDate'); if(dateEl) dateEl.value = r.date;
+  const timeEl = document.getElementById('rmpTime'); if(timeEl) timeEl.value = r.time || '';
   const distSel = document.getElementById('rmpDistSel');
   const knownKey = Object.keys(RACE_DIST_PRESETS).find(k => parseFloat(k) === r.dist);
   if(distSel){
@@ -5381,7 +5391,7 @@ function editRace(id){
 
 function cancelEditRace(){
   editingRaceId = null;
-  ['rmpName','rmpWhere','rmpDate'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  ['rmpName','rmpWhere','rmpDate','rmpTime'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
   const distSelEl = document.getElementById('rmpDistSel'); if(distSelEl) distSelEl.value = '42.195';
   toggleRmpCustomDist();
   const athletesSel = document.getElementById('rmpAthletes');
@@ -5398,17 +5408,19 @@ function removeRace(id){
   renderRaceManagementList();
 }
 
-function getRaceCountdownStr(dateStr){
+function getRaceCountdownStr(dateStr, timeStr){
   const now = new Date();
-  const target = new Date(dateStr + 'T00:00:00');
+  const targetStr = timeStr ? (dateStr + 'T' + timeStr + ':00') : (dateStr + 'T00:00:00');
+  const target = new Date(targetStr);
   const diff = target - now;
   if(diff <= 0) return { label: 'Gara passata', past: true, short: '—', days: -1 };
   const days = Math.floor(diff / 86400000);
   const hours = Math.floor((diff % 86400000) / 3600000);
   const mins = Math.floor((diff % 3600000) / 60000);
-  if(days > 1) return { label: `tra ${days} giorni`, past: false, short: `${days}g ${hours}h`, days };
-  if(days === 1) return { label: 'domani', past: false, short: `1g ${hours}h ${mins}m`, days: 1 };
-  return { label: 'oggi!', past: false, short: `${hours}h ${mins}m`, days: 0 };
+  const secs = Math.floor((diff % 60000) / 1000);
+  if(days > 1) return { label: `tra ${days} giorni`, past: false, short: `${days}g ${hours}h ${mins}m ${secs}s`, days };
+  if(days === 1) return { label: 'domani', past: false, short: `1g ${hours}h ${mins}m ${secs}s`, days: 1 };
+  return { label: 'oggi!', past: false, short: `${hours}h ${mins}m ${secs}s`, days: 0 };
 }
 
 function _raceColorClass(days){
@@ -5428,14 +5440,16 @@ function renderCountdownChips(){
   }
   const sorted = races.slice().sort((a,b)=> new Date(a.date) - new Date(b.date));
   box.innerHTML = sorted.map(r => {
-    const cd = getRaceCountdownStr(r.date);
+    const cd = getRaceCountdownStr(r.date, r.time);
     const colorCls = cd.past ? 'rcc-past' : _raceColorClass(cd.days);
     const distLabel = RACE_DIST_PRESETS[String(r.dist)] || r.dist + ' km';
     const athStr = r.athletes && r.athletes.length ? r.athletes.join(', ') : '';
+    const timeStr = r.time ? `<div class="rcc-time">🕐 ${r.time}</div>` : '';
     return `<div class="race-countdown-chip ${colorCls}">
       <div class="rcc-name" title="${r.name}">${r.name}</div>
       ${r.where ? `<div class="rcc-where">📍 ${r.where}</div>` : ''}
       <div class="rcc-dist">🏃 ${distLabel}</div>
+      ${timeStr}
       <div class="rcc-timer" data-race-id="${r.id}">${cd.short}</div>
       <div class="rcc-timer-label">${cd.label}</div>
       ${athStr ? `<div class="rcc-athletes">👤 ${athStr}</div>` : ''}
@@ -5451,7 +5465,7 @@ function renderRaceManagementList(){
   box.innerHTML = sorted.map(r => {
     const distLabel = RACE_DIST_PRESETS[String(r.dist)] || r.dist + ' km';
     return `<div class="rmp-race-row">
-      <div><div class="rmp-rname">${r.name}</div><div class="rmp-rmeta">${r.date} · ${distLabel}${r.where?' · '+r.where:''}</div></div>
+      <div><div class="rmp-rname">${r.name}</div><div class="rmp-rmeta">${r.date}${r.time?' '+r.time:''} · ${distLabel}${r.where?' · '+r.where:''}</div></div>
       <div style="display:flex;gap:2px;align-items:center;">
         <button class="rmp-race-edit" onclick="editRace('${r.id}')" title="Modifica">✏️</button>
         <button class="rmp-race-del" onclick="removeRace('${r.id}')">✕</button>
@@ -5499,7 +5513,7 @@ function tickRaceCountdowns(){
     const id = el.dataset.raceId;
     const race = races.find(r => r.id === id);
     if(!race) return;
-    const cd = getRaceCountdownStr(race.date);
+    const cd = getRaceCountdownStr(race.date, race.time);
     el.textContent = cd.short;
     const chip = el.closest('.race-countdown-chip');
     if(chip){
@@ -5515,7 +5529,7 @@ function initRaceCountdowns(){
   loadRaces();
   renderCountdownChips();
   loadRacesFromFirebase();
-  if(!raceCountdownTimer) raceCountdownTimer = setInterval(tickRaceCountdowns, 30000);
+  if(!raceCountdownTimer) raceCountdownTimer = setInterval(tickRaceCountdowns, 1000);
 }
 
 function sendChatMessage(){
