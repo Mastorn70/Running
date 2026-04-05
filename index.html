@@ -2422,6 +2422,125 @@ body.dark-mode .prediction-chart-container {
   .mobile-only { display: none !important; }
   .desktop-only { display: flex !important; }
 }
+
+/* ===== PIANO ALLENAMENTO ===== */
+.piano-card { padding: 20px; }
+.piano-form { background: rgba(37,99,235,0.07); border: 1px solid rgba(37,99,235,0.18); border-radius: 14px; padding: 16px; margin-top: 4px; }
+.piano-form h4 { color: #1d4ed8; }
+.piano-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+.piano-form-grid label { display: flex; flex-direction: column; font-size: 0.85rem; font-weight: 700; color: #334155; gap: 4px; }
+.piano-input {
+  padding: 7px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: #fff;
+  color: #1e293b;
+  transition: border-color 0.2s;
+}
+.piano-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+body.dark-mode .piano-input { background: #1e293b; color: #e2e8f0; border-color: #334155; }
+body.dark-mode .piano-form { background: rgba(37,99,235,0.12); border-color: rgba(37,99,235,0.3); }
+body.dark-mode .piano-form h4 { color: #93c5fd; }
+body.dark-mode .piano-form-grid label { color: #94a3b8; }
+
+.piano-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.piano-table th { background: linear-gradient(135deg,#1e3c72,#2a5298); color: #fff; padding: 9px 10px; text-align: left; font-weight: 700; white-space: nowrap; }
+.piano-table td { padding: 8px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
+.piano-table tbody tr:hover { background: rgba(59,130,246,0.06); }
+body.dark-mode .piano-table td { border-color: #334155; color: #e2e8f0; }
+body.dark-mode .piano-table tbody tr:hover { background: rgba(59,130,246,0.1); }
+
+.piano-delete-btn { background: #ef4444; color: #fff; border: none; border-radius: 6px; padding: 4px 10px; font-size: 0.8rem; cursor: pointer; font-weight: 700; }
+.piano-delete-btn:hover { background: #dc2626; }
+.piano-ripetute-only { display: none; }
+
+.piano-kpi-chip { background: linear-gradient(135deg,#1e3c72,#2a5298); border-radius: 12px; padding: 12px 14px; color: #fff; text-align: center; }
+.piano-kpi-chip .pkc-val { font-size: 1.3rem; font-weight: 800; }
+.piano-kpi-chip .pkc-lbl { font-size: 0.75rem; color: #93c5fd; margin-top: 2px; }
+.piano-kpi-chip .pkc-pct { font-size: 0.8rem; font-weight: 700; margin-top: 3px; }
+
+.piano-athlete-chip {
+  padding: 6px 14px;
+  border: 2px solid #cbd5e1;
+  border-radius: 20px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: #334155;
+  background: #f8fafc;
+  transition: all 0.15s;
+  user-select: none;
+  white-space: nowrap;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+  line-height: 1.3;
+}
+.piano-athlete-chip.selected {
+  background: linear-gradient(135deg,#2563eb,#1d4ed8);
+  border-color: #2563eb;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(37,99,235,0.35);
+}
+.piano-athlete-chip:hover { border-color: #3b82f6; }
+body.dark-mode .piano-athlete-chip { background: #1e293b; color: #e2e8f0; border-color: #334155; }
+body.dark-mode .piano-athlete-chip.selected { background: linear-gradient(135deg,#2563eb,#1d4ed8); color: #fff; }
+body.dark-mode #pianoAthletePicker { background: #0f172a; border-color: #334155; }
+
+/* Piano tab as full-screen overlay on mobile */
+@media (max-width: 900px) {
+  #tab-piano.piano-mobile-open {
+    display: block !important;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow-y: auto;
+    z-index: 9500;
+    background: #f8fafc;
+    padding: 0;
+    margin: 0;
+  }
+  body.dark-mode #tab-piano.piano-mobile-open { background: #0f172a; }
+  #pianoMobileBar { display: flex !important; }
+}
+#pianoMobileBar {
+  display: none;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: linear-gradient(135deg,#1e3c72,#2a5298);
+  color: #fff;
+  padding: 13px 16px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.25);
+}
+#pianoMobileBar button {
+  background: rgba(255,255,255,0.18);
+  border: none;
+  color: #fff;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+@media (max-width: 900px) {
+  .piano-form-grid { grid-template-columns: 1fr 1fr; }
+  #tab-piano .card > div[style*="grid-template-columns:1fr 1fr"] { grid-template-columns: 1fr !important; }
+}
 </style>
 </head>
 <script>
@@ -2444,6 +2563,7 @@ function exportAllData() {
     athletesToRemove: Array.isArray(athletesToRemove) ? athletesToRemove : [],
     audioEnabled: window.__audioEnabled !== false,
     races: Array.isArray(races) ? races : [],
+    trainingPlans: (function(){ try{ return JSON.parse(localStorage.getItem('trainingPlans') || '[]'); }catch(e){ return []; } })(),
     savedAt: new Date().toISOString()
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], {type: 'application/json'});
@@ -2541,6 +2661,7 @@ function addRowFromImportedData(row) {
   <button style="display:block;width:100%;margin-bottom:8px;font-size:1.1em;" data-section="dashboard">📊 Dashboard</button>
   <button style="display:block;width:100%;margin-bottom:8px;font-size:1.1em;" data-section="data">📋 Inserimento Dati</button>
   <button style="display:block;width:100%;font-size:1.1em;" data-section="ripetute">🏃‍♂️ Ripetute</button>
+  <button style="display:block;width:100%;margin-top:8px;font-size:1.1em;" data-section="piano">📅 Piano Allenamento</button>
   <button style="display:block;width:100%;margin-top:8px;font-size:1.1em;" data-section="chat">💬 Chat</button>
   <button style="display:block;width:100%;margin-top:8px;font-size:1.1em;" data-section="predizione">🔮 Predizione</button>
   <button style="display:block;width:100%;margin-top:8px;font-size:1.1em;" data-section="maratona">🧮 Maratona</button>
@@ -3150,6 +3271,11 @@ document.addEventListener('click', function(e) {
 });
 // Migliora UX mobile: scroll to top su tab switch
 window.switchTab = function(tabName, ev) {
+  // Clean up piano mobile overlay if switching away
+  var pianoTab = document.getElementById('tab-piano');
+  if(pianoTab) { pianoTab.classList.remove('piano-mobile-open'); }
+  document.body.style.overflow = '';
+
   document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
   const trigger = ev && (ev.currentTarget || ev.target);
@@ -3161,6 +3287,14 @@ window.switchTab = function(tabName, ev) {
   }
   if (tabName === 'chat' && typeof refreshChatMessages === 'function') {
     refreshChatMessages();
+  }
+  // On mobile, piano tab opens as fullscreen overlay
+  if(tabName === 'piano' && window.innerWidth <= 900) {
+    if(el) el.classList.add('piano-mobile-open');
+    document.body.style.overflow = 'hidden';
+    if(el) el.scrollTop = 0;
+    if(typeof initPianoTab === 'function') initPianoTab();
+    return;
   }
   // Su mobile, scrolla in alto quando si cambia tab
   if(window.innerWidth <= 900) window.scrollTo({top:0,behavior:'smooth'});
@@ -3476,6 +3610,7 @@ document.addEventListener('click', function(e){
     <button class="tab-btn active" onclick="switchTab('dashboard', event)">📊 Dashboard</button>
     <button class="tab-btn" onclick="switchTab('data', event)">📋Inserimento Dati</button>
     <button class="tab-btn" onclick="switchTab('ripetute', event)">🏃‍♂️Inserimento Ripetute</button>
+    <button class="tab-btn" onclick="switchTab('piano', event)">📅 Piano Allenamento</button>
     <button class="tab-btn" onclick="switchTab('chat', event)">💬 Chat</button>
   </div>
 
@@ -3755,6 +3890,162 @@ document.addEventListener('click', function(e){
           <div id="ripSummary" style="margin-top:12px;font-weight:700;"></div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- TAB PIANO ALLENAMENTO -->
+  <div id="tab-piano" class="tab-content">
+    <!-- Barra chiudi solo su mobile -->
+    <div id="pianoMobileBar">
+      <span>📅 Piano di Allenamento</span>
+      <button type="button" onclick="closePianoMobile()">✕ Chiudi</button>
+    </div>
+    <div class="card piano-card" style="margin-bottom:16px;">
+      <h3>📅 Piano di Allenamento Programmato</h3>
+
+      <!-- Form inserimento piano -->
+      <div class="piano-form" id="pianoFormSection">
+        <h4 style="margin:0 0 10px;">➕ Aggiungi sessione pianificata</h4>
+        <div class="piano-form-grid">
+          <div style="grid-column:1/-1;">
+            <span style="font-size:0.85rem;font-weight:700;color:#334155;display:block;margin-bottom:5px;">Atleti <span style="font-weight:400;color:#6b7280;font-size:0.77rem;">(clicca per selezionare, anche multipli)</span></span>
+            <div id="pianoAthletePicker" style="display:flex;flex-wrap:wrap;gap:6px;padding:7px 8px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;min-height:38px;align-items:center;">
+              <span style="color:#94a3b8;font-size:0.82rem;" id="pianoAthletePickerEmpty">Caricamento atleti...</span>
+            </div>
+          </div>
+          <label>Data
+            <input type="date" id="pianoDate" class="piano-input">
+          </label>
+          <label>Sport
+            <select id="pianoSport" class="piano-input">
+              <option value="corsa">Corsa</option>
+              <option value="bici">Bici</option>
+              <option value="palestra">Palestra</option>
+              <option value="nuoto">Nuoto</option>
+              <option value="sci">Sci</option>
+            </select>
+          </label>
+          <label>Tipo attività
+            <select id="pianoActivityType" class="piano-input" onchange="updatePianoRipetuteFields()">
+              <option value="Allenamento">Allenamento</option>
+              <option value="Ripetute">Ripetute</option>
+              <option value="Recupero">Recupero</option>
+              <option value="Test">Test</option>
+              <option value="Tecnica">Tecnica</option>
+              <option value="Gara">Gara</option>
+            </select>
+          </label>
+          <label>Km pianificati
+            <input type="number" id="pianoKm" class="piano-input" step="0.1" min="0" placeholder="es. 10" oninput="onPianoKmMinChange()">
+          </label>
+          <label>Minuti pianificati
+            <input type="number" id="pianoMinutes" class="piano-input" step="1" min="0" placeholder="es. 60" oninput="onPianoKmMinChange()">
+          </label>
+          <label>Passo (min/km)
+            <input type="text" id="pianoPace" class="piano-input" placeholder="es. 5:30" maxlength="7" oninput="onPianoPaceChange()">
+          </label>
+          <label>Velocità (km/h)
+            <input type="number" id="pianoSpeed" class="piano-input" step="0.1" min="0" placeholder="es. 11.0" oninput="onPianoSpeedChange()">
+          </label>
+          <label class="piano-ripetute-only" id="pianoRepsLabel">N° ripetute
+            <input type="number" id="pianoReps" class="piano-input" step="1" min="1" placeholder="es. 6">
+          </label>
+          <label class="piano-ripetute-only" id="pianoRepDistLabel">Dist. per rip. (km)
+            <input type="number" id="pianoRepDist" class="piano-input" step="0.01" min="0" placeholder="es. 0.4">
+          </label>
+          <label>RPE pianificato
+            <input type="number" id="pianoRpe" class="piano-input" step="0.5" min="1" max="10" placeholder="1-10">
+          </label>
+          <label>Note
+            <input type="text" id="pianoNote" class="piano-input" placeholder="es. Lungo lento, Z2" maxlength="120">
+          </label>
+        </div>
+        <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;">
+          <button type="button" onclick="addPianoSession()" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none;border-radius:8px;padding:9px 22px;font-weight:700;font-size:0.97rem;cursor:pointer;">✅ Aggiungi</button>
+          <button type="button" onclick="clearPianoForm()" style="background:#6b7280;color:#fff;border:none;border-radius:8px;padding:9px 18px;font-weight:600;cursor:pointer;">🗑 Pulisci</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filtri e tabella sessioni pianificate -->
+    <div class="card piano-card" style="margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
+        <h4 style="margin:0;">📋 Sessioni pianificate</h4>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <select id="pianoFilterAthlete" onchange="renderPianoTable()" class="piano-input" style="min-width:140px;">
+            <option value="">Tutti gli atleti</option>
+          </select>
+          <input type="date" id="pianoFilterFrom" onchange="renderPianoTable()" class="piano-input" title="Da data">
+          <input type="date" id="pianoFilterTo" onchange="renderPianoTable()" class="piano-input" title="A data">
+          <button type="button" onclick="clearPianoFilters()" style="background:#64748b;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-weight:600;cursor:pointer;">Reset filtri</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="piano-table" id="pianoTable">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Atleta</th>
+              <th>Sport</th>
+              <th>Tipo</th>
+              <th>Km pian.</th>
+              <th>Min pian.</th>
+              <th>Passo</th>
+              <th>Vel. km/h</th>
+              <th>Rip.</th>
+              <th>Dist./rip.</th>
+              <th>RPE pian.</th>
+              <th>Note</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="pianoTableBody"></tbody>
+        </table>
+        <div id="pianoTableEmpty" style="display:none;text-align:center;color:#64748b;padding:28px;font-size:0.97rem;">Nessuna sessione pianificata trovata.</div>
+      </div>
+    </div>
+
+    <!-- Confronto grafico piano vs effettivo -->
+    <div class="card piano-card" style="margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+        <h4 style="margin:0;">📊 Confronto Piano vs Effettivo</h4>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <select id="pianoChartAthlete" onchange="renderPianoCharts()" class="piano-input" style="min-width:150px;"></select>
+          <select id="pianoChartMetric" onchange="renderPianoCharts()" class="piano-input">
+            <option value="km">Km</option>
+            <option value="minutes">Minuti</option>
+            <option value="load">Carico (RPE×min)</option>
+          </select>
+          <select id="pianoChartGranularity" onchange="renderPianoCharts()" class="piano-input">
+            <option value="week">Per settimana</option>
+            <option value="day">Per giorno</option>
+          </select>
+          <input type="date" id="pianoChartFrom" onchange="renderPianoCharts()" class="piano-input" title="Da data">
+          <input type="date" id="pianoChartTo" onchange="renderPianoCharts()" class="piano-input" title="A data">
+        </div>
+      </div>
+      <!-- KPI summary row -->
+      <div id="pianoKpiRow" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px;"></div>
+      <!-- Charts -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div>
+          <h5 style="margin:0 0 6px;font-size:0.9rem;color:#64748b;">Km pianificati vs effettivi</h5>
+          <div style="height:260px;position:relative;"><canvas id="pianoKmChart"></canvas></div>
+        </div>
+        <div>
+          <h5 style="margin:0 0 6px;font-size:0.9rem;color:#64748b;">Minuti pianificati vs effettivi</h5>
+          <div style="height:260px;position:relative;"><canvas id="pianoMinChart"></canvas></div>
+        </div>
+        <div>
+          <h5 style="margin:0 0 6px;font-size:0.9rem;color:#64748b;">Carico pianificato vs effettivo (RPE×min)</h5>
+          <div style="height:260px;position:relative;"><canvas id="pianoLoadChart"></canvas></div>
+        </div>
+        <div>
+          <h5 style="margin:0 0 6px;font-size:0.9rem;color:#64748b;">% aderenza piano (Effettivo / Pianificato)</h5>
+          <div style="height:260px;position:relative;"><canvas id="pianoAdherenceChart"></canvas></div>
+        </div>
+      </div>
+      <div id="pianoChartEmpty" style="display:none;text-align:center;color:#64748b;padding:36px;font-size:1rem;">Nessun dato disponibile per il confronto. Aggiungi sessioni pianificate e dati effettivi.</div>
     </div>
   </div>
 
@@ -4416,6 +4707,11 @@ function applyImportedPayload(data) {
         if (typeof renderCountdownChips === 'function') renderCountdownChips();
         if (typeof renderRaceManagementList === 'function') renderRaceManagementList();
       }
+      // Piano allenamento
+      if (Array.isArray(data.trainingPlans)) {
+        try { localStorage.setItem('trainingPlans', JSON.stringify(data.trainingPlans)); } catch(e){}
+        try { if(typeof loadTrainingPlans === 'function') loadTrainingPlans(); } catch(e){}
+      }
     }
 
     if (topScoreRulesPayload && typeof applyTopScoreRulesPayload === 'function') applyTopScoreRulesPayload(topScoreRulesPayload);
@@ -4506,6 +4802,7 @@ function saveToFirebase() {
     athletesToRemove: Array.isArray(athletesToRemove) ? athletesToRemove : [],
     audioEnabled: window.__audioEnabled !== false,
     races: Array.isArray(races) ? races : [],
+    trainingPlans: (typeof trainingPlans !== 'undefined' && Array.isArray(trainingPlans)) ? trainingPlans : (function(){ try{ return JSON.parse(localStorage.getItem('trainingPlans')||'[]'); }catch(e){ return []; } })(),
     savedAt: new Date().toISOString()
   };
   console.log('Dati inviati a Firebase:', payload);
@@ -4795,6 +5092,11 @@ function $id(id){ return document.getElementById(id); }
 
 // expose switchTab globally
 window.switchTab = function(tabName, ev) {
+  // Clean up piano mobile overlay if switching away
+  var pianoTab = document.getElementById('tab-piano');
+  if(pianoTab) pianoTab.classList.remove('piano-mobile-open');
+  document.body.style.overflow = '';
+
   document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
   const trigger = ev && (ev.currentTarget || ev.target);
@@ -4806,6 +5108,12 @@ window.switchTab = function(tabName, ev) {
   }
   if (tabName === 'ripetute') {
     if (typeof renderRipSessionsList === 'function') renderRipSessionsList();
+  }
+  // On mobile, piano tab opens as fullscreen overlay
+  if(tabName === 'piano' && window.innerWidth <= 900) {
+    if(el) el.classList.add('piano-mobile-open');
+    document.body.style.overflow = 'hidden';
+    if(el) el.scrollTop = 0;
   }
 };
 
@@ -10935,9 +11243,472 @@ function selectMobileSection(section) {
   if(section === 'regole-score' && typeof openScoreRulesModal === 'function') {
     openScoreRulesModal();
   }
+  if(section === 'piano') {
+    var pianoTab = document.getElementById('tab-piano');
+    if(pianoTab) {
+      pianoTab.classList.add('active', 'piano-mobile-open');
+      document.body.style.overflow = 'hidden';
+      pianoTab.scrollTop = 0;
+      if(typeof initPianoTab === 'function') initPianoTab();
+    }
+    return;
+  }
   // Su mobile, scrolla in alto quando si cambia tab
   if(window.innerWidth <= 900) window.scrollTo({top:0,behavior:'smooth'});
 }
+function closePianoMobile() {
+  var pianoTab = document.getElementById('tab-piano');
+  if(pianoTab) {
+    pianoTab.classList.remove('piano-mobile-open');
+    pianoTab.classList.remove('active');
+  }
+  document.body.style.overflow = '';
+  // Riattiva la tab dashboard
+  document.querySelectorAll('.tab-content').forEach(function(el){ el.classList.remove('active'); });
+  var dash = document.getElementById('tab-dashboard');
+  if(dash) dash.classList.add('active');
+}
+</script>
+
+<!-- ============================================================
+     PIANO DI ALLENAMENTO – storage, CRUD, grafici confronto
+     ============================================================ -->
+<script>
+// ---- Storage ----
+const PIANO_KEY = 'trainingPlans';
+let trainingPlans = [];
+
+function loadTrainingPlans(){
+  try { trainingPlans = JSON.parse(localStorage.getItem(PIANO_KEY) || '[]'); } catch(e){ trainingPlans = []; }
+}
+function saveTrainingPlans(){
+  try { localStorage.setItem(PIANO_KEY, JSON.stringify(trainingPlans)); } catch(e){}
+  // Salva su Firebase
+  if(typeof saveToFirebase === 'function') saveToFirebase();
+}
+
+// ---- Athlete chip picker (multi-select) ----
+function populatePianoAthleteSelects(){
+  // Raccoglie tutti gli atleti: dalla variabile globale, dalle righe della tabella e da localStorage
+  let allAthletes = [];
+  if(Array.isArray(athletes) && athletes.length) allAthletes = athletes.slice();
+  // Fallback: dalla tabella dati
+  if(!allAthletes.length){
+    try {
+      const rows = document.querySelectorAll('#dataTable tbody tr');
+      const set = new Set();
+      rows.forEach(r => { const v = r.querySelector('select')?.value; if(v) set.add(v); });
+      allAthletes = Array.from(set);
+    } catch(e){}
+  }
+  // Fallback: da localStorage athletes
+  if(!allAthletes.length){
+    try {
+      const stored = JSON.parse(localStorage.getItem('athletes') || '[]');
+      if(Array.isArray(stored)) allAthletes = stored.map(a => typeof a === 'object' ? (a.name||'') : a).filter(Boolean);
+    } catch(e){}
+  }
+  if(!allAthletes.length) allAthletes = ['Max'];
+
+  // Chip picker per il form
+  const picker = document.getElementById('pianoAthletePicker');
+  if(picker){
+    const prevSelected = getPianoSelectedAthletes();
+    picker.innerHTML = allAthletes.map(a => {
+      const sel = prevSelected.includes(a) ? ' selected' : '';
+      const safe = a.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+      return `<button type="button" class="piano-athlete-chip${sel}" data-athlete="${safe}">${a}</button>`;
+    }).join('');
+    // Event delegation — use onclick property so re-populating doesn't stack listeners
+    picker.onclick = function(e){
+      const chip = e.target.closest('.piano-athlete-chip');
+      if(chip){ e.preventDefault(); chip.classList.toggle('selected'); }
+    };
+  }
+
+  // Filter select per la tabella
+  const pianoFilterEl = document.getElementById('pianoFilterAthlete');
+  if(pianoFilterEl){
+    const faVal = pianoFilterEl.value;
+    pianoFilterEl.innerHTML = `<option value="">Tutti gli atleti</option>` + allAthletes.map(a=>`<option value="${a}">${a}</option>`).join('');
+    if(faVal) pianoFilterEl.value = faVal;
+  }
+
+  // Chart athlete select
+  const pianoChartEl = document.getElementById('pianoChartAthlete');
+  if(pianoChartEl){
+    const curVal = pianoChartEl.value;
+    pianoChartEl.innerHTML = allAthletes.map(a=>`<option value="${a}">${a}</option>`).join('');
+    if(curVal && allAthletes.includes(curVal)) pianoChartEl.value = curVal;
+  }
+}
+
+function getPianoSelectedAthletes(){
+  const chips = document.querySelectorAll('#pianoAthletePicker .piano-athlete-chip.selected');
+  return Array.from(chips).map(c => c.textContent.trim());
+}
+
+// ---- Pace ↔ Speed sync helpers ----
+function _pianoDecimalPaceToMMSS(decMin){
+  if(!isFinite(decMin) || decMin <= 0) return '';
+  const m = Math.floor(decMin);
+  const s = Math.round((decMin - m) * 60);
+  return m + ':' + String(s).padStart(2,'0');
+}
+function _pianoMMSS_ToDecimal(str){
+  // accepts "5:30" or "5.30" or "5,30" or plain number "5.5"
+  if(!str) return 0;
+  str = str.replace(',','.');
+  if(str.includes(':')) {
+    const [mm,ss] = str.split(':');
+    return parseFloat(mm) + (parseFloat(ss||0) / 60);
+  }
+  return parseFloat(str) || 0;
+}
+
+function onPianoPaceChange(){
+  const paceStr = document.getElementById('pianoPace')?.value;
+  const decMin  = _pianoMMSS_ToDecimal(paceStr);
+  if(decMin > 0){
+    const speed = 60 / decMin;
+    const spEl  = document.getElementById('pianoSpeed');
+    if(spEl) spEl.value = speed.toFixed(2);
+  }
+}
+function onPianoSpeedChange(){
+  const spEl  = document.getElementById('pianoSpeed');
+  const speed = parseFloat(spEl?.value) || 0;
+  if(speed > 0){
+    const decMin = 60 / speed;
+    const pEl = document.getElementById('pianoPace');
+    if(pEl) pEl.value = _pianoDecimalPaceToMMSS(decMin);
+  }
+}
+function onPianoKmMinChange(){
+  const km  = parseFloat(document.getElementById('pianoKm')?.value) || 0;
+  const min = parseFloat(document.getElementById('pianoMinutes')?.value) || 0;
+  if(km > 0 && min > 0){
+    const decMin  = min / km;
+    const speed   = km / (min / 60);
+    const pEl  = document.getElementById('pianoPace');
+    const spEl = document.getElementById('pianoSpeed');
+    if(pEl)  pEl.value  = _pianoDecimalPaceToMMSS(decMin);
+    if(spEl) spEl.value = speed.toFixed(2);
+  }
+}
+function updatePianoRipetuteFields(){
+  const type = document.getElementById('pianoActivityType')?.value;
+  const show = type === 'Ripetute';
+  document.querySelectorAll('.piano-ripetute-only').forEach(el => {
+    el.style.display = show ? '' : 'none';
+  });
+}
+
+// ---- Unique ID ----
+function pianoUid(){
+  return 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+}
+
+// ---- Add session (one entry per selected athlete) ----
+function addPianoSession(){
+  const selectedAthletes = getPianoSelectedAthletes();
+  const date    = document.getElementById('pianoDate')?.value;
+  const type    = document.getElementById('pianoSport')?.value;
+  const activityType = document.getElementById('pianoActivityType')?.value;
+  const km      = parseFloat(document.getElementById('pianoKm')?.value) || 0;
+  const minutes = parseFloat(document.getElementById('pianoMinutes')?.value) || 0;
+  const rpe     = parseFloat(document.getElementById('pianoRpe')?.value) || 5;
+  const note    = document.getElementById('pianoNote')?.value?.trim() || '';
+  const paceStr = document.getElementById('pianoPace')?.value?.trim() || '';
+  const pace_min_km = _pianoMMSS_ToDecimal(paceStr) || 0;
+  const speed_kmh   = parseFloat(document.getElementById('pianoSpeed')?.value) || 0;
+  const reps        = parseInt(document.getElementById('pianoReps')?.value) || 0;
+  const rep_dist_km = parseFloat(document.getElementById('pianoRepDist')?.value) || 0;
+
+  if(!selectedAthletes.length){ alert('Seleziona almeno un atleta.'); return; }
+  if(!date){ alert('Inserisci una data.'); return; }
+  if(km <= 0 && minutes <= 0){ alert('Inserisci almeno km o minuti pianificati.'); return; }
+
+  selectedAthletes.forEach(athlete => {
+    trainingPlans.push({ id: pianoUid(), date, athlete, type, activityType, km, minutes, rpe, note, pace_min_km, speed_kmh, reps, rep_dist_km });
+  });
+  saveTrainingPlans();
+  clearPianoForm();
+  renderPianoTable();
+  renderPianoCharts();
+}
+
+function clearPianoForm(){
+  ['pianoKm','pianoMinutes','pianoRpe','pianoNote','pianoPace','pianoSpeed','pianoReps','pianoRepDist'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+  // Deseleziona tutti i chip
+  document.querySelectorAll('#pianoAthletePicker .piano-athlete-chip').forEach(c=>c.classList.remove('selected'));
+  // oggi come default
+  const dEl = document.getElementById('pianoDate');
+  if(dEl) dEl.value = new Date().toISOString().slice(0,10);
+  // nascondi campi ripetute
+  updatePianoRipetuteFields();
+}
+
+function deletePianoSession(id){
+  if(!confirm('Eliminare questa sessione pianificata?')) return;
+  trainingPlans = trainingPlans.filter(p => p.id !== id);
+  saveTrainingPlans();
+  renderPianoTable();
+  renderPianoCharts();
+}
+
+function clearPianoFilters(){
+  document.getElementById('pianoFilterAthlete').value = '';
+  document.getElementById('pianoFilterFrom').value = '';
+  document.getElementById('pianoFilterTo').value = '';
+  renderPianoTable();
+}
+
+// ---- Render table ----
+function renderPianoTable(){
+  const fa = document.getElementById('pianoFilterAthlete')?.value || '';
+  const ff = document.getElementById('pianoFilterFrom')?.value || '';
+  const ft = document.getElementById('pianoFilterTo')?.value || '';
+
+  let rows = trainingPlans.slice().sort((a,b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+  if(fa) rows = rows.filter(r => r.athlete === fa);
+  if(ff) rows = rows.filter(r => r.date >= ff);
+  if(ft) rows = rows.filter(r => r.date <= ft);
+
+  const tbody = document.getElementById('pianoTableBody');
+  const empty = document.getElementById('pianoTableEmpty');
+  if(!tbody) return;
+
+  if(rows.length === 0){
+    tbody.innerHTML = '';
+    if(empty) empty.style.display = 'block';
+    return;
+  }
+  if(empty) empty.style.display = 'none';
+  tbody.innerHTML = rows.map(r => {
+    const paceDisplay = r.pace_min_km > 0 ? _pianoDecimalPaceToMMSS(r.pace_min_km) : '-';
+    const speedDisplay = r.speed_kmh > 0 ? r.speed_kmh.toFixed(1) : '-';
+    const repsDisplay = r.activityType === 'Ripetute' && r.reps > 0 ? r.reps : '-';
+    const repDistDisplay = r.activityType === 'Ripetute' && r.rep_dist_km > 0 ? r.rep_dist_km.toFixed(2) : '-';
+    return `
+    <tr>
+      <td>${r.date}</td>
+      <td>${r.athlete}</td>
+      <td>${r.type || '-'}</td>
+      <td>${r.activityType || '-'}</td>
+      <td>${r.km > 0 ? r.km.toFixed(1) : '-'}</td>
+      <td>${r.minutes > 0 ? Math.round(r.minutes) : '-'}</td>
+      <td>${paceDisplay}</td>
+      <td>${speedDisplay}</td>
+      <td>${repsDisplay}</td>
+      <td>${repDistDisplay}</td>
+      <td>${r.rpe || '-'}</td>
+      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${r.note||''}">${r.note || ''}</td>
+      <td><button class="piano-delete-btn" onclick="deletePianoSession('${r.id}')">✕</button></td>
+    </tr>
+  `;
+  }).join('');
+}
+
+// ---- Helper: week key (YYYY-Www) ----
+function pianoWeekKey(dateStr){
+  const d = new Date(dateStr + 'T00:00:00');
+  const dayOfYear = Math.round((d - new Date(d.getFullYear(), 0, 1)) / 86400000);
+  const weekNum = Math.ceil((dayOfYear + new Date(d.getFullYear(), 0, 1).getDay() + 1) / 7);
+  return d.getFullYear() + '-S' + String(weekNum).padStart(2,'0');
+}
+
+// ---- Aggregate planned & actual by period ----
+function pianoBuildAggregated(athlete, granularity, fromDate, toDate){
+  let plans = trainingPlans.filter(p => p.athlete === athlete);
+  let actual = [];
+  try { actual = getDataRaw().filter(r => r.athlete === athlete); } catch(e){}
+
+  if(fromDate){ plans  = plans.filter(p => p.date >= fromDate);  actual = actual.filter(a => a.date >= fromDate); }
+  if(toDate){   plans  = plans.filter(p => p.date <= toDate);    actual = actual.filter(a => a.date <= toDate); }
+
+  const keyFn = granularity === 'week' ? pianoWeekKey : (d => d);
+  const buckets = {};
+  const addBucket = (key) => {
+    if(!buckets[key]) buckets[key] = { planned_km:0, actual_km:0, planned_min:0, actual_min:0, planned_load:0, actual_load:0 };
+  };
+
+  plans.forEach(p => {
+    const k = keyFn(p.date);
+    addBucket(k);
+    buckets[k].planned_km   += Number(p.km || 0);
+    buckets[k].planned_min  += Number(p.minutes || 0);
+    buckets[k].planned_load += (Number(p.rpe || 5) * Number(p.minutes || 0));
+  });
+  actual.forEach(a => {
+    const k = keyFn(a.date);
+    addBucket(k);
+    buckets[k].actual_km   += Number(a.km || 0);
+    buckets[k].actual_min  += Number(a.minutes || (Number(a.time||0)*60));
+    buckets[k].actual_load += (Number(a.rpe || 3) * Number(a.minutes || (Number(a.time||0)*60)));
+  });
+
+  const keys = Object.keys(buckets).sort();
+  return { keys, buckets };
+}
+
+// ---- Render charts ----
+const _pianoCharts = {};
+function _pianoDestroyChart(id){
+  if(_pianoCharts[id]){ try{ _pianoCharts[id].destroy(); }catch(e){} delete _pianoCharts[id]; }
+}
+
+function renderPianoCharts(){
+  const athlete     = document.getElementById('pianoChartAthlete')?.value || (athletes[0] || '');
+  const granularity = document.getElementById('pianoChartGranularity')?.value || 'week';
+  const fromDate    = document.getElementById('pianoChartFrom')?.value || '';
+  const toDate      = document.getElementById('pianoChartTo')?.value || '';
+
+  if(!athlete){ document.getElementById('pianoChartEmpty').style.display='block'; return; }
+
+  const { keys, buckets } = pianoBuildAggregated(athlete, granularity, fromDate, toDate);
+
+  const empty = document.getElementById('pianoChartEmpty');
+  if(keys.length === 0){
+    if(empty) empty.style.display = 'block';
+    ['pianoKmChart','pianoMinChart','pianoLoadChart','pianoAdherenceChart'].forEach(id => _pianoDestroyChart(id));
+    document.getElementById('pianoKpiRow').innerHTML = '';
+    return;
+  }
+  if(empty) empty.style.display = 'none';
+
+  const plannedKm   = keys.map(k => +buckets[k].planned_km.toFixed(2));
+  const actualKm    = keys.map(k => +buckets[k].actual_km.toFixed(2));
+  const plannedMin  = keys.map(k => +buckets[k].planned_min.toFixed(0));
+  const actualMin   = keys.map(k => +buckets[k].actual_min.toFixed(0));
+  const plannedLoad = keys.map(k => +buckets[k].planned_load.toFixed(0));
+  const actualLoad  = keys.map(k => +buckets[k].actual_load.toFixed(0));
+
+  const adherence = keys.map(k => {
+    const p = buckets[k].planned_km || 0;
+    const a = buckets[k].actual_km  || 0;
+    if(p === 0) return null;
+    return Math.min(150, +(((a/p)*100).toFixed(1)));
+  });
+
+  const totalPlanKm  = plannedKm.reduce((s,v)=>s+v,0);
+  const totalActKm   = actualKm.reduce((s,v)=>s+v,0);
+  const totalPlanMin = plannedMin.reduce((s,v)=>s+v,0);
+  const totalActMin  = actualMin.reduce((s,v)=>s+v,0);
+  const totalPlanLoad= plannedLoad.reduce((s,v)=>s+v,0);
+  const totalActLoad = actualLoad.reduce((s,v)=>s+v,0);
+  const globalAdh    = totalPlanKm > 0 ? ((totalActKm/totalPlanKm)*100).toFixed(1) : '-';
+
+  const adhColor = globalAdh === '-' ? '#64748b' : (parseFloat(globalAdh) >= 90 ? '#10b981' : parseFloat(globalAdh) >= 70 ? '#f59e0b' : '#ef4444');
+  document.getElementById('pianoKpiRow').innerHTML = `
+    <div class="piano-kpi-chip">
+      <div class="pkc-val">${totalPlanKm.toFixed(1)}</div>
+      <div class="pkc-lbl">Km pianificati</div>
+    </div>
+    <div class="piano-kpi-chip" style="background:linear-gradient(135deg,#065f46,#10b981);">
+      <div class="pkc-val">${totalActKm.toFixed(1)}</div>
+      <div class="pkc-lbl">Km effettivi</div>
+    </div>
+    <div class="piano-kpi-chip">
+      <div class="pkc-val">${Math.round(totalPlanMin)}</div>
+      <div class="pkc-lbl">Min pianificati</div>
+    </div>
+    <div class="piano-kpi-chip" style="background:linear-gradient(135deg,#065f46,#10b981);">
+      <div class="pkc-val">${Math.round(totalActMin)}</div>
+      <div class="pkc-lbl">Min effettivi</div>
+    </div>
+    <div class="piano-kpi-chip" style="background:linear-gradient(135deg,#7c3aed,#a855f7);">
+      <div class="pkc-val">${globalAdh}%</div>
+      <div class="pkc-lbl">Aderenza km</div>
+      <div class="pkc-pct" style="color:${adhColor};">${parseFloat(globalAdh)>=90?'✅ Ottima':parseFloat(globalAdh)>=70?'⚠️ Buona':globalAdh==='-'?'':'❌ Bassa'}</div>
+    </div>
+    <div class="piano-kpi-chip">
+      <div class="pkc-val">${totalPlanLoad.toFixed(0)}</div>
+      <div class="pkc-lbl">Carico pianificato</div>
+    </div>
+    <div class="piano-kpi-chip" style="background:linear-gradient(135deg,#065f46,#10b981);">
+      <div class="pkc-val">${totalActLoad.toFixed(0)}</div>
+      <div class="pkc-lbl">Carico effettivo</div>
+    </div>
+  `;
+
+  const commonOpts = (ylabel) => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: true, position: 'top', labels: { color: '#e2e8f0', font: { size: 11 } } }, tooltip: { mode: 'index', intersect: false } },
+    scales: {
+      x: { ticks: { color: '#94a3b8', maxRotation: 45, font: { size: 10 } }, grid: { color: 'rgba(148,163,184,0.12)' } },
+      y: { beginAtZero: true, ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: 'rgba(148,163,184,0.12)' }, title: { display: true, text: ylabel, color: '#64748b', font: { size: 11 } } }
+    }
+  });
+
+  _pianoDestroyChart('pianoKmChart');
+  const ctxKm = document.getElementById('pianoKmChart')?.getContext('2d');
+  if(ctxKm) _pianoCharts['pianoKmChart'] = new Chart(ctxKm, { type:'bar', data:{ labels:keys, datasets:[
+    { label:'Pianificati', data:plannedKm, backgroundColor:'rgba(59,130,246,0.7)', borderColor:'#3b82f6', borderWidth:2, borderRadius:4 },
+    { label:'Effettivi',   data:actualKm,  backgroundColor:'rgba(16,185,129,0.7)', borderColor:'#10b981', borderWidth:2, borderRadius:4 }
+  ]}, options:commonOpts('km') });
+
+  _pianoDestroyChart('pianoMinChart');
+  const ctxMin = document.getElementById('pianoMinChart')?.getContext('2d');
+  if(ctxMin) _pianoCharts['pianoMinChart'] = new Chart(ctxMin, { type:'bar', data:{ labels:keys, datasets:[
+    { label:'Pianificati', data:plannedMin, backgroundColor:'rgba(59,130,246,0.7)', borderColor:'#3b82f6', borderWidth:2, borderRadius:4 },
+    { label:'Effettivi',   data:actualMin,  backgroundColor:'rgba(16,185,129,0.7)', borderColor:'#10b981', borderWidth:2, borderRadius:4 }
+  ]}, options:commonOpts('min') });
+
+  _pianoDestroyChart('pianoLoadChart');
+  const ctxLoad = document.getElementById('pianoLoadChart')?.getContext('2d');
+  if(ctxLoad) _pianoCharts['pianoLoadChart'] = new Chart(ctxLoad, { type:'bar', data:{ labels:keys, datasets:[
+    { label:'Pianificato', data:plannedLoad, backgroundColor:'rgba(245,158,11,0.7)', borderColor:'#f59e0b', borderWidth:2, borderRadius:4 },
+    { label:'Effettivo',   data:actualLoad,  backgroundColor:'rgba(139,92,246,0.7)', borderColor:'#8b5cf6', borderWidth:2, borderRadius:4 }
+  ]}, options:commonOpts('RPE×min') });
+
+  _pianoDestroyChart('pianoAdherenceChart');
+  const ctxAdh = document.getElementById('pianoAdherenceChart')?.getContext('2d');
+  if(ctxAdh) _pianoCharts['pianoAdherenceChart'] = new Chart(ctxAdh, {
+    type: 'line',
+    data: { labels: keys, datasets: [
+      { label:'Aderenza %', data:adherence, borderColor:'#a855f7', backgroundColor:'rgba(168,85,247,0.15)', borderWidth:2.5, tension:0.35, pointRadius:5, fill:true },
+      { label:'100% target', data:keys.map(()=>100), borderColor:'#22c55e', borderDash:[6,4], borderWidth:1.5, pointRadius:0, fill:false }
+    ]},
+    options: { ...commonOpts('%'), scales: {
+      x: { ticks:{ color:'#94a3b8', maxRotation:45, font:{size:10} }, grid:{color:'rgba(148,163,184,0.12)'} },
+      y: { beginAtZero:true, max:155, ticks:{ color:'#94a3b8', font:{size:10}, callback: v=>v+'%' }, grid:{color:'rgba(148,163,184,0.12)'}, title:{display:true,text:'%',color:'#64748b',font:{size:11}} }
+    }}
+  });
+}
+
+// ---- Init ----
+function initPianoTab(){
+  loadTrainingPlans();
+  populatePianoAthleteSelects();
+  const dEl = document.getElementById('pianoDate');
+  if(dEl && !dEl.value) dEl.value = new Date().toISOString().slice(0,10);
+  renderPianoTable();
+  renderPianoCharts();
+}
+
+window.addEventListener('DOMContentLoaded', function(){
+  loadTrainingPlans();
+  const dEl = document.getElementById('pianoDate');
+  if(dEl) dEl.value = new Date().toISOString().slice(0,10);
+  // Delay populate to let loadAthletes() finish
+  setTimeout(populatePianoAthleteSelects, 600);
+});
+
+// Hook into switchTab — init piano on desktop tab switch
+(function(){
+  const _origSwitch = window.switchTab;
+  if(typeof _origSwitch === 'function'){
+    window.switchTab = function(tabName, event){
+      _origSwitch(tabName, event);
+      if(tabName === 'piano' && window.innerWidth > 900) initPianoTab();
+    };
+  }
+})();
 </script>
 </body>
 </html>
