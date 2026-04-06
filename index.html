@@ -428,6 +428,85 @@
 }
 @media (min-width: 901px) { #chatInlinePanelMobile { display: none; } }
 
+/* ---- Piano Inline Panel (dashboard) ---- */
+#pianoInlinePanel {
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(160deg, #0f172a 0%, #1e293b 60%, #1a2744 100%);
+  border: 1px solid rgba(59,130,246,0.45);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.5);
+  transition: max-height 0.35s cubic-bezier(0.4,0,0.2,1), box-shadow 0.25s;
+}
+#pianoInlinePanel.pi-collapsed { max-height: 36px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+#pianoInlinePanel.pi-collapsed .pi-body { display: none; }
+#pianoInlinePanel.pi-collapsed .pi-toggle-btn { transform: rotate(180deg); }
+.pi-header {
+  padding: 6px 10px;
+  background: linear-gradient(90deg, #1d4ed8 0%, #3b82f6 100%);
+  color: #fff;
+  font-size: 0.73rem;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+.pi-toggle-btn {
+  background: none; border: none; color: rgba(255,255,255,0.8);
+  font-size: 0.85rem; cursor: pointer; padding: 0 2px; line-height: 1;
+  flex-shrink: 0; transition: transform 0.25s;
+}
+.pi-ctrl-btn {
+  background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 5px; color: #fff; font-size: 0.68rem; font-weight: 700;
+  padding: 2px 7px; cursor: pointer; line-height: 1.4; flex-shrink: 0;
+  transition: background 0.15s;
+}
+.pi-ctrl-btn:hover { background: rgba(255,255,255,0.28); }
+.pi-add-btn { background: rgba(16,185,129,0.35); border-color: rgba(16,185,129,0.5); font-size: 0.75rem; padding: 1px 6px; }
+.pi-add-btn:hover { background: rgba(16,185,129,0.55); }
+.pi-athlete-select {
+  background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 6px; color: #fff; font-size: 0.72rem; font-weight: 700;
+  padding: 3px 6px; outline: none; cursor: pointer; max-width: 120px; flex-shrink: 0;
+  text-transform: none; letter-spacing: 0;
+}
+.pi-athlete-select option { background: #1e1b4b; color: #e2e8f0; }
+.pi-body { display: flex; flex-direction: column; gap: 0; }
+.pi-kpi-row { display: flex; gap: 8px; flex-wrap: wrap; padding: 8px 10px; }
+.pi-kpi-chip {
+  flex: 1; min-width: 80px; background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12); border-radius: 8px;
+  padding: 5px 10px; text-align: center;
+}
+.pi-kpi-chip .pkv { color: #fff; font-weight: 800; font-size: 1rem; line-height: 1.2; }
+.pi-kpi-chip .pkl { color: #94a3b8; font-size: 0.67rem; margin-top: 1px; }
+#pianoInlinePanelMobile {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(160deg, #0f172a 0%, #1e293b 60%, #1a2744 100%);
+  border: 1px solid rgba(59,130,246,0.45);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.5);
+  max-height: 460px;
+  margin-top: 6px;
+  transition: max-height 0.35s cubic-bezier(0.4,0,0.2,1), box-shadow 0.25s;
+}
+#pianoInlinePanelMobile.pi-collapsed { max-height: 38px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+#pianoInlinePanelMobile.pi-collapsed .pi-body { display: none; }
+#pianoInlinePanelMobile.pi-collapsed .pi-toggle-btn { transform: rotate(180deg); }
+@media (min-width: 901px) { #pianoInlinePanelMobile { display: none; } }
+@media (max-width: 900px) { #pianoInlinePanel { display: none; } }
+
 /* ---- Race Countdown Section ---- */
 #raceCountdownSection {
   grid-column: 1 / -1;
@@ -2866,6 +2945,21 @@ function addRowFromImportedData(row) {
     <div id="mobileKmTopRankingOverlay" style="position:absolute;right:8px;bottom:8px;left:8px;max-height:34%;overflow:auto;padding:8px 10px;border:1px solid rgba(203,213,225,.55);border-radius:10px;background:rgba(255,255,255,0.22);font-size:0.72rem;line-height:1.35;color:#0f172a;z-index:940;box-shadow:0 4px 12px rgba(0,0,0,.12);"></div>
     <div id="chatGhostFeedMobile"></div>
   </div>
+  <div id="pianoInlinePanelMobile" class="pi-collapsed">
+    <div class="pi-header">
+      <span style="flex:1;cursor:pointer;" onclick="togglePianoInlinePanel('mobile')">📅 Piano vs Effettivo</span>
+      <div style="display:flex;align-items:center;gap:5px;">
+        <button id="pianoInlineGranBtnMobile" class="pi-ctrl-btn" onclick="togglePianoInlineGranularity()" title="Cambia granularità">7d</button>
+        <button class="pi-ctrl-btn pi-add-btn" onclick="openPianoAdd('mobile')" title="Aggiungi sessione">➕</button>
+        <select id="pianoInlineAthleteMobile" class="pi-athlete-select" onchange="renderInlinePianoPanel('mobile')"></select>
+        <button class="pi-toggle-btn" onclick="togglePianoInlinePanel('mobile')" title="Nascondi/Mostra">▼</button>
+      </div>
+    </div>
+    <div class="pi-body">
+      <div class="pi-kpi-row" id="pianoInlineKpiMobile"></div>
+      <div style="padding:0 10px 10px;height:180px;position:relative;"><canvas id="pianoInlineChartMobile"></canvas></div>
+    </div>
+  </div>
   <div id="chatInlinePanelMobile">
     <div class="ci-inline-header" onclick="toggleInlineChatPanel('mobile')" style="cursor:pointer;"><span>💬 Chat Team</span><div style="display:flex;align-items:center;gap:4px;"><select id="chatInlineSenderMobile" class="ci-sender-select" onchange="syncInlineSender('mobile')" onclick="event.stopPropagation()"></select><button class="ci-toggle-btn" onclick="event.stopPropagation();toggleInlineChatPanel('mobile')" title="Nascondi/Mostra">▼</button></div></div>
     <div id="chatInlineMsgsMobile"></div>
@@ -3641,6 +3735,23 @@ document.addEventListener('click', function(e){
       <div class="card"><h3>⚡ Carico interno</h3><canvas id="loadChart"></canvas></div>
       <div class="card"><h3>💓 TRIMP</h3><canvas id="trimpChart"></canvas></div>
       <div class="card"><h3>⚠️ ACWR</h3><canvas id="acwrChart"></canvas></div>
+      <div class="card" style="grid-column:1/-1;padding:0;overflow:hidden;background:transparent;box-shadow:none;border:none;">
+        <div id="pianoInlinePanel" class="pi-collapsed">
+          <div class="pi-header">
+            <span style="flex:1;cursor:pointer;" onclick="togglePianoInlinePanel('desktop')">📅 Piano vs Effettivo</span>
+            <div style="display:flex;align-items:center;gap:5px;">
+              <button id="pianoInlineGranBtn" class="pi-ctrl-btn" onclick="togglePianoInlineGranularity()" title="Cambia granularità">7d</button>
+              <button class="pi-ctrl-btn pi-add-btn" onclick="openPianoAdd('desktop')" title="Aggiungi sessione">➕</button>
+              <select id="pianoInlineAthlete" class="pi-athlete-select" onchange="renderInlinePianoPanel('desktop')"></select>
+              <button class="pi-toggle-btn" onclick="togglePianoInlinePanel('desktop')" title="Nascondi/Mostra">▼</button>
+            </div>
+          </div>
+          <div class="pi-body">
+            <div class="pi-kpi-row" id="pianoInlineKpi"></div>
+            <div style="padding:0 10px 10px;height:180px;position:relative;"><canvas id="pianoInlineChart"></canvas></div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -9450,6 +9561,7 @@ function updateCharts(){
   // KPI
   updateKPI(filt, acwr);
   if (typeof updateMobileCharts === 'function' && window.innerWidth <= 900) updateMobileCharts();
+  try { populatePianoInlineAthletes(); renderInlinePianoPanel(window.innerWidth <= 900 ? 'mobile' : 'desktop'); } catch(e){}
 }
 
 // Forza il ricalcolo degli score su tutte le righe della tabella e aggiorna i grafici
@@ -11517,6 +11629,129 @@ function cancelPianoEdit(){
   _editingPianoId = null;
   clearPianoForm();
 }
+
+/* ---- Piano Inline Panel (dashboard widget) ---- */
+let _pianoInlineGranularity = 'week';
+
+function togglePianoInlineGranularity() {
+  _pianoInlineGranularity = _pianoInlineGranularity === 'week' ? 'day' : 'week';
+  const label = _pianoInlineGranularity === 'week' ? '7d' : '1d';
+  ['pianoInlineGranBtn','pianoInlineGranBtnMobile'].forEach(function(id){
+    const el = document.getElementById(id);
+    if (el) el.textContent = label;
+  });
+  renderInlinePianoPanel('desktop');
+  renderInlinePianoPanel('mobile');
+}
+
+function openPianoAdd(which) {
+  if (which === 'mobile') {
+    selectMobileSection('piano');
+  } else {
+    const pianoBtn = document.querySelector('.tab-btn[onclick*="piano"]');
+    if (pianoBtn) switchTab('piano', { target: pianoBtn, currentTarget: pianoBtn });
+    setTimeout(function(){
+      const form = document.getElementById('pianoDate') || document.getElementById('pianoForm');
+      if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  }
+}
+
+function togglePianoInlinePanel(which) {
+  const id = which === 'mobile' ? 'pianoInlinePanelMobile' : 'pianoInlinePanel';
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.toggle('pi-collapsed');
+  try { localStorage.setItem('pianoInlineCollapsed_' + which, el.classList.contains('pi-collapsed') ? '1' : '0'); } catch(e) {}
+  if (!el.classList.contains('pi-collapsed')) { populatePianoInlineAthletes(); renderInlinePianoPanel(which); }
+}
+
+function populatePianoInlineAthletes() {
+  // Use the global athletes array first; fall back to names found in plans
+  let all = (Array.isArray(athletes) && athletes.length > 0)
+    ? athletes.filter(Boolean)
+    : Array.from(new Set((Array.isArray(trainingPlans) ? trainingPlans : []).map(p => p.athlete).filter(Boolean)));
+  if (!all.length) {
+    // Last resort: try loading from localStorage directly
+    try {
+      const s = localStorage.getItem('athletes');
+      if (s) {
+        const parsed = JSON.parse(s);
+        if (Array.isArray(parsed) && parsed.length) {
+          all = parsed.map(a => (a && a.name ? a.name : a)).filter(Boolean);
+        }
+      }
+    } catch(e) {}
+  }
+  ['pianoInlineAthlete', 'pianoInlineAthleteMobile'].forEach(function(selId) {
+    const el = document.getElementById(selId);
+    if (!el) return;
+    const prev = el.value;
+    el.innerHTML = all.map(a => '<option value="' + a + '">' + a + '</option>').join('');
+    if (prev && all.includes(prev)) el.value = prev;
+  });
+}
+
+function renderInlinePianoPanel(which) {
+  if (typeof trainingPlans === 'undefined' || !Array.isArray(trainingPlans)) return;
+  const isMobile = which === 'mobile';
+  const panelId = isMobile ? 'pianoInlinePanelMobile' : 'pianoInlinePanel';
+  const panel = document.getElementById(panelId);
+  if (!panel || panel.classList.contains('pi-collapsed')) return;
+  const athleteEl = document.getElementById(isMobile ? 'pianoInlineAthleteMobile' : 'pianoInlineAthlete');
+  const kpiEl    = document.getElementById(isMobile ? 'pianoInlineKpiMobile' : 'pianoInlineKpi');
+  const chartId  = isMobile ? 'pianoInlineChartMobile' : 'pianoInlineChart';
+  if (!athleteEl || !kpiEl) return;
+  const athlete = athleteEl.value;
+  if (!athlete) { kpiEl.innerHTML = ''; return; }
+  const agg = pianoBuildAggregated(athlete, _pianoInlineGranularity, '', '');
+  const keys = agg.keys, buckets = agg.buckets;
+  if (!keys || !keys.length) {
+    kpiEl.innerHTML = '<div style="color:#64748b;padding:8px 4px;font-size:0.8rem;">Nessun dato pianificato.</div>';
+    return;
+  }
+  const plannedKm = keys.map(function(k){ return +(buckets[k].planned_km||0).toFixed(2); });
+  const actualKm  = keys.map(function(k){ return +(buckets[k].actual_km||0).toFixed(2); });
+  const totalPlan = plannedKm.reduce(function(s,v){ return s+v; }, 0);
+  const totalAct  = actualKm.reduce(function(s,v){ return s+v; }, 0);
+  const adhRaw = totalPlan > 0 ? Math.min(100, (totalAct / totalPlan) * 100) : null;
+  const adhText = adhRaw !== null ? adhRaw.toFixed(1) + '%' : '-';
+  const adhColor = adhRaw === null ? '#64748b' : adhRaw >= 90 ? '#10b981' : adhRaw >= 70 ? '#f59e0b' : '#ef4444';
+  kpiEl.innerHTML =
+    '<div class="pi-kpi-chip" style="border-color:rgba(59,130,246,0.4);background:rgba(59,130,246,0.18);">'
+    + '<div class="pkv">' + totalPlan.toFixed(1) + '</div><div class="pkl">Km pian.</div></div>'
+    + '<div class="pi-kpi-chip" style="border-color:rgba(16,185,129,0.4);background:rgba(16,185,129,0.18);">'
+    + '<div class="pkv">' + totalAct.toFixed(1) + '</div><div class="pkl">Km effettivi</div></div>'
+    + '<div class="pi-kpi-chip" style="border-color:rgba(168,85,247,0.4);background:rgba(168,85,247,0.18);">'
+    + '<div class="pkv" style="color:' + adhColor + '">' + adhText + '</div><div class="pkl">Aderenza</div></div>';
+  if (!window._pianoInlineCharts) window._pianoInlineCharts = {};
+  if (window._pianoInlineCharts[chartId]) { try { window._pianoInlineCharts[chartId].destroy(); } catch(e){ } }
+  const canvas = document.getElementById(chartId);
+  if (!canvas) return;
+  window._pianoInlineCharts[chartId] = new Chart(canvas.getContext('2d', {willReadFrequently: true}), {
+    type: 'bar',
+    data: {
+      labels: keys,
+      datasets: [
+        { label: 'Pianificati', data: plannedKm, backgroundColor: 'rgba(59,130,246,0.75)', borderColor: '#3b82f6', borderWidth: 1.5, borderRadius: 3 },
+        { label: 'Effettivi',   data: actualKm,  backgroundColor: 'rgba(16,185,129,0.75)', borderColor: '#10b981', borderWidth: 1.5, borderRadius: 3 }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#e2e8f0', font: { size: 10 }, boxWidth: 12 } },
+        tooltip: { mode: 'index', intersect: false }
+      },
+      scales: {
+        x: { ticks: { color: '#94a3b8', maxRotation: 45, font: { size: 9 } }, grid: { color: 'rgba(148,163,184,0.1)' } },
+        y: { beginAtZero: true, ticks: { color: '#94a3b8', font: { size: 9 } }, grid: { color: 'rgba(148,163,184,0.1)' } }
+      }
+    }
+  });
+}
+/* ---- End Piano Inline Panel ---- */
 
 function deletePianoSession(id){
   if(!confirm('Eliminare questa sessione pianificata?')) return;
