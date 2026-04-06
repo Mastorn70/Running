@@ -10416,25 +10416,45 @@ function renderTrendInlinePanelMobile() {
     const vals2 = allKeys.map(k => getVal(agg2, k));
     const labels = allKeys.map(k => k.slice(5)); // MM-DD
 
+    function fmtPace(v) {
+      if (v === null || v === undefined || v <= 0) return '-';
+      const m = Math.floor(v);
+      const s = Math.round((v - m) * 60);
+      return `${m}:${String(s).padStart(2, '0')}`;
+    }
+
+    const isPace = metric === 'pace';
     if (charts['trendInlineChartMobile']) charts['trendInlineChartMobile'].destroy();
     createChart('trendInlineChartMobile', 'line', labels, [
       { label: a1 || 'A1', data: vals1, borderColor: '#3b82f6', backgroundColor: '#3b82f622', fill: false, borderWidth: 2, tension: 0.3, pointRadius: 2, spanGaps: true },
       { label: a2 || 'A2', data: vals2, borderColor: '#ec4899', backgroundColor: '#ec489922', fill: false, borderWidth: 2, tension: 0.3, pointRadius: 2, spanGaps: true }
     ], {
       maintainAspectRatio: false,
-      plugins: { legend: { labels: { color: '#e2e8f0', font: { size: 10 } } } },
+      plugins: {
+        legend: { labels: { color: '#e2e8f0', font: { size: 10 } } },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) {
+              const raw = ctx.raw;
+              if (isPace) return `${ctx.dataset.label}: ${fmtPace(raw)} min/km`;
+              return `${ctx.dataset.label}: ${raw !== null ? Number(raw).toFixed(2) + ' km' : '-'}`;
+            }
+          }
+        }
+      },
       scales: {
-        y: { reverse: metric === 'pace', ticks: { color: '#94a3b8', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.07)' } },
+        y: {
+          reverse: isPace,
+          ticks: {
+            color: '#94a3b8',
+            font: { size: 9 },
+            callback: isPace ? function(v) { return fmtPace(v); } : undefined
+          },
+          grid: { color: 'rgba(255,255,255,0.07)' }
+        },
         x: { ticks: { color: '#94a3b8', font: { size: 9 }, maxRotation: 45 }, grid: { color: 'rgba(255,255,255,0.07)' } }
       }
     });
-
-    function fmtPace(v) {
-      if (!v && v !== 0) return '-';
-      const m = Math.floor(v);
-      const s = Math.round((v - m) * 60);
-      return `${m}:${String(s).padStart(2, '0')}`;
-    }
 
     const nonNull1 = vals1.filter(v => v !== null && v > 0);
     const nonNull2 = vals2.filter(v => v !== null && v > 0);
