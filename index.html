@@ -523,6 +523,41 @@
 @media (min-width: 901px) { #pianoInlinePanelMobile { display: none; } }
 @media (max-width: 900px) { #pianoInlinePanel { display: none; } }
 
+/* ---- Trend Inline Panel Mobile ---- */
+#trendInlinePanelMobile {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(160deg, #0f172a 0%, #162136 60%, #0f2027 100%);
+  border: 1px solid rgba(16,185,129,0.45);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.5);
+  max-height: 540px;
+  margin-top: 6px;
+  transition: max-height 0.35s cubic-bezier(0.4,0,0.2,1), box-shadow 0.25s;
+}
+#trendInlinePanelMobile.ti-collapsed { max-height: 38px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+#trendInlinePanelMobile.ti-collapsed .pi-body { display: none; }
+#trendInlinePanelMobile.ti-collapsed .pi-toggle-btn { transform: rotate(180deg); }
+@media (min-width: 901px) { #trendInlinePanelMobile { display: none; } }
+.ti-header {
+  padding: 6px 10px;
+  background: linear-gradient(90deg, #059669 0%, #10b981 100%);
+  color: #fff;
+  font-size: 0.73rem;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
 /* ---- Race Countdown Section ---- */
 #raceCountdownSection {
   grid-column: 1 / -1;
@@ -2983,6 +3018,44 @@ function addRowFromImportedData(row) {
       <div style="padding:0 10px 10px;height:180px;position:relative;"><canvas id="pianoInlineChartMobile"></canvas></div>
     </div>
   </div>
+  <!-- TREND INLINE PANEL MOBILE -->
+  <div id="trendInlinePanelMobile" class="ti-collapsed">
+    <div class="ti-header">
+      <span style="flex:1;" onclick="toggleTrendInlinePanelMobile()">📈 Trend Atleti</span>
+      <button class="pi-toggle-btn" onclick="toggleTrendInlinePanelMobile()" title="Nascondi/Mostra">▼</button>
+    </div>
+    <div class="pi-body">
+      <div class="pi-filter-row" style="gap:5px;flex-wrap:wrap;">
+        <label class="pi-filter-label">A1</label>
+        <select id="trendInlineA1Mobile" class="pi-athlete-select" style="max-width:95px;" onchange="renderTrendInlinePanelMobile()"></select>
+        <label class="pi-filter-label">A2</label>
+        <select id="trendInlineA2Mobile" class="pi-athlete-select" style="max-width:95px;" onchange="renderTrendInlinePanelMobile()"></select>
+      </div>
+      <div class="pi-filter-row" style="gap:5px;flex-wrap:wrap;">
+        <label class="pi-filter-label">Dati</label>
+        <select id="trendInlineMetricMobile" class="pi-athlete-select" onchange="renderTrendInlinePanelMobile()">
+          <option value="km">Km totali</option>
+          <option value="pace">Passo min/km</option>
+        </select>
+        <label class="pi-filter-label">Per</label>
+        <select id="trendInlinePeriodMobile" class="pi-athlete-select" onchange="renderTrendInlinePanelMobile()">
+          <option value="weekly">Settimanale</option>
+          <option value="daily">Giornaliero</option>
+        </select>
+      </div>
+      <div class="pi-filter-row">
+        <label class="pi-filter-label">Da</label>
+        <input type="date" id="trendInlineFromMobile" class="pi-date-input" oninput="renderTrendInlinePanelMobile()">
+        <label class="pi-filter-label">A</label>
+        <input type="date" id="trendInlineToMobile" class="pi-date-input" oninput="renderTrendInlinePanelMobile()">
+        <button class="pi-ctrl-btn" onclick="document.getElementById('trendInlineFromMobile').value='';document.getElementById('trendInlineToMobile').value='';renderTrendInlinePanelMobile()" title="Azzera filtri">✕</button>
+      </div>
+      <div class="pi-kpi-row" id="trendInlineKpiMobile"></div>
+      <div style="padding:0 10px 10px;height:190px;position:relative;"><canvas id="trendInlineChartMobile"></canvas></div>
+    </div>
+  </div>
+  <!-- /TREND INLINE PANEL MOBILE -->
+
   <div id="chatInlinePanelMobile">
     <div class="ci-inline-header" onclick="toggleInlineChatPanel('mobile')" style="cursor:pointer;"><span>💬 Chat Team</span><div style="display:flex;align-items:center;gap:4px;"><select id="chatInlineSenderMobile" class="ci-sender-select" onchange="syncInlineSender('mobile')" onclick="event.stopPropagation()"></select><button class="ci-toggle-btn" onclick="event.stopPropagation();toggleInlineChatPanel('mobile')" title="Nascondi/Mostra">▼</button></div></div>
     <div id="chatInlineMsgsMobile"></div>
@@ -6412,6 +6485,9 @@ function updateAthletesUI(){
   if(ta1) ta1.innerHTML = athletes.map((n,i)=>`<option value="${n}" ${i===0?'selected':''}>${n}</option>`).join('');
   if(ta2) ta2.innerHTML = athletes.map((n,i)=>`<option value="${n}" ${i===1?'selected':''}>${n}</option>`).join('');
   if(pa) pa.innerHTML = athletes.map((n,i)=>`<option value="${n}" ${i===0?'selected':''}>${n}</option>`).join('');
+  const tia1=$id('trendInlineA1Mobile'), tia2=$id('trendInlineA2Mobile');
+  if(tia1) tia1.innerHTML = athletes.map((n,i)=>`<option value="${n}" ${i===0?'selected':''}>${n}</option>`).join('');
+  if(tia2) tia2.innerHTML = athletes.map((n,i)=>`<option value="${n}" ${i===1?'selected':''}>${n}</option>`).join('');
   updateTableFilters();
   if(typeof populateChatSenderOptions === 'function') populateChatSenderOptions();
 }
@@ -7728,6 +7804,9 @@ function mergeAthletesFromArray(arr){
     if(ta1) ta1.innerHTML=athletes.map((n,i)=>`<option value="${n}" ${i===0?'selected':''}>${n}</option>`).join('');
     if(ta2) ta2.innerHTML=athletes.map((n,i)=>`<option value="${n}" ${i===1?'selected':''}>${n}</option>`).join('');
     if(pa) pa.innerHTML=athletes.map((n,i)=>`<option value="${n}" ${i===0?'selected':''}>${n}</option>`).join('');
+    const tia1=$id('trendInlineA1Mobile'), tia2=$id('trendInlineA2Mobile');
+    if(tia1) tia1.innerHTML=athletes.map((n,i)=>`<option value="${n}" ${i===0?'selected':''}>${n}</option>`).join('');
+    if(tia2) tia2.innerHTML=athletes.map((n,i)=>`<option value="${n}" ${i===1?'selected':''}>${n}</option>`).join('');
   }
 }
 
@@ -8124,6 +8203,9 @@ function aggiornaFiltroAtleti(data,acwr={}) {
   if(ta1) ta1.innerHTML = nomi.map((n,i)=>`<option value="${n}" ${i===0?'selected':''}>${n}</option>`).join('');
   if(ta2) ta2.innerHTML = nomi.map((n,i)=>`<option value="${n}" ${i===1?'selected':''}>${n}</option>`).join('');
   if(pa) pa.innerHTML = nomi.map((n,i)=>`<option value="${n}" ${i===0?'selected':''}>${n}</option>`).join('');
+  const tia1=$id('trendInlineA1Mobile'), tia2=$id('trendInlineA2Mobile');
+  if(tia1) tia1.innerHTML = nomi.map((n,i)=>`<option value="${n}" ${i===0?'selected':''}>${n}</option>`).join('');
+  if(tia2) tia2.innerHTML = nomi.map((n,i)=>`<option value="${n}" ${i===1?'selected':''}>${n}</option>`).join('');
 }
 
 function computeACWR(data){
@@ -10275,6 +10357,101 @@ function generateTrendChart(){
 function openTrend(){ $id('trendModal')?.classList.add('show'); setTimeout(()=>generateTrendChart(),200); }
 function closeTrend(){ $id('trendModal')?.classList.remove('show'); }
 
+/* ---- Trend Inline Panel Mobile ---- */
+function toggleTrendInlinePanelMobile() {
+  const p = $id('trendInlinePanelMobile');
+  if (!p) return;
+  p.classList.toggle('ti-collapsed');
+  if (!p.classList.contains('ti-collapsed')) renderTrendInlinePanelMobile();
+}
+
+function renderTrendInlinePanelMobile() {
+  try {
+    const data = getData();
+    const a1 = ($id('trendInlineA1Mobile') || {}).value || '';
+    const a2 = ($id('trendInlineA2Mobile') || {}).value || '';
+    const metric = ($id('trendInlineMetricMobile') || {}).value || 'km';
+    const period = ($id('trendInlinePeriodMobile') || {}).value || 'weekly';
+    const from = ($id('trendInlineFromMobile') || {}).value || '';
+    const to = ($id('trendInlineToMobile') || {}).value || '';
+
+    function filterRows(athlete) {
+      return data.filter(d => {
+        if (d.athlete !== athlete) return false;
+        if (from && d.date < from) return false;
+        if (to && d.date > to) return false;
+        return true;
+      }).sort((a, b) => a.date.localeCompare(b.date));
+    }
+
+    const dat1 = filterRows(a1);
+    const dat2 = filterRows(a2);
+
+    function aggregateMob(rows) {
+      const map = {};
+      rows.forEach(r => {
+        const key = (period === 'daily') ? r.date
+          : (typeof getWeekStartKey === 'function' ? getWeekStartKey(r.date) : r.date.slice(0,10));
+        if (!map[key]) map[key] = { kmSum: 0, timeSum: 0, count: 0 };
+        map[key].kmSum  += (r.km   || 0);
+        map[key].timeSum += (r.time || 0);
+        map[key].count  += 1;
+      });
+      return map;
+    }
+
+    const agg1 = aggregateMob(dat1);
+    const agg2 = aggregateMob(dat2);
+    let allKeys = Array.from(new Set([...Object.keys(agg1), ...Object.keys(agg2)])).sort();
+
+    function getVal(aggMap, key) {
+      const b = aggMap[key];
+      if (!b) return null;
+      if (metric === 'km') return b.kmSum;
+      if (metric === 'pace') return (b.kmSum > 0) ? (b.timeSum * 60 / b.kmSum) : null;
+      return null;
+    }
+
+    const vals1 = allKeys.map(k => getVal(agg1, k));
+    const vals2 = allKeys.map(k => getVal(agg2, k));
+    const labels = allKeys.map(k => k.slice(5)); // MM-DD
+
+    if (charts['trendInlineChartMobile']) charts['trendInlineChartMobile'].destroy();
+    createChart('trendInlineChartMobile', 'line', labels, [
+      { label: a1 || 'A1', data: vals1, borderColor: '#3b82f6', backgroundColor: '#3b82f622', fill: false, borderWidth: 2, tension: 0.3, pointRadius: 2, spanGaps: true },
+      { label: a2 || 'A2', data: vals2, borderColor: '#ec4899', backgroundColor: '#ec489922', fill: false, borderWidth: 2, tension: 0.3, pointRadius: 2, spanGaps: true }
+    ], {
+      maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#e2e8f0', font: { size: 10 } } } },
+      scales: {
+        y: { reverse: metric === 'pace', ticks: { color: '#94a3b8', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.07)' } },
+        x: { ticks: { color: '#94a3b8', font: { size: 9 }, maxRotation: 45 }, grid: { color: 'rgba(255,255,255,0.07)' } }
+      }
+    });
+
+    function fmtPace(v) {
+      if (!v && v !== 0) return '-';
+      const m = Math.floor(v);
+      const s = Math.round((v - m) * 60);
+      return `${m}:${String(s).padStart(2, '0')}`;
+    }
+
+    const nonNull1 = vals1.filter(v => v !== null && v > 0);
+    const nonNull2 = vals2.filter(v => v !== null && v > 0);
+    const avg1 = nonNull1.length ? nonNull1.reduce((s, v) => s + v, 0) / nonNull1.length : 0;
+    const avg2 = nonNull2.length ? nonNull2.reduce((s, v) => s + v, 0) / nonNull2.length : 0;
+    const tot1 = dat1.reduce((s, r) => s + (r.km || 0), 0);
+    const tot2 = dat2.reduce((s, r) => s + (r.km || 0), 0);
+
+    const kpiEl = $id('trendInlineKpiMobile');
+    if (kpiEl) kpiEl.innerHTML = `
+      <div class="pi-kpi-chip"><div class="pkv" style="color:#3b82f6">${a1 || 'A1'}</div><div class="pkl">${metric === 'pace' ? 'Passo medio: ' + fmtPace(avg1) : 'Km tot: ' + tot1.toFixed(1)} &bull; ${dat1.length} sess.</div></div>
+      <div class="pi-kpi-chip"><div class="pkv" style="color:#ec4899">${a2 || 'A2'}</div><div class="pkl">${metric === 'pace' ? 'Passo medio: ' + fmtPace(avg2) : 'Km tot: ' + tot2.toFixed(1)} &bull; ${dat2.length} sess.</div></div>
+    `;
+  } catch(e) { console.error('renderTrendInlinePanelMobile', e); }
+}
+/* ---- /Trend Inline Panel Mobile ---- */
+
 /* -----------------------------
    LINEAR REGRESSION (weighted)
    ----------------------------- */
@@ -11062,6 +11239,9 @@ window.addEventListener('load', ()=>{
   if(ta2) ta2.innerHTML=athletes.map((n,i)=>`<option value="${n}" ${i===1?'selected':''}>${n}</option>`).join('');
   if(pa) pa.innerHTML=athletes.map((n,i)=>`<option value="${n}" ${i===0?'selected':''}>${n}</option>`).join('');
   if(ma) ma.innerHTML=athletes.map((n,i)=>`<option value="${n}" ${i===0?'selected':''}>${n}</option>`).join('');
+  const tia1=$id('trendInlineA1Mobile'), tia2=$id('trendInlineA2Mobile');
+  if(tia1) tia1.innerHTML=athletes.map((n,i)=>`<option value="${n}" ${i===0?'selected':''}>${n}</option>`).join('');
+  if(tia2) tia2.innerHTML=athletes.map((n,i)=>`<option value="${n}" ${i===1?'selected':''}>${n}</option>`).join('');
   setTimeout(hideAppSplash, 1300);
   // migrate existing rows to ensure Min/km is populated for older data
   try{ if(typeof migrateExistingPaceFields === 'function') migrateExistingPaceFields(); }catch(e){console.warn('migrateExistingPaceFields failed', e); }
