@@ -2457,6 +2457,8 @@ body.dark-mode .piano-table tbody tr:hover { background: rgba(59,130,246,0.1); }
 
 .piano-delete-btn { background: #ef4444; color: #fff; border: none; border-radius: 6px; padding: 4px 10px; font-size: 0.8rem; cursor: pointer; font-weight: 700; }
 .piano-delete-btn:hover { background: #dc2626; }
+.piano-edit-btn { background: #6366f1; color: #fff; border: none; border-radius: 6px; padding: 4px 10px; font-size: 0.8rem; cursor: pointer; font-weight: 700; margin-right: 4px; }
+.piano-edit-btn:hover { background: #4f46e5; }
 .piano-ripetute-only { display: none; }
 
 .piano-kpi-chip { background: linear-gradient(135deg,#1e3c72,#2a5298); border-radius: 12px; padding: 12px 14px; color: #fff; text-align: center; }
@@ -3961,8 +3963,9 @@ document.addEventListener('click', function(e){
           </label>
         </div>
         <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;">
-          <button type="button" onclick="addPianoSession()" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none;border-radius:8px;padding:9px 22px;font-weight:700;font-size:0.97rem;cursor:pointer;">✅ Aggiungi</button>
+          <button id="pianoAddBtn" type="button" onclick="addPianoSession()" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none;border-radius:8px;padding:9px 22px;font-weight:700;font-size:0.97rem;cursor:pointer;">✅ Aggiungi</button>
           <button type="button" onclick="clearPianoForm()" style="background:#6b7280;color:#fff;border:none;border-radius:8px;padding:9px 18px;font-weight:600;cursor:pointer;">🗑 Pulisci</button>
+          <button id="pianoCancelBtn" type="button" onclick="cancelPianoEdit()" style="display:none;background:#f59e0b;color:#fff;border:none;border-radius:8px;padding:9px 18px;font-weight:600;cursor:pointer;">✕ Annulla</button>
         </div>
       </div>
     </div>
@@ -9505,7 +9508,7 @@ function addRow(){
     <td><select class="sport-select">${sports.map(s=>`<option value="${s}" ${s===sportVal?'selected':''}>${s}</option>`).join('')}</select></td>
     <td>${activityCellHtml}</td>
     <td><input type="text" value="${noteVal}"></td>
-    <td><button onclick="deleteRow(this)" style="padding:4px 8px;font-size:0.75rem;background:#ef4444;">🗑️</button></td>
+    <td style="white-space:nowrap;"><button onclick="openMobileSessionModal(this.closest('tr'))" style="padding:4px 8px;font-size:0.75rem;background:#6366f1;">✏️</button> <button onclick="deleteRow(this)" style="padding:4px 8px;font-size:0.75rem;background:#ef4444;">🗑️</button></td>
     <td><input type="number" placeholder="min/km" value="${preset.pace_min_per_km ?? ''}"></td>
   `;
   tb.insertBefore(tr, tb.firstChild);
@@ -11180,6 +11183,12 @@ window.addEventListener('DOMContentLoaded', function() {
 <script>
 // Floating mobile menu logic
 function openMobileMenu() {
+  // Chiudi il piano overlay se era aperto full-screen
+  var pianoTabEl = document.getElementById('tab-piano');
+  if(pianoTabEl && pianoTabEl.classList.contains('piano-mobile-open')) {
+    pianoTabEl.classList.remove('piano-mobile-open');
+    document.body.style.overflow = '';
+  }
   document.getElementById('mobileMenu').style.display = 'block';
   document.getElementById('mobileMenuOverlay').style.display = 'block';
 }
@@ -11206,6 +11215,10 @@ window.addEventListener('DOMContentLoaded', function() {
 });
 function selectMobileSection(section) {
   closeMobileMenu();
+  // Chiudi il piano overlay se era aperto
+  var pianoTabEl = document.getElementById('tab-piano');
+  if(pianoTabEl) pianoTabEl.classList.remove('piano-mobile-open');
+  document.body.style.overflow = '';
   // Chiudi tutti i modali speciali
   ['predictionModal','marathonModal','comparisonModal','trendModal','athletesModal','scoreRulesModal'].forEach(id => {
     var el = document.getElementById(id);
@@ -11404,6 +11417,9 @@ function updatePianoRipetuteFields(){
   });
 }
 
+// ---- Editing state ----
+let _editingPianoId = null;
+
 // ---- Unique ID ----
 function pianoUid(){
   return 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
@@ -11429,9 +11445,19 @@ function addPianoSession(){
   if(!date){ alert('Inserisci una data.'); return; }
   if(km <= 0 && minutes <= 0){ alert('Inserisci almeno km o minuti pianificati.'); return; }
 
-  selectedAthletes.forEach(athlete => {
-    trainingPlans.push({ id: pianoUid(), date, athlete, type, activityType, km, minutes, rpe, note, pace_min_km, speed_kmh, reps, rep_dist_km });
-  });
+  if(_editingPianoId){
+    // Modalità modifica: aggiorna la sessione esistente
+    const idx = trainingPlans.findIndex(p => p.id === _editingPianoId);
+    if(idx !== -1){
+      const athlete = selectedAthletes[0];
+      trainingPlans[idx] = { id: _editingPianoId, date, athlete, type, activityType, km, minutes, rpe, note, pace_min_km, speed_kmh, reps, rep_dist_km };
+    }
+  } else {
+    // Modalità aggiunta: crea una voce per ogni atleta
+    selectedAthletes.forEach(athlete => {
+      trainingPlans.push({ id: pianoUid(), date, athlete, type, activityType, km, minutes, rpe, note, pace_min_km, speed_kmh, reps, rep_dist_km });
+    });
+  }
   saveTrainingPlans();
   clearPianoForm();
   renderPianoTable();
@@ -11439,6 +11465,7 @@ function addPianoSession(){
 }
 
 function clearPianoForm(){
+  _editingPianoId = null;
   ['pianoKm','pianoMinutes','pianoRpe','pianoNote','pianoPace','pianoSpeed','pianoReps','pianoRepDist'].forEach(id=>{
     const el = document.getElementById(id);
     if(el) el.value = '';
@@ -11448,12 +11475,53 @@ function clearPianoForm(){
   // oggi come default
   const dEl = document.getElementById('pianoDate');
   if(dEl) dEl.value = new Date().toISOString().slice(0,10);
+  // Ripristina pulsante
+  const addBtn = document.getElementById('pianoAddBtn');
+  const cancelBtn = document.getElementById('pianoCancelBtn');
+  if(addBtn) addBtn.textContent = '✅ Aggiungi';
+  if(cancelBtn) cancelBtn.style.display = 'none';
   // nascondi campi ripetute
   updatePianoRipetuteFields();
 }
 
+function editPianoSession(id){
+  const r = trainingPlans.find(p => p.id === id);
+  if(!r) return;
+  _editingPianoId = id;
+  // Popola i campi del form
+  const dEl = document.getElementById('pianoDate'); if(dEl) dEl.value = r.date || '';
+  const spEl = document.getElementById('pianoSport'); if(spEl) spEl.value = r.type || '';
+  const atEl = document.getElementById('pianoActivityType'); if(atEl){ atEl.value = r.activityType || 'Allenamento'; updatePianoRipetuteFields(); }
+  const kmEl = document.getElementById('pianoKm'); if(kmEl) kmEl.value = r.km > 0 ? r.km : '';
+  const minEl = document.getElementById('pianoMinutes'); if(minEl) minEl.value = r.minutes > 0 ? r.minutes : '';
+  const pEl = document.getElementById('pianoPace'); if(pEl) pEl.value = r.pace_min_km > 0 ? _pianoDecimalPaceToMMSS(r.pace_min_km) : '';
+  const speedEl = document.getElementById('pianoSpeed'); if(speedEl) speedEl.value = r.speed_kmh > 0 ? r.speed_kmh.toFixed(2) : '';
+  const repsEl = document.getElementById('pianoReps'); if(repsEl) repsEl.value = r.reps > 0 ? r.reps : '';
+  const repDEl = document.getElementById('pianoRepDist'); if(repDEl) repDEl.value = r.rep_dist_km > 0 ? r.rep_dist_km : '';
+  const rpeEl = document.getElementById('pianoRpe'); if(rpeEl) rpeEl.value = r.rpe || '';
+  const noteEl = document.getElementById('pianoNote'); if(noteEl) noteEl.value = r.note || '';
+  // Seleziona il chip atleta corretto
+  document.querySelectorAll('#pianoAthletePicker .piano-athlete-chip').forEach(c => {
+    c.classList.toggle('selected', c.dataset.athlete === r.athlete);
+  });
+  // Aggiorna testo pulsante e mostra annulla
+  const addBtn = document.getElementById('pianoAddBtn');
+  const cancelBtn = document.getElementById('pianoCancelBtn');
+  if(addBtn) addBtn.textContent = '💾 Salva modifiche';
+  if(cancelBtn) cancelBtn.style.display = '';
+  // Scrolla al form
+  document.getElementById('pianoDate')?.closest('.card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function cancelPianoEdit(){
+  _editingPianoId = null;
+  clearPianoForm();
+}
+
 function deletePianoSession(id){
   if(!confirm('Eliminare questa sessione pianificata?')) return;
+  // Se stavo modificando questa sessione, resetta il form
+  if(_editingPianoId === id) cancelPianoEdit();
   trainingPlans = trainingPlans.filter(p => p.id !== id);
   saveTrainingPlans();
   renderPianoTable();
@@ -11507,7 +11575,7 @@ function renderPianoTable(){
       <td>${repDistDisplay}</td>
       <td>${r.rpe || '-'}</td>
       <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${r.note||''}">${r.note || ''}</td>
-      <td><button class="piano-delete-btn" onclick="deletePianoSession('${r.id}')">✕</button></td>
+      <td style="white-space:nowrap;"><button class="piano-edit-btn" onclick="editPianoSession('${r.id}')">✏️</button><button class="piano-delete-btn" onclick="deletePianoSession('${r.id}')">✕</button></td>
     </tr>
   `;
   }).join('');
@@ -11591,7 +11659,7 @@ function renderPianoCharts(){
     const p = buckets[k].planned_km || 0;
     const a = buckets[k].actual_km  || 0;
     if(p === 0) return null;
-    return Math.min(150, +(((a/p)*100).toFixed(1)));
+    return Math.min(100, +(((a/p)*100).toFixed(1)));
   });
 
   const totalPlanKm  = plannedKm.reduce((s,v)=>s+v,0);
@@ -11600,7 +11668,7 @@ function renderPianoCharts(){
   const totalActMin  = actualMin.reduce((s,v)=>s+v,0);
   const totalPlanLoad= plannedLoad.reduce((s,v)=>s+v,0);
   const totalActLoad = actualLoad.reduce((s,v)=>s+v,0);
-  const globalAdh    = totalPlanKm > 0 ? ((totalActKm/totalPlanKm)*100).toFixed(1) : '-';
+  const globalAdh    = totalPlanKm > 0 ? Math.min(100, +((totalActKm/totalPlanKm)*100)).toFixed(1) : '-';
 
   const adhColor = globalAdh === '-' ? '#64748b' : (parseFloat(globalAdh) >= 90 ? '#10b981' : parseFloat(globalAdh) >= 70 ? '#f59e0b' : '#ef4444');
   document.getElementById('pianoKpiRow').innerHTML = `
