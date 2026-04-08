@@ -657,9 +657,9 @@
   font-size: 0.61rem;
   color: rgba(255,255,255,0.55);
   margin-top: 3px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.3;
 }
 #raceManagementToggleBtn {
   grid-column: 1 / -1;
@@ -1798,6 +1798,15 @@ body.dark-mode .card h3 {
   border-radius: 16px;
   overflow: hidden;
   position: relative;
+}
+@media (max-width: 900px) {
+  #speedTopRankingOverlay {
+    left: 8px !important;
+    right: 8px !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    width: auto !important;
+  }
 }
 
 /* TABELLA */
@@ -3826,11 +3835,11 @@ document.addEventListener('click', function(e){
 
     <div class="grid">
       <div class="card" id="kmRunnerCard" style="position:relative;"><h3>🏃‍♂️ Classifica 3D atleti (avanzamento=score top atleta, dimensione=km)</h3><button id="allTimeBtn" onclick="applyAllTimeDateFilter()" style="position:absolute;top:12px;left:12px;padding:6px 10px;background:#111827;color:#fff;border:none;border-radius:8px;font-size:0.86rem;font-weight:700;z-index:9;box-shadow:0 2px 8px #0003;">All time</button><button id="fastestBtn" onclick="cycleFastestRaceDistance()" style="position:absolute;top:12px;left:94px;padding:6px 10px;background:#111827;color:#fff;border:none;border-radius:8px;font-size:0.86rem;font-weight:700;z-index:9;box-shadow:0 2px 8px #0003;">Fastest</button><span id="fastestDistanceLabel" style="position:absolute;top:18px;left:180px;color:#fff;font-size:0.83rem;font-weight:800;z-index:9;text-shadow:0 1px 2px rgba(0,0,0,.45);"></span><canvas id="kmChart"></canvas><div id="kmTopRankingOverlay" style="position:absolute;left:12px;bottom:12px;max-width:min(44%,380px);min-width:240px;max-height:42%;overflow:auto;margin-top:10px;padding:10px;border:1px solid rgba(203,213,225,.55);border-radius:10px;background:rgba(255,255,255,0.22);font-size:0.78rem;line-height:1.4;color:#0f172a;z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.12);"></div><div id="chatGhostFeed"></div><div id="chatInlinePanel"><div id="chatInlinePanelHeader" onclick="toggleInlineChatPanel('desktop')" style="cursor:pointer;"><span>💬 Chat Team</span><div style="display:flex;align-items:center;gap:4px;"><select id="chatInlineSender" class="ci-sender-select" onchange="syncInlineSender('desktop')" onclick="event.stopPropagation()"></select><button class="ci-toggle-btn" onclick="event.stopPropagation();toggleInlineChatPanel('desktop')" title="Nascondi/Mostra">▼</button></div></div><div id="chatInlineMsgs"></div><div id="chatInlineSendArea"><input id="chatInlineInput" type="text" placeholder="Scrivi..." maxlength="200" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendInlineChatMessage();}"><button id="chatInlineSendBtn" onclick="sendInlineChatMessage()">➤</button></div></div></div>
-      <div class="card" id="speedRunnerCard" style="position:relative;"><h3>Atleta più veloce (ripetute last 7)</h3><canvas id="speedChart"></canvas><div id="speedTopRankingOverlay" style="position:absolute;right:12px;bottom:12px;max-width:min(46%,360px);min-width:220px;max-height:42%;overflow:auto;margin-top:10px;padding:10px;border:1px solid rgba(203,213,225,.55);border-radius:10px;background:rgba(255,255,255,0.22);font-size:0.78rem;line-height:1.25;color:#0f172a;z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.12);"></div></div>
+      <div class="card" id="speedRunnerCard" style="position:relative;"><h3>Atleta più veloce (ripetute last 10)</h3><canvas id="speedChart"></canvas><div id="speedTopRankingOverlay" style="position:absolute;right:12px;bottom:12px;max-width:min(54%,460px);min-width:280px;max-height:42%;overflow:auto;margin-top:10px;padding:10px;border:1px solid rgba(203,213,225,.55);border-radius:10px;background:rgba(255,255,255,0.22);font-size:0.78rem;line-height:1.4;color:#0f172a;z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.12);"></div></div>
       <div class="card"><h3>📊 Km/settimana</h3><canvas id="weeklyChart"></canvas></div>
-      <div class="card"><h3>⚡ Carico interno</h3><canvas id="loadChart"></canvas></div>
-      <div class="card"><h3>💓 TRIMP</h3><canvas id="trimpChart"></canvas></div>
-      <div class="card"><h3>⚠️ ACWR</h3><canvas id="acwrChart"></canvas></div>
+      <div class="card"><h3>⚡ Sensazione Stanchezza</h3><canvas id="loadChart"></canvas></div>
+      <div class="card"><h3>💓 Carico Cardiaco</h3><canvas id="trimpChart"></canvas></div>
+      <div class="card"><h3>⚠️ OverTraining</h3><canvas id="acwrChart"></canvas></div>
       <div class="card" style="grid-column:1/-1;padding:0;overflow:hidden;background:transparent;box-shadow:none;border:none;">
         <div id="pianoInlinePanel" class="pi-collapsed">
           <div class="pi-header">
@@ -5691,13 +5700,19 @@ function spawnGhostMessage(msg){
     if(!feed) return;
     const el = buildEl();
     feed.insertBefore(el, feed.firstChild);
+    // Keep at most 4 ghost messages visible (3 existing + the new one)
+    const MAX_GHOST = 4;
+    const children = Array.from(feed.children);
+    if(children.length > MAX_GHOST){
+      children.slice(MAX_GHOST).forEach(old => old.remove());
+    }
     el.addEventListener('animationend', () => el.remove(), { once: true });
   });
 }
 
 function replayGhostFeed(msgs){
-  // Show the last few messages staggered so they're all drifting when page loads
-  const recent = msgs.slice(-6);
+  // Show at most the last 4 messages staggered so they're all drifting when page loads
+  const recent = msgs.slice(-4);
   recent.forEach((m, i) => {
     setTimeout(() => spawnGhostMessage(m), i * 600);
   });
@@ -5764,7 +5779,9 @@ async function loadChatMessagesFromFirebase(options = {}){
     // Spawn ghosts for messages newer than last seen
     const newMsgs = chatMessages.filter(m => m.createdAt && (!prevLastSeen || m.createdAt > prevLastSeen));
     if(newMsgs.length > 0){
-      newMsgs.forEach((m, i) => setTimeout(() => spawnGhostMessage(m), i * 500));
+      // On first load (prevLastSeen null) show at most the last 4; otherwise show all new ones
+      const toSpawn = prevLastSeen ? newMsgs : newMsgs.slice(-4);
+      toSpawn.forEach((m, i) => setTimeout(() => spawnGhostMessage(m), i * 500));
       __ghostLastSeen = newMsgs[newMsgs.length - 1].createdAt;
     }
     if(!options.silent) setChatStatus(`Chat aggiornata alle ${new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}.`);
@@ -9576,6 +9593,8 @@ function updateCharts(){
   }
 
   // Speed 3D (weighted average speed of ripetute in last 10 days)
+  // Uses combinedData (ALL data, unfiltered) so that active date/type/athlete filters
+  // do NOT hide athletes who have done ripetute in the last 10 days.
   if (charts['speedChart']) { charts['speedChart'].destroy(); charts['speedChart'] = null; }
   const isRipetutaRow = (row) => {
     const t = String(row.activityType || row.type || '').toLowerCase();
@@ -9584,8 +9603,11 @@ function updateCharts(){
   };
   const nowMs = Date.now();
   const tenDaysMs = 10 * 24 * 60 * 60 * 1000;
-  const speed3DRanking = Object.keys(byA).map((ath) => {
-    const recentRip = (byA[ath] || []).filter(r => {
+  // Group ALL data by athlete (ignore current filters)
+  const byAAll = {};
+  (combinedData || []).forEach(d => { if(!byAAll[d.athlete]) byAAll[d.athlete] = []; byAAll[d.athlete].push(d); });
+  const speed3DRanking = Object.keys(byAAll).map((ath) => {
+    const recentRip = (byAAll[ath] || []).filter(r => {
       if(!isRipetutaRow(r)) return false;
       const ts = new Date(r.date || '').getTime();
       return Number.isFinite(ts) && (nowMs - ts) <= tenDaysMs;
@@ -9613,7 +9635,7 @@ function updateCharts(){
       const speedOverlayTarget = $id('speedTopRankingOverlay') || ($id('mobileSpeedTopRankingOverlay') ? $id('mobileSpeedTopRankingOverlay') : null);
       if(speedOverlayTarget){
         const rowsHtml = speed3DRanking.slice(0,10).map((r, idx)=>{
-          const recentRows = (byA[r.athlete] || []).filter(rr => {
+          const recentRows = (byAAll[r.athlete] || []).filter(rr => {
             if(!isRipetutaRow(rr)) return false;
             const ts = new Date(rr.date || '').getTime();
             return Number.isFinite(ts) && (nowMs - ts) <= tenDaysMs;
