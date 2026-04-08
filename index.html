@@ -4158,7 +4158,7 @@ document.addEventListener('click', function(e){
             <input type="number" id="pianoMinutes" class="piano-input" step="1" min="0" placeholder="es. 60" oninput="onPianoKmMinChange()">
           </label>
           <label>Passo (min/km)
-            <input type="text" id="pianoPace" class="piano-input" placeholder="es. 5:30" maxlength="7" oninput="onPianoPaceChange()">
+            <input type="text" id="pianoPace" class="piano-input" placeholder="es. 4.30 o 4:30" maxlength="7" inputmode="decimal" oninput="onPianoPaceChange()">
           </label>
           <label>Velocità (km/h)
             <input type="number" id="pianoSpeed" class="piano-input" step="0.1" min="0" placeholder="es. 11.0" oninput="onPianoSpeedChange()">
@@ -11711,12 +11711,15 @@ function _pianoDecimalPaceToMMSS(decMin){
   return m + ':' + String(s).padStart(2,'0');
 }
 function _pianoMMSS_ToDecimal(str){
-  // accepts "5:30" or "5.30" or "5,30" or plain number "5.5"
+  // accepts "5:30", "5.30", "5,30"  →  5 min 30 sec = 5.5 decimal minutes
   if(!str) return 0;
-  str = str.replace(',','.');
-  if(str.includes(':')) {
-    const [mm,ss] = str.split(':');
-    return parseFloat(mm) + (parseFloat(ss||0) / 60);
+  // normalise separator: both ',' and '.' treated as mm:ss delimiter
+  const norm = str.trim().replace(',', ':').replace('.', ':');
+  if(norm.includes(':')) {
+    const parts = norm.split(':');
+    const mm = parseFloat(parts[0]) || 0;
+    const ss = parseFloat(parts[1] || 0);
+    return mm + (ss / 60);
   }
   return parseFloat(str) || 0;
 }
