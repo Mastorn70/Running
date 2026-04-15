@@ -4065,6 +4065,114 @@ document.addEventListener('click', function(e){
       </div>
     </div>
 
+    <!-- ===== RIPETUTE WIZARD MODAL ===== -->
+    <div id="ripWizardModal" style="display:none;position:fixed;z-index:10040;left:0;top:0;width:100vw;height:100dvh;background:rgba(15,23,42,0.82);backdrop-filter:blur(4px);justify-content:flex-start;align-items:flex-start;overflow-y:auto;padding:12px 0 40px;">
+      <div style="background:#1e293b;color:#e2e8f0;max-width:440px;width:96vw;margin:0 auto;border-radius:18px;box-shadow:0 16px 48px rgba(0,0,0,0.75);position:relative;animation:fadeIn 0.3s;">
+        <!-- Header -->
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 18px 10px;border-bottom:1px solid rgba(99,102,241,0.2);">
+          <span style="font-weight:800;font-size:1.05rem;color:#a5b4fc;">🏃 Nuova sessione ripetute</span>
+          <button onclick="closeRipWizard()" style="background:none;border:none;font-size:1.6rem;color:#94a3b8;cursor:pointer;line-height:1;">&times;</button>
+        </div>
+        <!-- Step bar -->
+        <div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 16px 6px;font-size:0.8rem;">
+          <span id="ripWizDot1" style="padding:4px 14px;border-radius:20px;font-weight:700;background:#6366f1;color:#fff;">1 · Sessione</span>
+          <span style="color:#475569;font-size:1rem;">→</span>
+          <span id="ripWizDot2" style="padding:4px 14px;border-radius:20px;font-weight:700;background:#334155;color:#94a3b8;">2 · Ripetute</span>
+        </div>
+
+        <!-- STEP 1: Session info -->
+        <div id="ripWizStep1" style="padding:16px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <label style="grid-column:1/-1;font-size:0.83rem;font-weight:600;color:#94a3b8;">Data
+              <input id="ripWizDate" type="date" style="display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:9px 10px;border-radius:9px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:0.95rem;">
+            </label>
+            <label style="grid-column:1/-1;font-size:0.83rem;font-weight:600;color:#94a3b8;">Atleta
+              <select id="ripWizAthlete" style="display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:9px 10px;border-radius:9px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:0.95rem;"></select>
+            </label>
+            <label style="grid-column:1/-1;font-size:0.83rem;font-weight:600;color:#94a3b8;">Tipo allenamento
+              <select id="ripWizType" style="display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:9px 10px;border-radius:9px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:0.95rem;">
+                <option value="Ripetute">Ripetute</option>
+                <option value="Fartlek">Fartlek</option>
+              </select>
+            </label>
+            <label style="font-size:0.83rem;font-weight:600;color:#94a3b8;">Warm-up (min)
+              <input id="ripWizWarmup" type="number" min="0" step="1" value="20" style="display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:9px 10px;border-radius:9px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:0.95rem;">
+            </label>
+            <label style="font-size:0.83rem;font-weight:600;color:#94a3b8;">Cool-down (min)
+              <input id="ripWizCooldown" type="number" min="0" step="1" value="15" style="display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:9px 10px;border-radius:9px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:0.95rem;">
+            </label>
+          </div>
+          <button onclick="ripWizGoStep2()" style="width:100%;margin-top:18px;padding:13px;background:linear-gradient(135deg,#6366f1,#7c3aed);color:#fff;font-weight:800;font-size:1rem;border:none;border-radius:10px;cursor:pointer;letter-spacing:0.3px;">Avanti →</button>
+        </div>
+
+        <!-- STEP 2: Rep groups -->
+        <div id="ripWizStep2" style="display:none;padding:16px;">
+          <!-- Groups added so far -->
+          <div id="ripWizGroupsList"></div>
+
+          <!-- Form for a rep group -->
+          <div id="ripWizRepForm">
+            <div style="background:#0f172a;border-radius:12px;padding:14px;border:1.5px solid rgba(99,102,241,0.28);">
+              <div id="ripWizFormTitle" style="font-size:0.83rem;font-weight:700;color:#a5b4fc;margin-bottom:12px;">Inserisci tipologia di ripetuta</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
+                <label style="font-size:0.81rem;font-weight:600;color:#94a3b8;">Tipo ripetuta
+                  <select id="ripWizRepType" onchange="ripWizOnRepTypeChange()" style="display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:7px 8px;border-radius:8px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:0.88rem;"></select>
+                </label>
+                <label style="font-size:0.81rem;font-weight:600;color:#94a3b8;">Numero rip.
+                  <input id="ripWizRepCount" type="number" min="1" max="50" step="1" value="4" style="display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:7px 8px;border-radius:8px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:0.88rem;">
+                </label>
+                <label style="font-size:0.81rem;font-weight:600;color:#94a3b8;">Distanza (km)
+                  <input id="ripWizRepDist" type="number" step="0.001" min="0" value="0.400" style="display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:7px 8px;border-radius:8px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:0.88rem;">
+                </label>
+                <label style="font-size:0.81rem;font-weight:600;color:#94a3b8;">Recupero (min)
+                  <input id="ripWizRepRest" type="number" min="0" step="0.01" value="1.00" style="display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:7px 8px;border-radius:8px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:0.88rem;">
+                </label>
+                <label style="grid-column:1/-1;font-size:0.81rem;font-weight:600;color:#94a3b8;">Tempo (hh : mm : ss) per ripetuta
+                  <div style="display:flex;gap:6px;margin-top:4px;align-items:center;">
+                    <input id="ripWizRepTimeH" type="number" min="0" step="1" value="0" placeholder="hh" style="flex:1;padding:7px 4px;border-radius:8px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:0.88rem;text-align:center;min-width:0;">
+                    <span style="color:#64748b;font-weight:800;font-size:1.1rem;">:</span>
+                    <input id="ripWizRepTimeM" type="number" min="0" max="59" step="1" value="1" placeholder="mm" style="flex:1;padding:7px 4px;border-radius:8px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:0.88rem;text-align:center;min-width:0;">
+                    <span style="color:#64748b;font-weight:800;font-size:1.1rem;">:</span>
+                    <input id="ripWizRepTimeS" type="number" min="0" max="59" step="1" value="30" placeholder="ss" style="flex:1;padding:7px 4px;border-radius:8px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:0.88rem;text-align:center;min-width:0;">
+                  </div>
+                </label>
+                <label style="grid-column:1/-1;font-size:0.81rem;font-weight:600;color:#94a3b8;">Passo (min/km) — punto decimale (es. 3.25)
+                  <input id="ripWizRepPace" type="text" placeholder="es. 3.25" style="display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:7px 8px;border-radius:8px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:0.88rem;">
+                </label>
+                <label style="font-size:0.81rem;font-weight:600;color:#94a3b8;">RPE (1–10)
+                  <input id="ripWizRepRpe" type="number" min="1" max="10" step="1" value="7" style="display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:7px 8px;border-radius:8px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:0.88rem;">
+                </label>
+                <label style="font-size:0.81rem;font-weight:600;color:#94a3b8;">FC (bpm)
+                  <input id="ripWizRepHr" type="number" min="0" step="1" value="170" style="display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:7px 8px;border-radius:8px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:0.88rem;">
+                </label>
+                <label style="grid-column:1/-1;font-size:0.81rem;font-weight:600;color:#94a3b8;">Lattato (mmol) — opzionale
+                  <input id="ripWizRepLactate" type="number" min="0" step="0.1" placeholder="opzionale" style="display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:7px 8px;border-radius:8px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:0.88rem;">
+                </label>
+              </div>
+              <button onclick="ripWizPreviewRep()" style="width:100%;margin-top:12px;padding:11px;background:linear-gradient(135deg,#0891b2,#0369a1);color:#fff;font-weight:700;border:none;border-radius:9px;cursor:pointer;font-size:0.92rem;">👁️ Mostra anteprima</button>
+            </div>
+          </div>
+
+          <!-- Review / preview card -->
+          <div id="ripWizReview" style="display:none;">
+            <div id="ripWizReviewContent" style="background:#0f172a;border-radius:12px;padding:14px;border:2px solid rgba(34,197,94,0.35);"></div>
+            <div style="display:flex;gap:8px;margin-top:10px;">
+              <button onclick="ripWizEditDraft()" style="flex:1;padding:11px;background:#334155;color:#e2e8f0;font-weight:700;border:none;border-radius:9px;cursor:pointer;font-size:0.88rem;">✏️ Modifica</button>
+              <button onclick="ripWizConfirmRep()" style="flex:1;padding:11px;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;font-weight:700;border:none;border-radius:9px;cursor:pointer;font-size:0.88rem;">✅ Conferma</button>
+            </div>
+          </div>
+
+          <!-- Bottom actions -->
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px;">
+            <button id="ripWizAddAnotherBtn" onclick="ripWizAddAnother()" style="display:none;padding:11px;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;font-weight:700;border:none;border-radius:10px;cursor:pointer;font-size:0.92rem;">➕ Aggiungi un'altra tipologia</button>
+            <button id="ripWizSaveBtn" onclick="ripWizSave()" style="display:none;padding:13px;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;font-weight:800;border:none;border-radius:10px;cursor:pointer;font-size:1rem;">💾 Salva sessione</button>
+            <button onclick="ripWizGoStep1()" style="padding:8px;background:none;border:1.5px solid #334155;color:#94a3b8;font-weight:600;border-radius:9px;cursor:pointer;font-size:0.83rem;">← Torna ai dati sessione</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- ===== END RIPETUTE WIZARD MODAL ===== -->
+
     <div id="ripetuteLayout" style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap;">
       <div id="ripetuteLeftCol" style="flex:1;min-width:320px;">
         <div class="card">
@@ -6885,14 +6993,20 @@ function startNewRipSession(config = {}){
 }
 
 function handleStartNewRipSession(){
+  // Always use the new multi-group wizard on mobile
   if(window.innerWidth <= 900) {
-    openMobileRipSessionModal();
+    openRipWizard();
     return;
   }
   startNewRipSession();
 }
 
 function openMobileRipSessionModal(){
+  // Legacy — redirected to the new wizard on mobile; kept for direct desktop calls
+  openRipWizard();
+}
+
+function _openMobileRipSessionModalLegacy(){
   const modal = document.getElementById('mobileRipSessionModal');
   if(!modal) return;
   bindMobileRipModalInteractions();
@@ -6942,6 +7056,316 @@ function closeMobileRipSessionModal(){
   const modal = document.getElementById('mobileRipSessionModal');
   if(modal) modal.style.display = 'none';
 }
+
+/* ============================================================
+   RIPETUTE WIZARD — multi-group interactive entry
+   ============================================================ */
+let ripWizState = { session: null, groups: [], editingIdx: -1, draft: null };
+
+function openRipWizard() {
+  ripWizState = { session: null, groups: [], editingIdx: -1, draft: null };
+  const sel = document.getElementById('ripWizAthlete');
+  if(sel) sel.innerHTML = '<option value="">-- Seleziona atleta --</option>' + (Array.isArray(athletes) ? athletes : []).map(a=>`<option value="${a}">${a}</option>`).join('');
+  const dateEl = document.getElementById('ripWizDate');
+  if(dateEl) dateEl.value = new Date().toISOString().slice(0,10);
+  const warmEl = document.getElementById('ripWizWarmup'); if(warmEl) warmEl.value = '20';
+  const coolEl = document.getElementById('ripWizCooldown'); if(coolEl) coolEl.value = '15';
+  const typeEl = document.getElementById('ripWizType'); if(typeEl) typeEl.value = 'Ripetute';
+  _ripWizShowStep(1);
+  const modal = document.getElementById('ripWizardModal');
+  if(modal) { modal.style.display = 'flex'; modal.scrollTop = 0; }
+  if(!window.__ripWizBound) _bindRipWizInteractions();
+}
+
+function closeRipWizard() {
+  const modal = document.getElementById('ripWizardModal');
+  if(modal) modal.style.display = 'none';
+}
+
+function _ripWizShowStep(n) {
+  const s1 = document.getElementById('ripWizStep1');
+  const s2 = document.getElementById('ripWizStep2');
+  if(s1) s1.style.display = n === 1 ? 'block' : 'none';
+  if(s2) s2.style.display = n === 2 ? 'block' : 'none';
+  const d1 = document.getElementById('ripWizDot1');
+  const d2 = document.getElementById('ripWizDot2');
+  if(d1) { d1.style.background = n === 1 ? '#6366f1' : '#334155'; d1.style.color = n === 1 ? '#fff' : '#94a3b8'; }
+  if(d2) { d2.style.background = n === 2 ? '#6366f1' : '#334155'; d2.style.color = n === 2 ? '#fff' : '#94a3b8'; }
+}
+
+function ripWizGoStep2() {
+  const date = document.getElementById('ripWizDate')?.value || '';
+  const athlete = document.getElementById('ripWizAthlete')?.value || '';
+  if(!date) { alert('Seleziona la data della sessione.'); return; }
+  if(!athlete) { alert('Seleziona l\'atleta.'); return; }
+  ripWizState.session = {
+    date,
+    athlete,
+    type: document.getElementById('ripWizType')?.value || 'Ripetute',
+    warmup_min: +(document.getElementById('ripWizWarmup')?.value || 20),
+    cooldown_min: +(document.getElementById('ripWizCooldown')?.value || 15)
+  };
+  ripWizState.editingIdx = -1;
+  ripWizState.draft = null;
+  const repTypeSel = document.getElementById('ripWizRepType');
+  if(repTypeSel) repTypeSel.innerHTML = RIP_PRESET_TYPES.map(t=>`<option value="${t}">${t}</option>`).join('');
+  _ripWizShowReviewPanel(false);
+  _ripWizShowRepForm(true);
+  ripWizOnRepTypeChange();
+  _ripWizRenderGroups();
+  _ripWizUpdateBottomBtns();
+  _ripWizShowStep(2);
+  document.getElementById('ripWizardModal')?.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function ripWizGoStep1() {
+  _ripWizShowStep(1);
+  if(ripWizState.session) {
+    const s = ripWizState.session;
+    const dateEl = document.getElementById('ripWizDate'); if(dateEl) dateEl.value = s.date;
+    const athSel = document.getElementById('ripWizAthlete'); if(athSel) athSel.value = s.athlete;
+    const typeSel = document.getElementById('ripWizType'); if(typeSel) typeSel.value = s.type;
+    const warmEl = document.getElementById('ripWizWarmup'); if(warmEl) warmEl.value = s.warmup_min;
+    const coolEl = document.getElementById('ripWizCooldown'); if(coolEl) coolEl.value = s.cooldown_min;
+  }
+}
+
+function ripWizOnRepTypeChange() {
+  const sel = document.getElementById('ripWizRepType');
+  const distInput = document.getElementById('ripWizRepDist');
+  if(!sel || !distInput) return;
+  const presetKm = getRipPresetKm(sel.value);
+  if(presetKm !== null) {
+    distInput.value = normalizeKmValue(presetKm) || String(presetKm);
+    distInput.readOnly = true;
+    distInput.style.background = '#1a2744';
+    distInput.style.color = '#93c5fd';
+  } else {
+    distInput.readOnly = false;
+    distInput.style.background = '#1e293b';
+    distInput.style.color = '#e2e8f0';
+  }
+  _ripWizSyncPaceFromTime();
+}
+
+function _ripWizSyncPaceFromTime() {
+  const dist = Number(document.getElementById('ripWizRepDist')?.value || 0);
+  const h = Number(document.getElementById('ripWizRepTimeH')?.value || 0);
+  const m = Number(document.getElementById('ripWizRepTimeM')?.value || 0);
+  const s = Number(document.getElementById('ripWizRepTimeS')?.value || 0);
+  const totalMin = h * 60 + m + s / 60;
+  const paceEl = document.getElementById('ripWizRepPace');
+  if(paceEl && dist > 0 && totalMin > 0) paceEl.value = formatMinutesToPaceDisplay(totalMin / dist);
+}
+
+function _ripWizSyncTimeFromPace() {
+  const dist = Number(document.getElementById('ripWizRepDist')?.value || 0);
+  const paceMin = parsePaceDisplayToMinutes(document.getElementById('ripWizRepPace')?.value || '');
+  if(dist > 0 && paceMin > 0) {
+    const totalSec = Math.round(paceMin * dist * 60);
+    const hEl = document.getElementById('ripWizRepTimeH');
+    const mEl = document.getElementById('ripWizRepTimeM');
+    const sEl = document.getElementById('ripWizRepTimeS');
+    if(hEl) hEl.value = Math.floor(totalSec / 3600);
+    if(mEl) mEl.value = Math.floor((totalSec % 3600) / 60);
+    if(sEl) sEl.value = totalSec % 60;
+  }
+}
+
+function _bindRipWizInteractions() {
+  const bindInput = (id, fn) => { const el = document.getElementById(id); if(el) el.addEventListener('input', fn); };
+  ['ripWizRepTimeH','ripWizRepTimeM','ripWizRepTimeS','ripWizRepDist'].forEach(id => bindInput(id, _ripWizSyncPaceFromTime));
+  bindInput('ripWizRepPace', _ripWizSyncTimeFromPace);
+  window.__ripWizBound = true;
+}
+
+function _ripWizGetFormDraft() {
+  return {
+    repType: document.getElementById('ripWizRepType')?.value || '400m',
+    count: Math.max(1, +(document.getElementById('ripWizRepCount')?.value || 1)),
+    distance_km: +(document.getElementById('ripWizRepDist')?.value || 0.4),
+    timeH: +(document.getElementById('ripWizRepTimeH')?.value || 0),
+    timeM: +(document.getElementById('ripWizRepTimeM')?.value || 1),
+    timeS: +(document.getElementById('ripWizRepTimeS')?.value || 30),
+    rest_min: +(document.getElementById('ripWizRepRest')?.value || 1),
+    rpe: +(document.getElementById('ripWizRepRpe')?.value || 0),
+    hr: +(document.getElementById('ripWizRepHr')?.value || 0),
+    lactate: (document.getElementById('ripWizRepLactate')?.value || '').trim()
+  };
+}
+
+function _ripWizFillFormFromDraft(draft) {
+  if(!draft) return;
+  const repTypeSel = document.getElementById('ripWizRepType');
+  if(repTypeSel) { repTypeSel.innerHTML = RIP_PRESET_TYPES.map(t=>`<option value="${t}">${t}</option>`).join(''); repTypeSel.value = draft.repType || '400m'; }
+  const map = { ripWizRepCount:draft.count, ripWizRepDist:draft.distance_km, ripWizRepTimeH:draft.timeH, ripWizRepTimeM:draft.timeM, ripWizRepTimeS:draft.timeS, ripWizRepRest:draft.rest_min, ripWizRepRpe:draft.rpe, ripWizRepHr:draft.hr, ripWizRepLactate:draft.lactate };
+  Object.entries(map).forEach(([id,val]) => { const el = document.getElementById(id); if(el) el.value = val ?? ''; });
+  ripWizOnRepTypeChange();
+  _ripWizSyncPaceFromTime();
+}
+
+function _ripWizShowRepForm(show) {
+  const el = document.getElementById('ripWizRepForm');
+  if(el) el.style.display = show ? 'block' : 'none';
+}
+
+function _ripWizShowReviewPanel(show) {
+  const el = document.getElementById('ripWizReview');
+  if(el) el.style.display = show ? 'block' : 'none';
+}
+
+function ripWizPreviewRep() {
+  const draft = _ripWizGetFormDraft();
+  if(!draft.distance_km || draft.distance_km <= 0) { alert('Inserisci una distanza valida.'); return; }
+  const totalMin = draft.timeH * 60 + draft.timeM + draft.timeS / 60;
+  if(totalMin <= 0) { alert('Inserisci un tempo valido per la ripetuta.'); return; }
+  ripWizState.draft = draft;
+  const paceStr = formatMinutesToPaceDisplay(totalMin / draft.distance_km);
+  const timeStr = `${String(draft.timeH).padStart(2,'0')}:${String(draft.timeM).padStart(2,'0')}:${String(draft.timeS).padStart(2,'0')}`;
+  const totalDistKm = (draft.count * draft.distance_km).toFixed(3);
+  const totalSec = Math.round(totalMin * 60 * draft.count);
+  const tH = Math.floor(totalSec / 3600), tM = Math.floor((totalSec % 3600) / 60), tS = totalSec % 60;
+  const totalTimeStr = [tH > 0 ? `${tH}h` : null, `${tM}m`, `${tS}s`].filter(Boolean).join(' ');
+  const chip = (label, val, color) => `<div style="background:#1e293b;border-radius:7px;padding:8px 10px;"><div style="color:#64748b;font-size:0.72rem;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px;">${label}</div><div style="font-weight:800;font-size:0.9rem;color:${color || '#e2e8f0'};">${val}</div></div>`;
+  const reviewEl = document.getElementById('ripWizReviewContent');
+  if(reviewEl) reviewEl.innerHTML = `
+    <div style="font-size:0.82rem;font-weight:800;color:#86efac;margin-bottom:12px;display:flex;align-items:center;gap:6px;">📋 <span>Riepilogo — ${draft.count}× ${draft.repType}</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;">
+      ${chip('Tipo', draft.repType, '#a5b4fc')}
+      ${chip('Numero', `${draft.count}×`, '#e2e8f0')}
+      ${chip('Distanza', `${draft.distance_km} km`, '#e2e8f0')}
+      ${chip('Tempo/rep', timeStr, '#e2e8f0')}
+      ${chip('Passo', `${paceStr} min/km`, '#67e8f9')}
+      ${chip('Recupero', `${draft.rest_min} min`, '#e2e8f0')}
+      ${chip('RPE', `${draft.rpe}/10`, '#fbbf24')}
+      ${chip('FC', `${draft.hr} bpm`, '#f87171')}
+      ${draft.lactate ? chip('Lattato', `${draft.lactate} mmol`, '#34d399') : ''}
+    </div>
+    <div style="margin-top:10px;background:rgba(99,102,241,0.14);border-radius:8px;padding:9px 10px;font-size:0.82rem;color:#c7d2fe;">
+      <span style="font-weight:700;">Totale gruppo:</span> ${totalDistKm} km &nbsp;·&nbsp; ${totalTimeStr} di lavoro ad alta intensità
+    </div>`;
+  _ripWizShowRepForm(false);
+  _ripWizShowReviewPanel(true);
+}
+
+function ripWizEditDraft() {
+  _ripWizShowReviewPanel(false);
+  _ripWizShowRepForm(true);
+}
+
+function ripWizConfirmRep() {
+  if(!ripWizState.draft) return;
+  if(ripWizState.editingIdx >= 0) {
+    ripWizState.groups[ripWizState.editingIdx] = { ...ripWizState.draft };
+    ripWizState.editingIdx = -1;
+  } else {
+    ripWizState.groups.push({ ...ripWizState.draft });
+  }
+  ripWizState.draft = null;
+  _ripWizShowReviewPanel(false);
+  _ripWizShowRepForm(false);
+  _ripWizRenderGroups();
+  _ripWizResetRepForm();
+  _ripWizUpdateBottomBtns();
+}
+
+function ripWizAddAnother() {
+  _ripWizShowRepForm(true);
+  _ripWizShowReviewPanel(false);
+  const titleEl = document.getElementById('ripWizFormTitle');
+  if(titleEl) titleEl.textContent = 'Inserisci tipologia di ripetuta';
+  ripWizState.editingIdx = -1;
+  _ripWizResetRepForm();
+  document.getElementById('ripWizRepForm')?.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+function _ripWizResetRepForm() {
+  const repTypeSel = document.getElementById('ripWizRepType');
+  if(repTypeSel) repTypeSel.value = '400m';
+  const defaults = { ripWizRepCount:4, ripWizRepTimeH:0, ripWizRepTimeM:1, ripWizRepTimeS:30, ripWizRepRest:1, ripWizRepRpe:7, ripWizRepHr:170 };
+  Object.entries(defaults).forEach(([id,val]) => { const el = document.getElementById(id); if(el) el.value = val; });
+  const lac = document.getElementById('ripWizRepLactate'); if(lac) lac.value = '';
+  const titleEl = document.getElementById('ripWizFormTitle');
+  if(titleEl) titleEl.textContent = 'Inserisci tipologia di ripetuta';
+  ripWizOnRepTypeChange();
+}
+
+function _ripWizUpdateBottomBtns() {
+  const hasGroups = ripWizState.groups.length > 0;
+  const addBtn = document.getElementById('ripWizAddAnotherBtn');
+  const saveBtn = document.getElementById('ripWizSaveBtn');
+  if(addBtn) addBtn.style.display = hasGroups ? 'block' : 'none';
+  if(saveBtn) saveBtn.style.display = hasGroups ? 'block' : 'none';
+}
+
+function _ripWizRenderGroups() {
+  const container = document.getElementById('ripWizGroupsList');
+  if(!container) return;
+  if(!ripWizState.groups.length) { container.innerHTML = ''; return; }
+  container.innerHTML = `
+    <div style="font-size:0.76rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px;">Tipologie aggiunte</div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
+      ${ripWizState.groups.map((g, i) => {
+        const totalMin = g.timeH * 60 + g.timeM + g.timeS / 60;
+        const paceStr = g.distance_km > 0 && totalMin > 0 ? formatMinutesToPaceDisplay(totalMin / g.distance_km) : '--';
+        const timeStr = `${String(g.timeH).padStart(2,'0')}:${String(g.timeM).padStart(2,'0')}:${String(g.timeS).padStart(2,'0')}`;
+        return `<div style="background:#0f172a;border:1.5px solid rgba(99,102,241,0.28);border-radius:10px;padding:9px 12px;display:flex;align-items:center;gap:8px;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:800;font-size:0.92rem;color:#e2e8f0;">${g.count}<span style="color:#64748b;">×</span> <span style="color:#a5b4fc;">${g.repType}</span></div>
+            <div style="font-size:0.73rem;color:#64748b;margin-top:3px;">${g.distance_km} km · ⏱ ${timeStr} · 👟 ${paceStr} &nbsp;·&nbsp; rec. ${g.rest_min} min</div>
+          </div>
+          <button onclick="ripWizEditGroupAt(${i})" title="Modifica" style="background:#1e3a5f;border:none;color:#93c5fd;border-radius:7px;padding:5px 9px;cursor:pointer;font-size:0.78rem;flex-shrink:0;">✏️</button>
+          <button onclick="ripWizDeleteGroupAt(${i})" title="Rimuovi" style="background:#450a0a;border:none;color:#fca5a5;border-radius:7px;padding:5px 9px;cursor:pointer;font-size:0.78rem;flex-shrink:0;">✖</button>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function ripWizEditGroupAt(idx) {
+  const group = ripWizState.groups[idx];
+  if(!group) return;
+  ripWizState.editingIdx = idx;
+  ripWizState.draft = { ...group };
+  _ripWizFillFormFromDraft(group);
+  const titleEl = document.getElementById('ripWizFormTitle');
+  if(titleEl) titleEl.textContent = `Modifica tipologia ${idx + 1}`;
+  _ripWizShowRepForm(true);
+  _ripWizShowReviewPanel(false);
+  document.getElementById('ripWizRepForm')?.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+function ripWizDeleteGroupAt(idx) {
+  ripWizState.groups.splice(idx, 1);
+  if(ripWizState.editingIdx === idx) { ripWizState.editingIdx = -1; ripWizState.draft = null; }
+  _ripWizRenderGroups();
+  _ripWizUpdateBottomBtns();
+  if(!ripWizState.groups.length) { _ripWizShowRepForm(true); _ripWizResetRepForm(); }
+}
+
+function ripWizSave() {
+  if(!ripWizState.groups.length) { alert('Aggiungi almeno una tipologia di ripetuta prima di salvare.'); return; }
+  const session = ripWizState.session;
+  startNewRipSession({ date:session.date, athlete:session.athlete, type:session.type, warmup_min:session.warmup_min, cooldown_min:session.cooldown_min });
+  const rowsBody = $id('ripRowsBody');
+  if(rowsBody) rowsBody.innerHTML = '';
+  ripWizState.groups.forEach(g => {
+    const totalMin = g.timeH * 60 + g.timeM + g.timeS / 60;
+    const timeS = Math.round(totalMin * 60);
+    for(let i = 0; i < g.count; i++) {
+      addRipRow({ repType:g.repType, distance_km:g.distance_km, time_s:timeS, rest_s:Math.round((g.rest_min||0)*60), rpe:g.rpe||'', hr:g.hr||'', lactate:g.lactate !== '' ? g.lactate : undefined });
+    }
+  });
+  const ripSession = readRipSessionFromForm();
+  const reps = Array.isArray(ripSession.reps) ? ripSession.reps.filter(r => _isMeaningfulRep(r)) : [];
+  if(!reps.length) { alert('Dati non validi, controlla i valori inseriti.'); return; }
+  ripSession.reps = reps;
+  try { const stats = computeRipMetrics(ripSession); renderRipAnalysis(ripSession, stats); } catch(e) { console.warn('Rip wizard save render failed', e); }
+  upsertRipSessionIntoMainTable(ripSession);
+  closeRipWizard();
+}
+/* ============================================================
+   END RIPETUTE WIZARD
+   ============================================================ */
 
 function saveMobileRipSession(){
   const date = document.getElementById('mobileRipDate')?.value || '';
