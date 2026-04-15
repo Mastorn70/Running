@@ -7379,6 +7379,18 @@ function ripWizPreviewRep() {
     </div>
     <div style="margin-top:10px;background:rgba(99,102,241,0.14);border-radius:8px;padding:9px 10px;font-size:0.82rem;color:#c7d2fe;">
       <span style="font-weight:700;">Totale gruppo:</span> ${totalDistKm} km &nbsp;·&nbsp; ${totalTimeStr} di lavoro ad alta intensità
+    </div>
+    <div style="margin-top:12px;">
+      <div style="font-size:0.75rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:7px;">🏃 Passo per singola ripetuta</div>
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        ${Array.from({length: draft.count}, (_,i) => `
+          <div style="display:flex;align-items:center;gap:8px;background:#1e293b;border-radius:8px;padding:6px 10px;">
+            <span style="color:#64748b;font-size:0.78rem;font-weight:700;min-width:40px;">Rep ${i+1}</span>
+            <input id="ripWizIndivPace_${i}" type="text" value="${paceStr}" placeholder="es. 3.25"
+              style="flex:1;background:#0f172a;color:#67e8f9;border:1.5px solid #334155;border-radius:6px;padding:5px 8px;font-size:0.88rem;font-weight:700;min-width:0;">
+            <span style="color:#64748b;font-size:0.75rem;">min/km</span>
+          </div>`).join('')}
+      </div>
     </div>`;
   _ripWizShowRepForm(false);
   _ripWizShowReviewPanel(true);
@@ -7391,6 +7403,14 @@ function ripWizEditDraft() {
 
 function ripWizConfirmRep() {
   if(!ripWizState.draft) return;
+  // collect individual paces from preview inputs
+  const cnt = ripWizState.draft.count || 0;
+  const indivPaces = [];
+  for(let i = 0; i < cnt; i++) {
+    const el = document.getElementById(`ripWizIndivPace_${i}`);
+    indivPaces.push(el ? el.value.trim() : '');
+  }
+  ripWizState.draft.indivPaces = indivPaces;
   if(ripWizState.editingIdx >= 0) {
     ripWizState.groups[ripWizState.editingIdx] = { ...ripWizState.draft };
     ripWizState.editingIdx = -1;
@@ -7486,9 +7506,15 @@ function ripWizSave() {
   if(rowsBody) rowsBody.innerHTML = '';
   ripWizState.groups.forEach(g => {
     const totalMin = g.timeH * 60 + g.timeM + g.timeS / 60;
-    const timeS = Math.round(totalMin * 60);
+    const defaultTimeS = Math.round(totalMin * 60);
     for(let i = 0; i < g.count; i++) {
-      addRipRow({ repType:g.repType, distance_km:g.distance_km, time_s:timeS, rest_s:Math.round((g.rest_min||0)*60), rpe:g.rpe||'', hr:g.hr||'', lactate:g.lactate !== '' ? g.lactate : undefined });
+      let repTimeS = defaultTimeS;
+      const indivPaceStr = g.indivPaces && g.indivPaces[i];
+      if(indivPaceStr && g.distance_km > 0) {
+        const paceMin = parsePaceDisplayToMinutes(indivPaceStr);
+        if(paceMin > 0) repTimeS = Math.round(paceMin * g.distance_km * 60);
+      }
+      addRipRow({ repType:g.repType, distance_km:g.distance_km, time_s:repTimeS, rest_s:Math.round((g.rest_min||0)*60), rpe:g.rpe||'', hr:g.hr||'', lactate:g.lactate !== '' ? g.lactate : undefined });
     }
   });
   const ripSession = readRipSessionFromForm();
