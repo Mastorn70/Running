@@ -2779,8 +2779,10 @@ function addRowFromImportedData(row) {
   <div class="app-splash-tip">5:50 Tritatisù</div>
 </div>
 <div id="mobileQuickActions">
-  <button type="button" class="quick-btn quick-top" onclick="openMobileSessionModal()">Add sessione</button>
-  <button type="button" class="quick-btn quick-top" style="background:linear-gradient(135deg,#7c3aed 0%,#a21caf 100%);" onclick="openVoiceSessionModal()">🎙️ Voce</button>
+  <div style="display:flex;gap:3px;">
+    <button type="button" class="quick-btn quick-top" style="width:62px;max-width:62px;border-top-right-radius:0;border-bottom-right-radius:0;" onclick="openMobileSessionModal()">Add sessione</button>
+    <button type="button" class="quick-btn" style="width:26px;max-width:26px;padding:0;text-align:center;flex-shrink:0;border-radius:0 22px 12px 0;background:linear-gradient(135deg,#7c3aed 0%,#a21caf 100%);" onclick="openVoiceSessionModal()">🎙️</button>
+  </div>
   <button type="button" class="quick-btn quick-bottom" onclick="openQuickRipSession()">Add ripetute</button>
 </div>
 <img id="mobileTopCenterIcon" src="./icona.svg" alt="Icona app mobile" onclick="openMobileIconPreview()">
@@ -4049,8 +4051,14 @@ document.addEventListener('click', function(e){
         <label style="color:#a5b4fc;font-size:0.82em;">Km
           <input id="voiceFieldKm" type="number" min="0" step="0.01" placeholder="0" style="width:100%;background:#0f172a;color:#e2e8f0;border:1px solid #4338ca;border-radius:6px;padding:5px 6px;">
         </label>
-        <label style="color:#a5b4fc;font-size:0.82em;">Minuti totali
-          <input id="voiceFieldMinutes" type="number" min="0" step="1" placeholder="0" style="width:100%;background:#0f172a;color:#e2e8f0;border:1px solid #4338ca;border-radius:6px;padding:5px 6px;">
+        <label style="color:#a5b4fc;font-size:0.82em;">Tempo (hh:mm:ss)
+          <div style="display:flex;gap:3px;align-items:center;">
+            <input id="voiceFieldHh" type="number" min="0" max="99" step="1" placeholder="hh" style="width:33%;background:#0f172a;color:#e2e8f0;border:1px solid #4338ca;border-radius:6px;padding:5px 4px;text-align:center;">
+            <span style="color:#a5b4fc;font-weight:700;">:</span>
+            <input id="voiceFieldMm" type="number" min="0" max="59" step="1" placeholder="mm" style="width:33%;background:#0f172a;color:#e2e8f0;border:1px solid #4338ca;border-radius:6px;padding:5px 4px;text-align:center;">
+            <span style="color:#a5b4fc;font-weight:700;">:</span>
+            <input id="voiceFieldSs" type="number" min="0" max="59" step="1" placeholder="ss" style="width:33%;background:#0f172a;color:#e2e8f0;border:1px solid #4338ca;border-radius:6px;padding:5px 4px;text-align:center;">
+          </div>
         </label>
         <label style="color:#a5b4fc;font-size:0.82em;">RPE
           <input id="voiceFieldRpe" type="number" min="1" max="10" step="1" placeholder="" style="width:100%;background:#0f172a;color:#e2e8f0;border:1px solid #4338ca;border-radius:6px;padding:5px 6px;">
@@ -5575,10 +5583,10 @@ let charts = {};
 let fileHandle = null;
 
 window.sports = window.sports || ['corsa','bici','palestra','nuoto','sci'];
-let athletes=['Max'];
+let athletes=['Max']; window.athletes = athletes;
 let athleteDetails = {};
 let athletesToRemove = [];
-let activityTypes=['Allenamento','Gara','Test','Recupero','Tecnica','Ripetute'];
+let activityTypes=['Allenamento','Gara','Test','Recupero','Tecnica','Ripetute']; window.activityTypes = activityTypes;
 const TOP_SCORE_RULES_KEY = 'topScoreRules';
 let topScoreRules = { malePct: 0, femalePct: 0, otherPct: 0 };
 const RACE_DISTANCE_OPTIONS = ['10K', '21K', '42K'];
@@ -12939,7 +12947,7 @@ window.addEventListener('DOMContentLoaded', function(){
     const mb = document.getElementById('voiceMicBtn');
     if(mb){ mb.textContent = '🎙️'; mb.style.boxShadow = '0 4px 20px #7c3aed66'; }
     // Clear parsed fields
-    ['voiceFieldKm','voiceFieldMinutes','voiceFieldRpe','voiceFieldHr','voiceFieldNote'].forEach(id=>{
+    ['voiceFieldKm','voiceFieldHh','voiceFieldMm','voiceFieldSs','voiceFieldRpe','voiceFieldHr','voiceFieldNote'].forEach(id=>{
       const el=document.getElementById(id); if(el) el.value='';
     });
     modal.style.display = 'flex';
@@ -13075,7 +13083,15 @@ window.addEventListener('DOMContentLoaded', function(){
     set('voiceFieldDate', p.date);
     setSel('voiceFieldAthlete', p.athlete);
     set('voiceFieldKm', p.km);
-    set('voiceFieldMinutes', p.minutes);
+    if(p.minutes){
+      const totSec = Math.round(Number(p.minutes)*60);
+      const hh = Math.floor(totSec/3600);
+      const mm = Math.floor((totSec%3600)/60);
+      const ss = totSec%60;
+      set('voiceFieldHh', hh ? String(hh) : '');
+      set('voiceFieldMm', mm ? String(mm) : '');
+      set('voiceFieldSs', ss ? String(ss) : '');
+    }
     set('voiceFieldRpe', p.rpe);
     set('voiceFieldHr', p.hr);
     setSel('voiceFieldSport', p.sport);
@@ -13091,7 +13107,10 @@ window.addEventListener('DOMContentLoaded', function(){
       return;
     }
     const km       = document.getElementById('voiceFieldKm')?.value || '';
-    const minutes  = document.getElementById('voiceFieldMinutes')?.value || '';
+    const hh = Number(document.getElementById('voiceFieldHh')?.value || 0);
+    const mm = Number(document.getElementById('voiceFieldMm')?.value || 0);
+    const ss = Number(document.getElementById('voiceFieldSs')?.value || 0);
+    const minutes  = String((hh * 60) + mm + (ss / 60)) || '';
     const rpe      = document.getElementById('voiceFieldRpe')?.value || '';
     const hr       = document.getElementById('voiceFieldHr')?.value || '';
     const sport    = document.getElementById('voiceFieldSport')?.value || (window.sports||[])[0] || '';
@@ -13118,9 +13137,13 @@ window.addEventListener('DOMContentLoaded', function(){
       const hh = Math.floor(totSec/3600);
       const mm = Math.floor((totSec%3600)/60);
       const ss = totSec%60;
-      set('mobileSessionHh', hh ? String(hh) : '');
-      set('mobileSessionMm', mm ? String(mm) : '');
-      set('mobileSessionSs', ss ? String(ss) : '');
+      const _totSec = Math.round(Number(minutes||0)*60);
+      const _hh = Math.floor(_totSec/3600);
+      const _mm = Math.floor((_totSec%3600)/60);
+      const _ss = _totSec%60;
+      set('mobileSessionHh', _hh ? String(_hh) : '');
+      set('mobileSessionMm', _mm ? String(_mm) : '');
+      set('mobileSessionSs', _ss ? String(_ss) : '');
       set('mobileSessionRpe', rpe);
       set('mobileSessionHr', hr);
       setSel('mobileSessionSport', sport);
