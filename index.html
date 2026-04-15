@@ -2691,7 +2691,7 @@ function exportAllData() {
     dati = getDataRaw().map(x=>({ date:x.date, athlete:x.athlete, km:x.km, minutes:x.minutes, time:x.time, rpe:x.rpe, hr:x.hr, type:x.type, activityType:x.activityType, raceDistance:x.raceDistance||'', note:x.note }));
   } catch(e) {}
   const ripPayload = Array.isArray(ripetuteSessions)
-    ? ripetuteSessions.map(s => ({ id:s.id, date:s.date, athlete:s.athlete, type:s.type||'Ripetute', warmup_min:+(s.warmup_min||0), cooldown_min:+(s.cooldown_min||0), reps:Array.isArray(s.reps)?s.reps:[] }))
+    ? ripetuteSessions.map(s => ({ id:s.id, date:s.date, athlete:s.athlete, type:s.type||'Ripetute', warmup_min:+(s.warmup_min||0), warmup_km:+(s.warmup_km||0), cooldown_min:+(s.cooldown_min||0), cooldown_km:+(s.cooldown_km||0), reps:Array.isArray(s.reps)?s.reps:[] }))
     : [];
   const payload = {
     data: dati || [],
@@ -2699,7 +2699,7 @@ function exportAllData() {
     athletesProfile: (typeof getAthletesProfilePayload === 'function' ? getAthletesProfilePayload() : null) || [],
     topScoreRules: { malePct: Number(topScoreRules?.malePct||0), femalePct: Number(topScoreRules?.femalePct||0), otherPct: Number(topScoreRules?.otherPct||0) },
     sportEquivalence: (typeof sportEquivalence !== 'undefined' ? sportEquivalence : null) || {},
-    kpiTargets: { km: MOBILE_KPI_TARGETS?.km, carico: MOBILE_KPI_TARGETS?.carico, trimp: MOBILE_KPI_TARGETS?.trimp, risk: MOBILE_KPI_TARGETS?.risk },
+    kpiTargets: { km: MOBILE_KPI_TARGETS?.km, carico: MOBILE_KPI_TARGETS?.carico, trimp: MOBILE_KPI_TARGETS?.trimp, risk: MOBILE_KPI_TARGETS?.risk, warmup_hr: MOBILE_KPI_TARGETS?.warmup_hr, warmup_rpe: MOBILE_KPI_TARGETS?.warmup_rpe, cooldown_hr: MOBILE_KPI_TARGETS?.cooldown_hr, cooldown_rpe: MOBILE_KPI_TARGETS?.cooldown_rpe },
     kpiParams: (typeof KPI_PARAMS !== 'undefined' ? KPI_PARAMS : null) || {},
     athletesToRemove: Array.isArray(athletesToRemove) ? athletesToRemove : [],
     audioEnabled: window.__audioEnabled !== false,
@@ -2960,6 +2960,38 @@ function addRowFromImportedData(row) {
             <span style="color:#7dd3fc;font-size:0.8rem;">%</span>
           </div>
         </label>
+        <div style="height:1px;background:rgba(255,255,255,0.06);margin:6px 0;border-radius:4px;"></div>
+        <label style="font-size:0.85rem;color:#94a3b8;font-weight:600;">Valori std Warm-up / Cool-down</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <label style="font-size:0.82rem;color:#94a3b8;">
+            Warm-up FC
+            <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
+              <input id="kpiWarmupHr" type="number" min="0" step="1" value="120" style="flex:1;padding:7px 10px;border-radius:8px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:0.95rem;">
+              <span style="color:#7dd3fc;font-size:0.78rem;">bpm</span>
+            </div>
+          </label>
+          <label style="font-size:0.82rem;color:#94a3b8;">
+            Warm-up RPE
+            <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
+              <input id="kpiWarmupRpe" type="number" min="0" max="10" step="0.5" value="2" style="flex:1;padding:7px 10px;border-radius:8px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:0.95rem;">
+              <span style="color:#7dd3fc;font-size:0.78rem;">/10</span>
+            </div>
+          </label>
+          <label style="font-size:0.82rem;color:#94a3b8;">
+            Cool-down FC
+            <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
+              <input id="kpiCooldownHr" type="number" min="0" step="1" value="120" style="flex:1;padding:7px 10px;border-radius:8px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:0.95rem;">
+              <span style="color:#7dd3fc;font-size:0.78rem;">bpm</span>
+            </div>
+          </label>
+          <label style="font-size:0.82rem;color:#94a3b8;">
+            Cool-down RPE
+            <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
+              <input id="kpiCooldownRpe" type="number" min="0" max="10" step="0.5" value="2" style="flex:1;padding:7px 10px;border-radius:8px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:0.95rem;">
+              <span style="color:#7dd3fc;font-size:0.78rem;">/10</span>
+            </div>
+          </label>
+        </div>
         <div style="height:1px;background:rgba(255,255,255,0.06);margin:6px 0;border-radius:4px;"></div>
         <label style="font-size:0.85rem;color:#94a3b8;">Parametri calcolo ACWR</label>
         <label style="font-size:0.85rem;color:#94a3b8;">
@@ -3511,7 +3543,7 @@ window.switchTab = function(tabName, ev) {
 // Mobile Chart.js: aggiorna i grafici in base ai filtri REALI
 let mobileCharts = [];
 // Target di riferimento per le barre KPI mobile/desktop (persistiti in localStorage)
-const _kpiTargetDefaults = { km: 50, carico: 3000, trimp: 300, risk: 10 };
+const _kpiTargetDefaults = { km: 50, carico: 3000, trimp: 300, risk: 10, warmup_hr: 120, warmup_rpe: 2, cooldown_hr: 120, cooldown_rpe: 2 };
 const MOBILE_KPI_TARGETS = Object.assign({}, _kpiTargetDefaults, (() => {
   try { return JSON.parse(localStorage.getItem('mobileKpiTargets') || '{}'); } catch(e){ return {}; }
 })());
@@ -3527,6 +3559,12 @@ function openMobileKpiTargetModal() {
   document.getElementById('kpiTargetCarico').value = MOBILE_KPI_TARGETS.carico;
   document.getElementById('kpiTargetTrimp').value = MOBILE_KPI_TARGETS.trimp;
   document.getElementById('kpiTargetRisk').value = MOBILE_KPI_TARGETS.risk;
+  try {
+    document.getElementById('kpiWarmupHr').value = MOBILE_KPI_TARGETS.warmup_hr ?? 120;
+    document.getElementById('kpiWarmupRpe').value = MOBILE_KPI_TARGETS.warmup_rpe ?? 2;
+    document.getElementById('kpiCooldownHr').value = MOBILE_KPI_TARGETS.cooldown_hr ?? 120;
+    document.getElementById('kpiCooldownRpe').value = MOBILE_KPI_TARGETS.cooldown_rpe ?? 2;
+  } catch(e) {}
   // populate ACWR params
   try{
     document.getElementById('kpiParamAcuteDays').value = KPI_PARAMS.acuteDays;
@@ -3570,7 +3608,11 @@ function saveMobileKpiTargets() {
   const carico = parseFloat(document.getElementById('kpiTargetCarico').value) || _kpiTargetDefaults.carico;
   const trimp = parseFloat(document.getElementById('kpiTargetTrimp').value) || _kpiTargetDefaults.trimp;
   const risk = parseFloat(document.getElementById('kpiTargetRisk').value) ?? _kpiTargetDefaults.risk;
-  Object.assign(MOBILE_KPI_TARGETS, { km, carico, trimp, risk });
+  const warmup_hr = parseInt(document.getElementById('kpiWarmupHr')?.value) || _kpiTargetDefaults.warmup_hr;
+  const warmup_rpe = parseFloat(document.getElementById('kpiWarmupRpe')?.value) ?? _kpiTargetDefaults.warmup_rpe;
+  const cooldown_hr = parseInt(document.getElementById('kpiCooldownHr')?.value) || _kpiTargetDefaults.cooldown_hr;
+  const cooldown_rpe = parseFloat(document.getElementById('kpiCooldownRpe')?.value) ?? _kpiTargetDefaults.cooldown_rpe;
+  Object.assign(MOBILE_KPI_TARGETS, { km, carico, trimp, risk, warmup_hr, warmup_rpe, cooldown_hr, cooldown_rpe });
   try { localStorage.setItem('mobileKpiTargets', JSON.stringify(MOBILE_KPI_TARGETS)); } catch(e){}
   // save ACWR params
   try{
@@ -3593,6 +3635,12 @@ function resetMobileKpiTargets() {
   document.getElementById('kpiTargetCarico').value = _kpiTargetDefaults.carico;
   document.getElementById('kpiTargetTrimp').value = _kpiTargetDefaults.trimp;
   document.getElementById('kpiTargetRisk').value = _kpiTargetDefaults.risk;
+  try {
+    document.getElementById('kpiWarmupHr').value = _kpiTargetDefaults.warmup_hr;
+    document.getElementById('kpiWarmupRpe').value = _kpiTargetDefaults.warmup_rpe;
+    document.getElementById('kpiCooldownHr').value = _kpiTargetDefaults.cooldown_hr;
+    document.getElementById('kpiCooldownRpe').value = _kpiTargetDefaults.cooldown_rpe;
+  } catch(e) {}
   // reset ACWR params
   try{
     Object.assign(KPI_PARAMS, _kpiParamDefaults);
@@ -3992,7 +4040,9 @@ document.addEventListener('click', function(e){
         <option value="Fartlek">Fartlek</option>
       </select>
       <label>Warm-up (min):</label><input type="number" id="ripWarmup" value="20" style="width:80px;">
+      <label>Warm-up (km):</label><input type="number" id="ripWarmupKm" value="0" min="0" step="0.01" style="width:80px;">
       <label>Cool-down (min):</label><input type="number" id="ripCooldown" value="15" style="width:80px;">
+      <label>Cool-down (km):</label><input type="number" id="ripCooldownKm" value="0" min="0" step="0.01" style="width:80px;">
       <button onclick="handleStartNewRipSession()">➕ Nuova Sessione</button>
       <!--<button onclick="saveRipSessionsToFile()">⬇️ Esporta</button>-->
       <!--<button onclick="loadRipSessionsFromFile()">📂 Importa</button>-->
@@ -4018,8 +4068,14 @@ document.addEventListener('click', function(e){
           <label>Warm-up (min)
             <input id="mobileRipWarmup" type="number" min="0" step="1" value="20" style="width:100%;">
           </label>
+          <label>Warm-up (km)
+            <input id="mobileRipWarmupKm" type="number" min="0" step="0.01" value="0" style="width:100%;">
+          </label>
           <label>Cool-down (min)
             <input id="mobileRipCooldown" type="number" min="0" step="1" value="15" style="width:100%;">
+          </label>
+          <label>Cool-down (km)
+            <input id="mobileRipCooldownKm" type="number" min="0" step="0.01" value="0" style="width:100%;">
           </label>
           <div style="grid-column:1 / -1;height:1px;background:#e2e8f0;margin:4px 0;"></div>
           <label style="grid-column:1 / -1;font-weight:700;color:#334155;">Ripetute (inserimento rapido)</label>
@@ -4098,8 +4154,14 @@ document.addEventListener('click', function(e){
             <label style="font-size:0.83rem;font-weight:600;color:#94a3b8;">Warm-up (min)
               <input id="ripWizWarmup" type="number" min="0" step="1" value="20" style="display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:9px 10px;border-radius:9px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:0.95rem;">
             </label>
+            <label style="font-size:0.83rem;font-weight:600;color:#94a3b8;">Warm-up (km)
+              <input id="ripWizWarmupKm" type="number" min="0" step="0.01" value="0" style="display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:9px 10px;border-radius:9px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:0.95rem;">
+            </label>
             <label style="font-size:0.83rem;font-weight:600;color:#94a3b8;">Cool-down (min)
               <input id="ripWizCooldown" type="number" min="0" step="1" value="15" style="display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:9px 10px;border-radius:9px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:0.95rem;">
+            </label>
+            <label style="font-size:0.83rem;font-weight:600;color:#94a3b8;">Cool-down (km)
+              <input id="ripWizCooldownKm" type="number" min="0" step="0.01" value="0" style="display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:9px 10px;border-radius:9px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:0.95rem;">
             </label>
           </div>
           <button onclick="ripWizGoStep2()" style="width:100%;margin-top:18px;padding:13px;background:linear-gradient(135deg,#6366f1,#7c3aed);color:#fff;font-weight:800;font-size:1rem;border:none;border-radius:10px;cursor:pointer;letter-spacing:0.3px;">Avanti →</button>
@@ -5019,6 +5081,10 @@ function applyImportedPayload(data) {
         if (kt.carico) MOBILE_KPI_TARGETS.carico = Number(kt.carico);
         if (kt.trimp)  MOBILE_KPI_TARGETS.trimp  = Number(kt.trimp);
         if (kt.risk != null) MOBILE_KPI_TARGETS.risk = Number(kt.risk);
+        if (kt.warmup_hr != null) MOBILE_KPI_TARGETS.warmup_hr = Number(kt.warmup_hr);
+        if (kt.warmup_rpe != null) MOBILE_KPI_TARGETS.warmup_rpe = Number(kt.warmup_rpe);
+        if (kt.cooldown_hr != null) MOBILE_KPI_TARGETS.cooldown_hr = Number(kt.cooldown_hr);
+        if (kt.cooldown_rpe != null) MOBILE_KPI_TARGETS.cooldown_rpe = Number(kt.cooldown_rpe);
         try { localStorage.setItem('mobileKpiTargets', JSON.stringify(MOBILE_KPI_TARGETS)); } catch(e){}
       }
       if (data.kpiParams && typeof data.kpiParams === 'object') {
@@ -5064,7 +5130,9 @@ function applyImportedPayload(data) {
           athlete: s.athlete || '',
           type: s.type || 'Ripetute',
           warmup_min: +(s.warmup_min || 0),
+          warmup_km: +(s.warmup_km || 0),
           cooldown_min: +(s.cooldown_min || 0),
+          cooldown_km: +(s.cooldown_km || 0),
           reps: Array.isArray(s.reps) ? s.reps.filter(r => typeof _isMeaningfulRep === 'function' ? _isMeaningfulRep(r) : true) : []
         }))
         .filter(s => s.athlete && Array.isArray(s.reps) && s.reps.length > 0);
@@ -5111,7 +5179,9 @@ function saveToFirebase() {
         athlete: s.athlete,
         type: s.type || 'Ripetute',
         warmup_min: +(s.warmup_min || 0),
+        warmup_km: +(s.warmup_km || 0),
         cooldown_min: +(s.cooldown_min || 0),
+        cooldown_km: +(s.cooldown_km || 0),
         reps: Array.isArray(s.reps) ? s.reps : []
       }))
     : [];
@@ -5131,7 +5201,7 @@ function saveToFirebase() {
       otherPct: Number(topScoreRules.otherPct || 0)
     },
     sportEquivalence: sportEquivalence || {},
-    kpiTargets: { km: MOBILE_KPI_TARGETS.km, carico: MOBILE_KPI_TARGETS.carico, trimp: MOBILE_KPI_TARGETS.trimp, risk: MOBILE_KPI_TARGETS.risk },
+    kpiTargets: { km: MOBILE_KPI_TARGETS.km, carico: MOBILE_KPI_TARGETS.carico, trimp: MOBILE_KPI_TARGETS.trimp, risk: MOBILE_KPI_TARGETS.risk, warmup_hr: MOBILE_KPI_TARGETS.warmup_hr, warmup_rpe: MOBILE_KPI_TARGETS.warmup_rpe, cooldown_hr: MOBILE_KPI_TARGETS.cooldown_hr, cooldown_rpe: MOBILE_KPI_TARGETS.cooldown_rpe },
     kpiParams: KPI_PARAMS || {},
     athletesToRemove: Array.isArray(athletesToRemove) ? athletesToRemove : [],
     audioEnabled: window.__audioEnabled !== false,
@@ -6967,7 +7037,7 @@ function renderRipSessionsList(){
     let stats = { total_distance_km: 0, total_reps: reps.length };
     try { stats = computeRipMetrics(Object.assign({}, s, { reps })); } catch (e) { console.warn('computeRipMetrics error for session', s, e); }
     const repsCount = reps.length;
-    const totalKm = stats && (stats.total_distance_km ?? 0);
+    const totalKm = Math.round(((stats && (stats.total_distance_km ?? 0)) + (s.warmup_km || 0) + (s.cooldown_km || 0)) * 100) / 100;
     const date = s.date || '';
     const athlete = s.athlete || '—';
     const id = s.id || '';
@@ -6987,7 +7057,9 @@ function startNewRipSession(config = {}){
   }
   if($id('ripType') && config.type) $id('ripType').value = config.type;
   if($id('ripWarmup') && config.warmup_min !== undefined) $id('ripWarmup').value = config.warmup_min;
+  if($id('ripWarmupKm') && config.warmup_km !== undefined) $id('ripWarmupKm').value = config.warmup_km;
   if($id('ripCooldown') && config.cooldown_min !== undefined) $id('ripCooldown').value = config.cooldown_min;
+  if($id('ripCooldownKm') && config.cooldown_km !== undefined) $id('ripCooldownKm').value = config.cooldown_km;
   if($id('ripRowsBody')) $id('ripRowsBody').innerHTML = '';
   for(let i=0;i<2;i++) addRipRow();
 }
@@ -7019,8 +7091,12 @@ function _openMobileRipSessionModalLegacy(){
   if(typeSel) typeSel.value = 'Ripetute';
   const warmupInput = document.getElementById('mobileRipWarmup');
   if(warmupInput) warmupInput.value = '20';
+  const warmupKmInput = document.getElementById('mobileRipWarmupKm');
+  if(warmupKmInput) warmupKmInput.value = '0';
   const cooldownInput = document.getElementById('mobileRipCooldown');
   if(cooldownInput) cooldownInput.value = '15';
+  const cooldownKmInput = document.getElementById('mobileRipCooldownKm');
+  if(cooldownKmInput) cooldownKmInput.value = '0';
   const countInput = document.getElementById('mobileRipCount');
   if(countInput) countInput.value = '2';
   const repTypeInput = document.getElementById('mobileRipRepType');
@@ -7069,7 +7145,9 @@ function openRipWizard() {
   const dateEl = document.getElementById('ripWizDate');
   if(dateEl) dateEl.value = new Date().toISOString().slice(0,10);
   const warmEl = document.getElementById('ripWizWarmup'); if(warmEl) warmEl.value = '20';
+  const warmKmEl = document.getElementById('ripWizWarmupKm'); if(warmKmEl) warmKmEl.value = '0';
   const coolEl = document.getElementById('ripWizCooldown'); if(coolEl) coolEl.value = '15';
+  const coolKmEl = document.getElementById('ripWizCooldownKm'); if(coolKmEl) coolKmEl.value = '0';
   const typeEl = document.getElementById('ripWizType'); if(typeEl) typeEl.value = 'Ripetute';
   _ripWizShowStep(1);
   const modal = document.getElementById('ripWizardModal');
@@ -7103,7 +7181,9 @@ function ripWizGoStep2() {
     athlete,
     type: document.getElementById('ripWizType')?.value || 'Ripetute',
     warmup_min: +(document.getElementById('ripWizWarmup')?.value || 20),
-    cooldown_min: +(document.getElementById('ripWizCooldown')?.value || 15)
+    warmup_km: +(document.getElementById('ripWizWarmupKm')?.value || 0),
+    cooldown_min: +(document.getElementById('ripWizCooldown')?.value || 15),
+    cooldown_km: +(document.getElementById('ripWizCooldownKm')?.value || 0)
   };
   ripWizState.editingIdx = -1;
   ripWizState.draft = null;
@@ -7126,7 +7206,9 @@ function ripWizGoStep1() {
     const athSel = document.getElementById('ripWizAthlete'); if(athSel) athSel.value = s.athlete;
     const typeSel = document.getElementById('ripWizType'); if(typeSel) typeSel.value = s.type;
     const warmEl = document.getElementById('ripWizWarmup'); if(warmEl) warmEl.value = s.warmup_min;
+    const warmKmEl = document.getElementById('ripWizWarmupKm'); if(warmKmEl) warmKmEl.value = s.warmup_km || 0;
     const coolEl = document.getElementById('ripWizCooldown'); if(coolEl) coolEl.value = s.cooldown_min;
+    const coolKmEl = document.getElementById('ripWizCooldownKm'); if(coolKmEl) coolKmEl.value = s.cooldown_km || 0;
   }
 }
 
@@ -7345,7 +7427,7 @@ function ripWizDeleteGroupAt(idx) {
 function ripWizSave() {
   if(!ripWizState.groups.length) { alert('Aggiungi almeno una tipologia di ripetuta prima di salvare.'); return; }
   const session = ripWizState.session;
-  startNewRipSession({ date:session.date, athlete:session.athlete, type:session.type, warmup_min:session.warmup_min, cooldown_min:session.cooldown_min });
+  startNewRipSession({ date:session.date, athlete:session.athlete, type:session.type, warmup_min:session.warmup_min, warmup_km:session.warmup_km||0, cooldown_min:session.cooldown_min, cooldown_km:session.cooldown_km||0 });
   const rowsBody = $id('ripRowsBody');
   if(rowsBody) rowsBody.innerHTML = '';
   ripWizState.groups.forEach(g => {
@@ -7379,7 +7461,9 @@ function saveMobileRipSession(){
     athlete,
     type: document.getElementById('mobileRipType')?.value || 'Ripetute',
     warmup_min: +(document.getElementById('mobileRipWarmup')?.value || 20),
-    cooldown_min: +(document.getElementById('mobileRipCooldown')?.value || 15)
+    warmup_km: +(document.getElementById('mobileRipWarmupKm')?.value || 0),
+    cooldown_min: +(document.getElementById('mobileRipCooldown')?.value || 15),
+    cooldown_km: +(document.getElementById('mobileRipCooldownKm')?.value || 0)
   });
   const ripCount = Math.max(1, +(document.getElementById('mobileRipCount')?.value || 1));
   const repType = (document.getElementById('mobileRipRepType')?.value || 'Custom').trim();
@@ -7484,7 +7568,9 @@ function readRipSessionFromForm(){
     athlete: $id('ripAthlete') ? $id('ripAthlete').value : '',
     type: $id('ripType') ? $id('ripType').value : '',
     warmup_min: +($id('ripWarmup')?.value || 0),
+    warmup_km: +($id('ripWarmupKm')?.value || 0),
     cooldown_min: +($id('ripCooldown')?.value || 0),
+    cooldown_km: +($id('ripCooldownKm')?.value || 0),
     reps
   };
 }
@@ -7959,9 +8045,43 @@ function upsertRipSessionIntoMainTable(session, options = {}){
   const replaced = _removeTableRowsForRipSessionGroup(normalizedSession);
   _removeRipSessionFromStorage(normalizedSession);
 
+  const warmupKm = +(normalizedSession.warmup_km || 0);
+  const warmupMin = +(normalizedSession.warmup_min || 0);
+  const cooldownKm = +(normalizedSession.cooldown_km || 0);
+  const cooldownMin = +(normalizedSession.cooldown_min || 0);
+
+  // Add cool-down row first (it gets prepended, so order ends: warmup, reps, cooldown)
+  if(cooldownKm > 0) {
+    addRow({
+      date: normalizedSession.date,
+      athlete: normalizedSession.athlete,
+      km: cooldownKm,
+      minutes: cooldownMin,
+      time: cooldownMin / 60,
+      pace_min_per_km: cooldownKm > 0 && cooldownMin > 0 ? formatMinutesToPaceDisplay(cooldownMin / cooldownKm) : '',
+      rpe: MOBILE_KPI_TARGETS.cooldown_rpe ?? 2, hr: MOBILE_KPI_TARGETS.cooldown_hr ?? 120, type: 'Ripetute',
+      activityType: _normalizeRipSessionType(normalizedSession.type),
+      note: 'Cool-down'
+    });
+  }
+
   reps.slice().reverse().forEach(rep => {
     addRow(_buildTableRowFromRipRep(normalizedSession, rep));
   });
+
+  if(warmupKm > 0) {
+    addRow({
+      date: normalizedSession.date,
+      athlete: normalizedSession.athlete,
+      km: warmupKm,
+      minutes: warmupMin,
+      time: warmupMin / 60,
+      pace_min_per_km: warmupKm > 0 && warmupMin > 0 ? formatMinutesToPaceDisplay(warmupMin / warmupKm) : '',
+      rpe: MOBILE_KPI_TARGETS.warmup_rpe ?? 2, hr: MOBILE_KPI_TARGETS.warmup_hr ?? 120, type: 'Ripetute',
+      activityType: _normalizeRipSessionType(normalizedSession.type),
+      note: 'Warm-up'
+    });
+  }
 
   try { renderRipSessionsList(); } catch(e){ console.warn('renderRipSessionsList after rip upsert failed', e); }
   try { updateTableFilters(); } catch(e){ console.warn('updateTableFilters after rip upsert failed', e); }
@@ -8031,7 +8151,7 @@ function renderRipSessionsList(){
     let stats = { total_distance_km: 0, total_reps: reps.length };
     try { stats = computeRipMetrics(Object.assign({}, s, { reps })); } catch (e) { console.warn('computeRipMetrics error for session', s, e); }
     const repsCount = reps.length;
-    const totalKm = stats && (stats.total_distance_km ?? 0);
+    const totalKm = Math.round(((stats && (stats.total_distance_km ?? 0)) + (s.warmup_km || 0) + (s.cooldown_km || 0)) * 100) / 100;
     const date = s.date || '';
     const athlete = s.athlete || '—';
     const id = s.id || '';
@@ -8048,7 +8168,9 @@ function viewRipSession(id){
   $id('ripAthlete').innerHTML = athletes.map(a=>`<option value="${a}" ${a===s.athlete?'selected':''}>${a}</option>`).join('');
   if($id('ripType')) $id('ripType').value = _normalizeRipSessionType(s.type);
   $id('ripWarmup').value = s.warmup_min || 0;
+  if($id('ripWarmupKm')) $id('ripWarmupKm').value = s.warmup_km || 0;
   $id('ripCooldown').value = s.cooldown_min || 0;
+  if($id('ripCooldownKm')) $id('ripCooldownKm').value = s.cooldown_km || 0;
   if($id('ripRowsBody')) $id('ripRowsBody').innerHTML = '';
   s.reps.forEach(r => addRipRow(r));
   const stats = computeRipMetrics(s);
@@ -8074,6 +8196,18 @@ function convertRipetuteToDataEntries(ripSessions){
   const entries = [];
   ripSessions.forEach(s => {
     if(!s.reps) return;
+    const warmupKm = +(s.warmup_km || 0);
+    const cooldownKm = +(s.cooldown_km || 0);
+    const warmupMin = +(s.warmup_min || 0);
+    const cooldownMin = +(s.cooldown_min || 0);
+    if(warmupKm > 0) {
+      entries.push({
+        date: s.date, athlete: s.athlete,
+        km: warmupKm, minutes: warmupMin, time: warmupMin / 60,
+        pace_min_per_km: warmupKm > 0 && warmupMin > 0 ? formatMinutesToPaceDisplay(warmupMin / warmupKm) : '',
+        rpe: MOBILE_KPI_TARGETS.warmup_rpe ?? 2, hr: MOBILE_KPI_TARGETS.warmup_hr ?? 120, type: 'Ripetute', activityType: s.type || 'Ripetute', note: 'Warm-up'
+      });
+    }
     s.reps.forEach(r=>{
       const minutes = (r.time_s || 0) / 60;
       const km = (r.distance || 0) / 1000;
@@ -8091,6 +8225,14 @@ function convertRipetuteToDataEntries(ripSessions){
         note: `Rip: ${r.label||''} rec ${((r.rest_s||0)/60).toFixed(2)}min latt:${r.lactate||''}`
       });
     });
+    if(cooldownKm > 0) {
+      entries.push({
+        date: s.date, athlete: s.athlete,
+        km: cooldownKm, minutes: cooldownMin, time: cooldownMin / 60,
+        pace_min_per_km: cooldownKm > 0 && cooldownMin > 0 ? formatMinutesToPaceDisplay(cooldownMin / cooldownKm) : '',
+        rpe: MOBILE_KPI_TARGETS.cooldown_rpe ?? 2, hr: MOBILE_KPI_TARGETS.cooldown_hr ?? 120, type: 'Ripetute', activityType: s.type || 'Ripetute', note: 'Cool-down'
+      });
+    }
   });
   return entries;
 }
