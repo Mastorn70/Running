@@ -2783,7 +2783,10 @@ function addRowFromImportedData(row) {
     <button type="button" class="quick-btn quick-top" style="width:62px;max-width:62px;border-top-right-radius:0;border-bottom-right-radius:0;" onclick="openMobileSessionModal()">Add sessione</button>
     <button type="button" class="quick-btn" style="width:26px;max-width:26px;padding:0;text-align:center;flex-shrink:0;border-radius:0 22px 12px 0;background:linear-gradient(135deg,#7c3aed 0%,#a21caf 100%);" onclick="openVoiceSessionModal()">🎙️</button>
   </div>
-  <button type="button" class="quick-btn quick-bottom" onclick="openQuickRipSession()">Add ripetute</button>
+  <div style="display:flex;gap:3px;">
+    <button type="button" class="quick-btn quick-bottom" style="width:62px;max-width:62px;border-bottom-right-radius:0;border-top-right-radius:0;" onclick="openQuickRipSession()">Add ripetute</button>
+    <button type="button" class="quick-btn" style="width:26px;max-width:26px;padding:0;text-align:center;flex-shrink:0;border-radius:0 12px 22px 0;background:linear-gradient(135deg,#0891b2 0%,#0d9488 100%);" onclick="openVoiceRipModal()">🎙️</button>
+  </div>
 </div>
 <img id="mobileTopCenterIcon" src="./icona.svg" alt="Icona app mobile" onclick="openMobileIconPreview()">
 <div id="mobileIconPreview" onclick="closeMobileIconPreview()">
@@ -4072,6 +4075,14 @@ document.addEventListener('click', function(e){
         <label style="color:#a5b4fc;font-size:0.82em;">Tipo
           <select id="voiceFieldActivityType" style="width:100%;background:#0f172a;color:#e2e8f0;border:1px solid #4338ca;border-radius:6px;padding:5px 6px;"></select>
         </label>
+        <label style="color:#a5b4fc;font-size:0.82em;">Distanza gara
+          <select id="voiceFieldRaceDistance" style="width:100%;background:#0f172a;color:#e2e8f0;border:1px solid #4338ca;border-radius:6px;padding:5px 6px;">
+            <option value="">-- Gara km --</option>
+            <option value="10K">10K</option>
+            <option value="21K">21K</option>
+            <option value="42K">42K</option>
+          </select>
+        </label>
         <label style="grid-column:1/-1;color:#a5b4fc;font-size:0.82em;">Note
           <input id="voiceFieldNote" type="text" placeholder="Note" style="width:100%;background:#0f172a;color:#e2e8f0;border:1px solid #4338ca;border-radius:6px;padding:5px 6px;">
         </label>
@@ -4084,6 +4095,76 @@ document.addEventListener('click', function(e){
   </div>
 
   <!-- TAB RIPETUTE -->
+  <!-- VOICE RIPETUTE MODAL -->
+  <div id="voiceRipModal" style="display:none;position:fixed;z-index:10041;left:0;top:0;width:100vw;height:100vh;background:rgba(10,10,30,0.96);backdrop-filter:blur(8px);justify-content:center;align-items:flex-start;overflow-y:auto;padding:12px 0 40px;">
+    <div style="background:#0c1a2e;color:#e2e8f0;max-width:420px;width:94vw;padding:22px 18px 18px;border-radius:18px;box-shadow:0 8px 40px #0008;position:relative;animation:fadeIn 0.25s;margin:0 auto;">
+      <button type="button" onclick="closeVoiceRipModal()" style="position:absolute;top:8px;right:12px;font-size:1.5em;background:none;border:none;color:#67e8f9;cursor:pointer;">&times;</button>
+      <h3 style="margin:0 0 14px 0;color:#67e8f9;text-align:center;">🎙️ Ripetute vocale</h3>
+      <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:12px;">
+        <button id="voiceRipMicBtn" type="button" onclick="toggleVoiceRipListening()" style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#0891b2 0%,#0d9488 100%);border:none;font-size:2.2em;cursor:pointer;color:#fff;box-shadow:0 4px 20px #0891b266;transition:box-shadow 0.2s;">🎙️</button>
+        <div id="voiceRipStatus" style="text-align:center;font-size:0.82em;color:#94a3b8;margin-top:8px;">Premi il microfono e parla</div>
+      </div>
+      <div id="voiceRipTranscript" style="min-height:44px;background:#0f172a;border-radius:10px;padding:10px 12px;font-size:0.88em;color:#cbd5e1;margin-bottom:14px;border:1px solid #164e63;word-break:break-word;font-style:italic;">— trascrizione —</div>
+
+      <!-- SESSION fields -->
+      <div style="font-size:0.75rem;font-weight:700;color:#67e8f9;letter-spacing:0.5px;margin-bottom:6px;text-transform:uppercase;">Sessione</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+        <label style="color:#7dd3fc;font-size:0.82em;">Data
+          <input id="voiceRipDate" type="date" style="width:100%;background:#0f172a;color:#e2e8f0;border:1px solid #164e63;border-radius:6px;padding:5px 6px;">
+        </label>
+        <label style="color:#7dd3fc;font-size:0.82em;">Atleta
+          <select id="voiceRipAthlete" style="width:100%;background:#0f172a;color:#e2e8f0;border:1px solid #164e63;border-radius:6px;padding:5px 6px;"></select>
+        </label>
+        <label style="color:#7dd3fc;font-size:0.82em;">Tipo allenamento
+          <select id="voiceRipType" style="width:100%;background:#0f172a;color:#e2e8f0;border:1px solid #164e63;border-radius:6px;padding:5px 6px;">
+            <option value="Ripetute">Ripetute</option>
+            <option value="Fartlek">Fartlek</option>
+          </select>
+        </label>
+        <label style="color:#7dd3fc;font-size:0.82em;">Warm-up (min)
+          <input id="voiceRipWarmup" type="number" min="0" step="1" placeholder="20" style="width:100%;background:#0f172a;color:#e2e8f0;border:1px solid #164e63;border-radius:6px;padding:5px 6px;">
+        </label>
+        <label style="color:#7dd3fc;font-size:0.82em;">Cool-down (min)
+          <input id="voiceRipCooldown" type="number" min="0" step="1" placeholder="15" style="width:100%;background:#0f172a;color:#e2e8f0;border:1px solid #164e63;border-radius:6px;padding:5px 6px;">
+        </label>
+      </div>
+
+      <!-- REP GROUP fields -->
+      <div style="font-size:0.75rem;font-weight:700;color:#67e8f9;letter-spacing:0.5px;margin-bottom:6px;text-transform:uppercase;">Ripetute (primo gruppo)</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+        <label style="color:#7dd3fc;font-size:0.82em;">N° ripetute
+          <input id="voiceRipCount" type="number" min="1" step="1" placeholder="4" style="width:100%;background:#0f172a;color:#e2e8f0;border:1px solid #164e63;border-radius:6px;padding:5px 6px;">
+        </label>
+        <label style="color:#7dd3fc;font-size:0.82em;">Distanza (km)
+          <input id="voiceRipDist" type="number" min="0" step="0.001" placeholder="0.400" style="width:100%;background:#0f172a;color:#e2e8f0;border:1px solid #164e63;border-radius:6px;padding:5px 6px;">
+        </label>
+        <label style="grid-column:1/-1;color:#7dd3fc;font-size:0.82em;">Tempo ripetuta (hh:mm:ss)
+          <div style="display:flex;gap:3px;align-items:center;">
+            <input id="voiceRipTimeH" type="number" min="0" max="99" step="1" placeholder="hh" style="width:33%;background:#0f172a;color:#e2e8f0;border:1px solid #164e63;border-radius:6px;padding:5px 4px;text-align:center;">
+            <span style="color:#67e8f9;font-weight:700;">:</span>
+            <input id="voiceRipTimeM" type="number" min="0" max="59" step="1" placeholder="mm" style="width:33%;background:#0f172a;color:#e2e8f0;border:1px solid #164e63;border-radius:6px;padding:5px 4px;text-align:center;">
+            <span style="color:#67e8f9;font-weight:700;">:</span>
+            <input id="voiceRipTimeS" type="number" min="0" max="59" step="1" placeholder="ss" style="width:33%;background:#0f172a;color:#e2e8f0;border:1px solid #164e63;border-radius:6px;padding:5px 4px;text-align:center;">
+          </div>
+        </label>
+        <label style="color:#7dd3fc;font-size:0.82em;">RPE
+          <input id="voiceRipRpe" type="number" min="1" max="10" step="1" placeholder="" style="width:100%;background:#0f172a;color:#e2e8f0;border:1px solid #164e63;border-radius:6px;padding:5px 6px;">
+        </label>
+        <label style="color:#7dd3fc;font-size:0.82em;">FC
+          <input id="voiceRipHr" type="number" min="0" step="1" placeholder="" style="width:100%;background:#0f172a;color:#e2e8f0;border:1px solid #164e63;border-radius:6px;padding:5px 6px;">
+        </label>
+        <label style="color:#7dd3fc;font-size:0.82em;">Recupero (min)
+          <input id="voiceRipRest" type="number" min="0" step="0.5" placeholder="1" style="width:100%;background:#0f172a;color:#e2e8f0;border:1px solid #164e63;border-radius:6px;padding:5px 6px;">
+        </label>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button type="button" onclick="closeVoiceRipModal()" style="flex:1;background:#475569;color:#fff;border:none;border-radius:8px;padding:10px;cursor:pointer;">Annulla</button>
+        <button type="button" onclick="confirmVoiceRip()" style="flex:1;background:linear-gradient(135deg,#0891b2 0%,#0d9488 100%);color:#fff;border:none;border-radius:8px;padding:10px;font-weight:700;cursor:pointer;">✅ Conferma</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB RIPETUTE (content) -->
   <div id="tab-ripetute" class="tab-content">
     <div class="table-filters" style="align-items:flex-start;">
       <label>📅 Data:</label>
@@ -4100,6 +4181,7 @@ document.addEventListener('click', function(e){
       <label>Cool-down (min):</label><input type="number" id="ripCooldown" value="15" style="width:80px;">
       <label>Cool-down (km):</label><input type="number" id="ripCooldownKm" value="0" min="0" step="0.01" style="width:80px;">
       <button onclick="handleStartNewRipSession()">➕ Nuova Sessione</button>
+      <button onclick="openVoiceRipModal()" style="background:linear-gradient(135deg,#0891b2 0%,#0d9488 100%);">🎙️ Voce Rip</button>
       <!--<button onclick="saveRipSessionsToFile()">⬇️ Esporta</button>-->
       <!--<button onclick="loadRipSessionsFromFile()">📂 Importa</button>-->
     </div>
@@ -12950,6 +13032,7 @@ window.addEventListener('DOMContentLoaded', function(){
     ['voiceFieldKm','voiceFieldHh','voiceFieldMm','voiceFieldSs','voiceFieldRpe','voiceFieldHr','voiceFieldNote'].forEach(id=>{
       const el=document.getElementById(id); if(el) el.value='';
     });
+    const rdSel = document.getElementById('voiceFieldRaceDistance'); if(rdSel) rdSel.value='';
     modal.style.display = 'flex';
   };
 
@@ -13024,7 +13107,7 @@ window.addEventListener('DOMContentLoaded', function(){
     const result = {
       date: new Date().toISOString().slice(0,10),
       athlete: '', km: '', minutes: '', rpe: '', hr: '',
-      sport: (window.sports||[])[0] || '', activityType: '', note: ''
+      sport: (window.sports||[])[0] || '', activityType: '', raceDistance: '', note: ''
     };
 
     // Date modifiers
@@ -13034,26 +13117,32 @@ window.addEventListener('DOMContentLoaded', function(){
     const gfa = t.match(/(\d+)\s*giorni?\s*fa/);
     if(gfa){ const d=new Date(); d.setDate(d.getDate()-parseInt(gfa[1])); result.date=d.toISOString().slice(0,10); }
 
-    // Athlete (case-insensitive match against known athletes)
+    // Athlete
     for(const a of (window.athletes||[])){
       if(t.includes(a.toLowerCase())){ result.athlete=a; break; }
     }
 
-    // km: "10 km", "10 chilometri", "10 chilo"
+    // km
     const kmM = t.match(/(\d+(?:[.,]\d+)?)\s*(?:km\b|chilo(?:metr[io])?)/);
     if(kmM) result.km = kmM[1].replace(',','.');
 
-    // Duration: handle "un'ora / 1 ora / X ore" + "X minuti"
-    let totalMin = 0;
-    if(/\bun['\s]?ora\b/.test(t)) totalMin += 60;
+    // Duration: ore + minuti + secondi
+    let totalSec = 0;
+    // "un'ora" / "un ora"
+    if(/\bun[' ]?ora\b/.test(t)) totalSec += 3600;
+    // "X ore" (skip if already matched un'ora)
     const oreM = t.match(/(\d+)\s*or[ae]\b/);
-    if(oreM && !/\bun['\s]?ora\b/.test(t)) totalMin += parseInt(oreM[1])*60;
+    if(oreM && !/\bun[' ]?ora\b/.test(t)) totalSec += parseInt(oreM[1]) * 3600;
+    // "X minuti / min"
     const minM = t.match(/(\d+)\s*min(?:uti?)?\b/);
-    if(minM) totalMin += parseInt(minM[1]);
-    if(totalMin > 0) result.minutes = String(totalMin);
+    if(minM) totalSec += parseInt(minM[1]) * 60;
+    // "X secondi / sec"
+    const secM = t.match(/(\d+)\s*sec(?:ondi?)?\b/);
+    if(secM) totalSec += parseInt(secM[1]);
+    if(totalSec > 0) result.minutes = String(totalSec / 60);
 
     // RPE
-    const rpeM = t.match(/(?:rpe|sforzo|fatica)\s*(\d+(?:[.,]\d+)?)/);
+    const rpeM = t.match(/(?:rpe|sforzo|fatica)\s*(\d+(?:[.,]\d+)?)/)
     if(rpeM) result.rpe = rpeM[1].replace(',','.');
 
     // FC / HR
@@ -13069,6 +13158,11 @@ window.addEventListener('DOMContentLoaded', function(){
     for(const ty of (window.activityTypes||[])){
       if(t.includes(ty.toLowerCase())){ result.activityType=ty; break; }
     }
+
+    // Race distance: "10k / 10 km / mezza maratona / 21k / maratona / 42k"
+    if(/\b42\s*k|\bmaratona\b/.test(t)) result.raceDistance = '42K';
+    else if(/\b21\s*k|\bmezza\b/.test(t)) result.raceDistance = '21K';
+    else if(/\b10\s*k/.test(t)) result.raceDistance = '10K';
 
     return result;
   }
@@ -13096,6 +13190,7 @@ window.addEventListener('DOMContentLoaded', function(){
     set('voiceFieldHr', p.hr);
     setSel('voiceFieldSport', p.sport);
     setSel('voiceFieldActivityType', p.activityType);
+    setSel('voiceFieldRaceDistance', p.raceDistance);
     set('voiceFieldNote', p.note);
   }
 
@@ -13115,6 +13210,7 @@ window.addEventListener('DOMContentLoaded', function(){
     const hr       = document.getElementById('voiceFieldHr')?.value || '';
     const sport    = document.getElementById('voiceFieldSport')?.value || (window.sports||[])[0] || '';
     const aType    = document.getElementById('voiceFieldActivityType')?.value || '';
+    const raceDistance = document.getElementById('voiceFieldRaceDistance')?.value || '';
     const note     = document.getElementById('voiceFieldNote')?.value || '';
 
     window.closeVoiceSessionModal();
@@ -13133,10 +13229,6 @@ window.addEventListener('DOMContentLoaded', function(){
       setSel('mobileSessionAthlete', athlete);
       set('mobileSessionKm', km);
       // Split total minutes into hh:mm:ss
-      const totSec = Math.round(Number(minutes||0)*60);
-      const hh = Math.floor(totSec/3600);
-      const mm = Math.floor((totSec%3600)/60);
-      const ss = totSec%60;
       const _totSec = Math.round(Number(minutes||0)*60);
       const _hh = Math.floor(_totSec/3600);
       const _mm = Math.floor((_totSec%3600)/60);
@@ -13148,6 +13240,7 @@ window.addEventListener('DOMContentLoaded', function(){
       set('mobileSessionHr', hr);
       setSel('mobileSessionSport', sport);
       setSel('mobileSessionActivityType', aType);
+      setSel('mobileSessionRaceDistance', raceDistance);
       set('mobileSessionNote', note);
       // Recompute score preview
       try{
@@ -13157,6 +13250,267 @@ window.addEventListener('DOMContentLoaded', function(){
           scoreEl.value = isNaN(s) ? '' : s.toFixed(0);
         }
       }catch(e){}
+    }, 80);
+  };
+})();
+
+// ═══════════════════════════════════════════════════════
+// VOICE RIPETUTE INPUT
+// ═══════════════════════════════════════════════════════
+(function(){
+  let _vRipRec = null;
+  let _vRipActive = false;
+
+  window.openVoiceRipModal = function(){
+    const modal = document.getElementById('voiceRipModal');
+    if(!modal) return;
+    // Populate athlete select
+    const athSel = document.getElementById('voiceRipAthlete');
+    if(athSel) athSel.innerHTML = '<option value="">-- Atleta --</option>' +
+      (window.athletes || []).map(a=>`<option value="${a}">${a}</option>`).join('');
+    // Default date = today
+    const df = document.getElementById('voiceRipDate');
+    if(df) df.value = new Date().toISOString().slice(0,10);
+    // Default values
+    const set = (id,v)=>{ const el=document.getElementById(id); if(el) el.value=v; };
+    set('voiceRipWarmup','20');
+    set('voiceRipCooldown','15');
+    set('voiceRipCount','');
+    set('voiceRipDist','');
+    set('voiceRipTimeH','');
+    set('voiceRipTimeM','');
+    set('voiceRipTimeS','');
+    set('voiceRipRpe','');
+    set('voiceRipHr','');
+    set('voiceRipRest','');
+    document.getElementById('voiceRipType').value = 'Ripetute';
+    // Reset transcript
+    const tr = document.getElementById('voiceRipTranscript');
+    if(tr) tr.textContent = '— trascrizione —';
+    const st = document.getElementById('voiceRipStatus');
+    if(st) st.textContent = 'Premi il microfono e parla';
+    const mb = document.getElementById('voiceRipMicBtn');
+    if(mb){ mb.textContent = '🎙️'; mb.style.boxShadow = '0 4px 20px #0891b266'; }
+    modal.style.display = 'flex';
+  };
+
+  window.closeVoiceRipModal = function(){
+    _vRipStop();
+    const modal = document.getElementById('voiceRipModal');
+    if(modal) modal.style.display = 'none';
+  };
+
+  window.toggleVoiceRipListening = function(){
+    if(_vRipActive) _vRipStop(); else _vRipStart();
+  };
+
+  function _vRipStart(){
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if(!SR){
+      alert('Il riconoscimento vocale non è supportato da questo browser.\nUsa Google Chrome per questa funzione.');
+      return;
+    }
+    _vRipRec = new SR();
+    _vRipRec.lang = 'it-IT';
+    _vRipRec.interimResults = true;
+    _vRipRec.maxAlternatives = 1;
+    _vRipRec.continuous = false;
+
+    const tr = document.getElementById('voiceRipTranscript');
+    const st = document.getElementById('voiceRipStatus');
+    const mb = document.getElementById('voiceRipMicBtn');
+
+    _vRipRec.onstart = () => {
+      _vRipActive = true;
+      if(st) st.textContent = '🔴 In ascolto…';
+      if(mb){ mb.textContent = '⏹️'; mb.style.boxShadow = '0 0 0 8px #ef444455, 0 4px 24px #ef444488'; }
+    };
+    _vRipRec.onresult = (e) => {
+      const text = Array.from(e.results).map(r=>r[0].transcript).join(' ');
+      if(tr) tr.textContent = text;
+      if(e.results[e.results.length-1].isFinal){
+        _vRipFillFields(_vRipParse(text));
+      }
+    };
+    _vRipRec.onerror = (e) => {
+      _vRipActive = false;
+      const msg = e.error === 'not-allowed'
+        ? 'Permesso microfono negato.'
+        : 'Errore: ' + e.error;
+      if(st) st.textContent = msg;
+      if(mb){ mb.textContent = '🎙️'; mb.style.boxShadow = '0 4px 20px #0891b266'; }
+    };
+    _vRipRec.onend = () => {
+      _vRipActive = false;
+      if(st) st.textContent = 'Ascoltato ✔ — verifica i dati e premi Conferma';
+      if(mb){ mb.textContent = '🎙️'; mb.style.boxShadow = '0 4px 20px #0891b266'; }
+    };
+    _vRipRec.start();
+  }
+
+  function _vRipStop(){
+    if(_vRipRec){ try{ _vRipRec.stop(); }catch(e){} _vRipRec = null; }
+    _vRipActive = false;
+    const mb = document.getElementById('voiceRipMicBtn');
+    if(mb){ mb.textContent = '🎙️'; mb.style.boxShadow = '0 4px 20px #0891b266'; }
+  }
+
+  function _vRipParse(text){
+    const t = text.toLowerCase();
+    const result = {
+      date: new Date().toISOString().slice(0,10),
+      athlete: '',
+      type: 'Ripetute',
+      warmup: 20, cooldown: 15,
+      count: '', dist: '',
+      timeH: '', timeM: '', timeS: '',
+      rpe: '', hr: '', rest: ''
+    };
+
+    // Date
+    if(/\bieri\b/.test(t)){
+      const d=new Date(); d.setDate(d.getDate()-1); result.date=d.toISOString().slice(0,10);
+    }
+    const gfa = t.match(/(\d+)\s*giorni?\s*fa/);
+    if(gfa){ const d=new Date(); d.setDate(d.getDate()-parseInt(gfa[1])); result.date=d.toISOString().slice(0,10); }
+
+    // Athlete
+    for(const a of (window.athletes||[])){
+      if(t.includes(a.toLowerCase())){ result.athlete=a; break; }
+    }
+
+    // Tipo allenamento
+    if(/\bfartlek\b/.test(t)) result.type = 'Fartlek';
+
+    // Warm-up: "20 minuti di riscaldamento / warm" 
+    const wuM = t.match(/(\d+)\s*min(?:uti?)?\s*(?:di\s*)?(?:riscaldamento|warm|warmup)/);
+    if(wuM) result.warmup = parseInt(wuM[1]);
+
+    // Cool-down: "15 minuti di defaticamento / cool"
+    const cdM = t.match(/(\d+)\s*min(?:uti?)?\s*(?:di\s*)?(?:defaticamento|cooldown|cool)/);
+    if(cdM) result.cooldown = parseInt(cdM[1]);
+
+    // N° ripetute: "4 ripetute / 5 rep"
+    const cntM = t.match(/(\d+)\s*(?:ripetut[ae]|rep(?:s|etizioni?)?)\b/);
+    if(cntM) result.count = cntM[1];
+
+    // Distanza: "400 metri / 1000m / 1 km"
+    // metres
+    const mtrM = t.match(/(\d+(?:[.,]\d+)?)\s*(?:metr[io]|mt\b)/);
+    if(mtrM) result.dist = (parseFloat(mtrM[1].replace(',','.')) / 1000).toFixed(3);
+    // km
+    const dkmM = t.match(/(\d+(?:[.,]\d+)?)\s*km\b/);
+    if(dkmM && !mtrM) result.dist = dkmM[1].replace(',','.');
+
+    // Rep time: ore + minuti + secondi
+    let repSec = 0;
+    if(/\bun[' ]?ora\b/.test(t)) repSec += 3600;
+    const oreM = t.match(/(\d+)\s*or[ae]\b/);
+    if(oreM && !/\bun[' ]?ora\b/.test(t)) repSec += parseInt(oreM[1]) * 3600;
+    // "1 minuto e 30" / "1 minuto 30 secondi"
+    const minM = t.match(/(\d+)\s*min(?:uti?)?(?:\s*(?:e\s*)?(\d+)(?:\s*sec(?:ondi?)?))?/);
+    if(minM){ repSec += parseInt(minM[1])*60; if(minM[2]) repSec += parseInt(minM[2]); }
+    // extra seconds if mentioned explicitly
+    const secM = t.match(/(\d+)\s*sec(?:ondi?)?\b/);
+    if(secM && !minM?.[2]) repSec += parseInt(secM[1]);
+    if(repSec > 0){
+      result.timeH = Math.floor(repSec/3600) || '';
+      result.timeM = Math.floor((repSec%3600)/60) || '';
+      result.timeS = repSec%60 || '';
+    }
+
+    // RPE
+    const rpeM = t.match(/(?:rpe|sforzo|fatica)\s*(\d+(?:[.,]\d+)?)/);
+    if(rpeM) result.rpe = rpeM[1].replace(',','.');
+
+    // FC
+    const hrM = t.match(/(?:\bfc\b|frequenza(?:\s*cardiaca)?|battiti)\s*(\d+)/);
+    if(hrM) result.hr = hrM[1];
+
+    // Recupero: "1 minuto di recupero / rec"
+    const restM = t.match(/(\d+(?:[.,]\d+)?)\s*min(?:uti?)?\s*(?:di\s*)?(?:recupero|rec\b)/);
+    if(restM) result.rest = restM[1].replace(',','.');
+
+    return result;
+  }
+
+  function _vRipFillFields(p){
+    const set = (id,v)=>{ if(v==='' || v===undefined || v===null) return; const el=document.getElementById(id); if(el) el.value=v; };
+    const setSel = (id,v)=>{
+      if(!v) return;
+      const el=document.getElementById(id); if(!el) return;
+      for(const o of el.options){ if(o.value.toLowerCase()===String(v).toLowerCase()){ el.value=o.value; return; } }
+    };
+    set('voiceRipDate', p.date);
+    setSel('voiceRipAthlete', p.athlete);
+    setSel('voiceRipType', p.type);
+    set('voiceRipWarmup', p.warmup);
+    set('voiceRipCooldown', p.cooldown);
+    set('voiceRipCount', p.count);
+    set('voiceRipDist', p.dist);
+    set('voiceRipTimeH', p.timeH);
+    set('voiceRipTimeM', p.timeM);
+    set('voiceRipTimeS', p.timeS);
+    set('voiceRipRpe', p.rpe);
+    set('voiceRipHr', p.hr);
+    set('voiceRipRest', p.rest);
+  }
+
+  window.confirmVoiceRip = function(){
+    const date    = document.getElementById('voiceRipDate')?.value || '';
+    const athlete = document.getElementById('voiceRipAthlete')?.value || '';
+    if(!date || !athlete){
+      alert('Compila almeno Data e Atleta prima di confermare.');
+      return;
+    }
+    const type     = document.getElementById('voiceRipType')?.value || 'Ripetute';
+    const warmup   = document.getElementById('voiceRipWarmup')?.value || '20';
+    const cooldown = document.getElementById('voiceRipCooldown')?.value || '15';
+    const count    = document.getElementById('voiceRipCount')?.value || '';
+    const dist     = document.getElementById('voiceRipDist')?.value || '';
+    const tH       = document.getElementById('voiceRipTimeH')?.value || '0';
+    const tM       = document.getElementById('voiceRipTimeM')?.value || '0';
+    const tS       = document.getElementById('voiceRipTimeS')?.value || '0';
+    const rpe      = document.getElementById('voiceRipRpe')?.value || '';
+    const hr       = document.getElementById('voiceRipHr')?.value || '';
+    const rest     = document.getElementById('voiceRipRest')?.value || '1';
+
+    window.closeVoiceRipModal();
+
+    // Open the wizard and pre-fill
+    if(typeof openRipWizard === 'function') openRipWizard();
+
+    setTimeout(()=>{
+      // Step 1 fields
+      const set = (id,v)=>{ const el=document.getElementById(id); if(el && v!==undefined && v!=='') el.value=v; };
+      const setSel = (id,v)=>{
+        if(!v) return;
+        const el=document.getElementById(id); if(!el) return;
+        for(const o of el.options){ if(o.value.toLowerCase()===v.toLowerCase()){ el.value=o.value; return; } }
+      };
+      set('ripWizDate', date);
+      setSel('ripWizAthlete', athlete);
+      setSel('ripWizType', type);
+      set('ripWizWarmup', warmup);
+      set('ripWizCooldown', cooldown);
+
+      // If we have rep data, advance to step 2 and pre-fill
+      if(count || dist){
+        if(typeof ripWizGoStep2 === 'function') ripWizGoStep2();
+        setTimeout(()=>{
+          const s2 = (id,v)=>{ const el=document.getElementById(id); if(el && v!=='' && v!==undefined) el.value=v; };
+          s2('ripWizRepCount', count || '4');
+          s2('ripWizRepDist', dist || '0.400');
+          s2('ripWizRepTimeH', tH || '0');
+          s2('ripWizRepTimeM', tM || '1');
+          s2('ripWizRepTimeS', tS || '0');
+          s2('ripWizRepRpe', rpe);
+          s2('ripWizRepHr', hr);
+          s2('ripWizRepRest', rest || '1');
+          // Sync pace from time
+          if(typeof _ripWizSyncPaceFromTime === 'function') _ripWizSyncPaceFromTime();
+        }, 50);
+      }
     }, 80);
   };
 })();
