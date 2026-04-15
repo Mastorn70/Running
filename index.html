@@ -2780,6 +2780,7 @@ function addRowFromImportedData(row) {
 </div>
 <div id="mobileQuickActions">
   <button type="button" class="quick-btn quick-top" onclick="openMobileSessionModal()">Add sessione</button>
+  <button type="button" class="quick-btn quick-top" style="background:linear-gradient(135deg,#7c3aed 0%,#a21caf 100%);" onclick="openVoiceSessionModal()">🎙️ Voce</button>
   <button type="button" class="quick-btn quick-bottom" onclick="openQuickRipSession()">Add ripetute</button>
 </div>
 <img id="mobileTopCenterIcon" src="./icona.svg" alt="Icona app mobile" onclick="openMobileIconPreview()">
@@ -3948,6 +3949,7 @@ document.addEventListener('click', function(e){
 
     <div class="controls">
       <button id="addRowBtn">➕ Aggiungi Sessione</button>
+      <button id="voiceSessionBtn" onclick="openVoiceSessionModal()" style="background:linear-gradient(135deg,#7c3aed 0%,#a21caf 100%);">🎙️ Voce</button>
       <button id="updateChartsBtn">🔄 Aggiorna Grafici</button>
       <button id="manageSportsBtn">⚙️ Sport</button>
       <button id="manageActivityTypesBtn">🏷️ Tipi Attività</button>
@@ -4023,6 +4025,52 @@ document.addEventListener('click', function(e){
         <button type="button" onclick="closeMobileSessionModal()" style="flex:1;background:#64748b;">Annulla</button>
         <button id="mobileSessionDeleteBtn" type="button" onclick="deleteMobileSessionFromModal()" style="flex:1;background:#ef4444;color:#fff;display:none;">Elimina</button>
         <button id="mobileSessionSaveBtn" type="button" onclick="saveMobileSession()" style="flex:1;background:#6366f1;">Salva sessione</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VOICE SESSION MODAL -->
+  <div id="voiceSessionModal" style="display:none;position:fixed;z-index:10040;left:0;top:0;width:100vw;height:100vh;background:rgba(10,10,30,0.96);backdrop-filter:blur(8px);justify-content:center;align-items:center;">
+    <div style="background:#1e1b4b;color:#e2e8f0;max-width:400px;width:94vw;padding:22px 18px 18px;border-radius:18px;box-shadow:0 8px 40px #0008;position:relative;animation:fadeIn 0.25s;max-height:92vh;overflow-y:auto;">
+      <button type="button" onclick="closeVoiceSessionModal()" style="position:absolute;top:8px;right:12px;font-size:1.5em;background:none;border:none;color:#a5b4fc;cursor:pointer;">&times;</button>
+      <h3 style="margin:0 0 14px 0;color:#a5b4fc;text-align:center;">🎙️ Sessione vocale</h3>
+      <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:12px;">
+        <button id="voiceMicBtn" type="button" onclick="toggleVoiceListening()" style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#7c3aed 0%,#a21caf 100%);border:none;font-size:2.2em;cursor:pointer;color:#fff;box-shadow:0 4px 20px #7c3aed66;transition:box-shadow 0.2s;">🎙️</button>
+        <div id="voiceStatus" style="text-align:center;font-size:0.82em;color:#94a3b8;margin-top:8px;">Premi il microfono e parla</div>
+      </div>
+      <div id="voiceTranscript" style="min-height:44px;background:#0f172a;border-radius:10px;padding:10px 12px;font-size:0.88em;color:#cbd5e1;margin-bottom:14px;border:1px solid #334155;word-break:break-word;font-style:italic;">— trascrizione —</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+        <label style="color:#a5b4fc;font-size:0.82em;">Data
+          <input id="voiceFieldDate" type="date" style="width:100%;background:#0f172a;color:#e2e8f0;border:1px solid #4338ca;border-radius:6px;padding:5px 6px;">
+        </label>
+        <label style="color:#a5b4fc;font-size:0.82em;">Atleta
+          <select id="voiceFieldAthlete" style="width:100%;background:#0f172a;color:#e2e8f0;border:1px solid #4338ca;border-radius:6px;padding:5px 6px;"></select>
+        </label>
+        <label style="color:#a5b4fc;font-size:0.82em;">Km
+          <input id="voiceFieldKm" type="number" min="0" step="0.01" placeholder="0" style="width:100%;background:#0f172a;color:#e2e8f0;border:1px solid #4338ca;border-radius:6px;padding:5px 6px;">
+        </label>
+        <label style="color:#a5b4fc;font-size:0.82em;">Minuti totali
+          <input id="voiceFieldMinutes" type="number" min="0" step="1" placeholder="0" style="width:100%;background:#0f172a;color:#e2e8f0;border:1px solid #4338ca;border-radius:6px;padding:5px 6px;">
+        </label>
+        <label style="color:#a5b4fc;font-size:0.82em;">RPE
+          <input id="voiceFieldRpe" type="number" min="1" max="10" step="1" placeholder="" style="width:100%;background:#0f172a;color:#e2e8f0;border:1px solid #4338ca;border-radius:6px;padding:5px 6px;">
+        </label>
+        <label style="color:#a5b4fc;font-size:0.82em;">FC
+          <input id="voiceFieldHr" type="number" min="0" step="1" placeholder="" style="width:100%;background:#0f172a;color:#e2e8f0;border:1px solid #4338ca;border-radius:6px;padding:5px 6px;">
+        </label>
+        <label style="color:#a5b4fc;font-size:0.82em;">Sport
+          <select id="voiceFieldSport" style="width:100%;background:#0f172a;color:#e2e8f0;border:1px solid #4338ca;border-radius:6px;padding:5px 6px;"></select>
+        </label>
+        <label style="color:#a5b4fc;font-size:0.82em;">Tipo
+          <select id="voiceFieldActivityType" style="width:100%;background:#0f172a;color:#e2e8f0;border:1px solid #4338ca;border-radius:6px;padding:5px 6px;"></select>
+        </label>
+        <label style="grid-column:1/-1;color:#a5b4fc;font-size:0.82em;">Note
+          <input id="voiceFieldNote" type="text" placeholder="Note" style="width:100%;background:#0f172a;color:#e2e8f0;border:1px solid #4338ca;border-radius:6px;padding:5px 6px;">
+        </label>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button type="button" onclick="closeVoiceSessionModal()" style="flex:1;background:#475569;color:#fff;border:none;border-radius:8px;padding:10px;cursor:pointer;">Annulla</button>
+        <button type="button" onclick="confirmVoiceSession()" style="flex:1;background:linear-gradient(135deg,#6366f1 0%,#a21caf 100%);color:#fff;border:none;border-radius:8px;padding:10px;font-weight:700;cursor:pointer;">✅ Conferma</button>
       </div>
     </div>
   </div>
@@ -12859,6 +12907,235 @@ window.addEventListener('DOMContentLoaded', function(){
       if(tabName === 'piano' && window.innerWidth > 900) initPianoTab();
     };
   }
+})();
+
+// ═══════════════════════════════════════════════════════
+// VOICE SESSION INPUT
+// ═══════════════════════════════════════════════════════
+(function(){
+  let _voiceRec = null;
+  let _voiceActive = false;
+
+  window.openVoiceSessionModal = function(){
+    const modal = document.getElementById('voiceSessionModal');
+    if(!modal) return;
+    // Populate selects
+    const athleteSel = document.getElementById('voiceFieldAthlete');
+    if(athleteSel) athleteSel.innerHTML = '<option value="">-- Atleta --</option>' +
+      (window.athletes || []).map(a=>`<option value="${a}">${a}</option>`).join('');
+    const sportSel = document.getElementById('voiceFieldSport');
+    if(sportSel) sportSel.innerHTML = (window.sports || []).map(s=>`<option value="${s}">${s}</option>`).join('');
+    const typeSel = document.getElementById('voiceFieldActivityType');
+    if(typeSel) typeSel.innerHTML = '<option value="">-- Tipo --</option>' +
+      (window.activityTypes || []).map(t=>`<option value="${t}">${t}</option>`).join('');
+    // Default date = today
+    const df = document.getElementById('voiceFieldDate');
+    if(df) df.value = new Date().toISOString().slice(0,10);
+    // Reset transcript & status
+    const tr = document.getElementById('voiceTranscript');
+    if(tr) tr.textContent = '— trascrizione —';
+    const st = document.getElementById('voiceStatus');
+    if(st) st.textContent = 'Premi il microfono e parla';
+    const mb = document.getElementById('voiceMicBtn');
+    if(mb){ mb.textContent = '🎙️'; mb.style.boxShadow = '0 4px 20px #7c3aed66'; }
+    // Clear parsed fields
+    ['voiceFieldKm','voiceFieldMinutes','voiceFieldRpe','voiceFieldHr','voiceFieldNote'].forEach(id=>{
+      const el=document.getElementById(id); if(el) el.value='';
+    });
+    modal.style.display = 'flex';
+  };
+
+  window.closeVoiceSessionModal = function(){
+    _stopListening();
+    const modal = document.getElementById('voiceSessionModal');
+    if(modal) modal.style.display = 'none';
+  };
+
+  window.toggleVoiceListening = function(){
+    if(_voiceActive) _stopListening(); else _startListening();
+  };
+
+  function _startListening(){
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if(!SR){
+      alert('Il riconoscimento vocale non è supportato da questo browser.\nUsa Google Chrome per questa funzione.');
+      return;
+    }
+    _voiceRec = new SR();
+    _voiceRec.lang = 'it-IT';
+    _voiceRec.interimResults = true;
+    _voiceRec.maxAlternatives = 1;
+    _voiceRec.continuous = false;
+
+    const tr = document.getElementById('voiceTranscript');
+    const st = document.getElementById('voiceStatus');
+    const mb = document.getElementById('voiceMicBtn');
+
+    _voiceRec.onstart = () => {
+      _voiceActive = true;
+      if(st) st.textContent = '🔴 In ascolto…';
+      if(mb){ mb.textContent = '⏹️'; mb.style.boxShadow = '0 0 0 8px #ef444455, 0 4px 24px #ef444488'; }
+    };
+
+    _voiceRec.onresult = (e) => {
+      const text = Array.from(e.results).map(r=>r[0].transcript).join(' ');
+      if(tr) tr.textContent = text;
+      if(e.results[e.results.length-1].isFinal){
+        const parsed = _parseText(text);
+        _fillFields(parsed);
+      }
+    };
+
+    _voiceRec.onerror = (e) => {
+      _voiceActive = false;
+      const msg = e.error === 'not-allowed'
+        ? 'Permesso microfono negato. Controlla le impostazioni del browser.'
+        : 'Errore: ' + e.error;
+      if(st) st.textContent = msg;
+      if(mb){ mb.textContent = '🎙️'; mb.style.boxShadow = '0 4px 20px #7c3aed66'; }
+    };
+
+    _voiceRec.onend = () => {
+      _voiceActive = false;
+      if(st) st.textContent = 'Ascoltato ✔ — verifica i dati e premi Conferma';
+      if(mb){ mb.textContent = '🎙️'; mb.style.boxShadow = '0 4px 20px #7c3aed66'; }
+    };
+
+    _voiceRec.start();
+  }
+
+  function _stopListening(){
+    if(_voiceRec){ try{ _voiceRec.stop(); }catch(e){} _voiceRec = null; }
+    _voiceActive = false;
+    const mb = document.getElementById('voiceMicBtn');
+    if(mb){ mb.textContent = '🎙️'; mb.style.boxShadow = '0 4px 20px #7c3aed66'; }
+  }
+
+  function _parseText(text){
+    const t = text.toLowerCase();
+    const result = {
+      date: new Date().toISOString().slice(0,10),
+      athlete: '', km: '', minutes: '', rpe: '', hr: '',
+      sport: (window.sports||[])[0] || '', activityType: '', note: ''
+    };
+
+    // Date modifiers
+    if(/\bieri\b/.test(t)){
+      const d=new Date(); d.setDate(d.getDate()-1); result.date=d.toISOString().slice(0,10);
+    }
+    const gfa = t.match(/(\d+)\s*giorni?\s*fa/);
+    if(gfa){ const d=new Date(); d.setDate(d.getDate()-parseInt(gfa[1])); result.date=d.toISOString().slice(0,10); }
+
+    // Athlete (case-insensitive match against known athletes)
+    for(const a of (window.athletes||[])){
+      if(t.includes(a.toLowerCase())){ result.athlete=a; break; }
+    }
+
+    // km: "10 km", "10 chilometri", "10 chilo"
+    const kmM = t.match(/(\d+(?:[.,]\d+)?)\s*(?:km\b|chilo(?:metr[io])?)/);
+    if(kmM) result.km = kmM[1].replace(',','.');
+
+    // Duration: handle "un'ora / 1 ora / X ore" + "X minuti"
+    let totalMin = 0;
+    if(/\bun['\s]?ora\b/.test(t)) totalMin += 60;
+    const oreM = t.match(/(\d+)\s*or[ae]\b/);
+    if(oreM && !/\bun['\s]?ora\b/.test(t)) totalMin += parseInt(oreM[1])*60;
+    const minM = t.match(/(\d+)\s*min(?:uti?)?\b/);
+    if(minM) totalMin += parseInt(minM[1]);
+    if(totalMin > 0) result.minutes = String(totalMin);
+
+    // RPE
+    const rpeM = t.match(/(?:rpe|sforzo|fatica)\s*(\d+(?:[.,]\d+)?)/);
+    if(rpeM) result.rpe = rpeM[1].replace(',','.');
+
+    // FC / HR
+    const hrM = t.match(/(?:\bfc\b|frequenza(?:\s*cardiaca)?|battiti)\s*(\d+)/);
+    if(hrM) result.hr = hrM[1];
+
+    // Sport
+    for(const s of (window.sports||[])){
+      if(t.includes(s.toLowerCase())){ result.sport=s; break; }
+    }
+
+    // Activity type
+    for(const ty of (window.activityTypes||[])){
+      if(t.includes(ty.toLowerCase())){ result.activityType=ty; break; }
+    }
+
+    return result;
+  }
+
+  function _fillFields(p){
+    const set = (id,v)=>{ const el=document.getElementById(id); if(el && v!==undefined && v!=='') el.value=v; };
+    const setSel = (id,v)=>{
+      if(!v) return;
+      const el=document.getElementById(id); if(!el) return;
+      for(const o of el.options){ if(o.value.toLowerCase()===v.toLowerCase()){ el.value=o.value; return; } }
+    };
+    set('voiceFieldDate', p.date);
+    setSel('voiceFieldAthlete', p.athlete);
+    set('voiceFieldKm', p.km);
+    set('voiceFieldMinutes', p.minutes);
+    set('voiceFieldRpe', p.rpe);
+    set('voiceFieldHr', p.hr);
+    setSel('voiceFieldSport', p.sport);
+    setSel('voiceFieldActivityType', p.activityType);
+    set('voiceFieldNote', p.note);
+  }
+
+  window.confirmVoiceSession = function(){
+    const date = document.getElementById('voiceFieldDate')?.value || '';
+    const athlete = document.getElementById('voiceFieldAthlete')?.value || '';
+    if(!date || !athlete){
+      alert('Compila almeno Data e Atleta prima di confermare.');
+      return;
+    }
+    const km       = document.getElementById('voiceFieldKm')?.value || '';
+    const minutes  = document.getElementById('voiceFieldMinutes')?.value || '';
+    const rpe      = document.getElementById('voiceFieldRpe')?.value || '';
+    const hr       = document.getElementById('voiceFieldHr')?.value || '';
+    const sport    = document.getElementById('voiceFieldSport')?.value || (window.sports||[])[0] || '';
+    const aType    = document.getElementById('voiceFieldActivityType')?.value || '';
+    const note     = document.getElementById('voiceFieldNote')?.value || '';
+
+    window.closeVoiceSessionModal();
+
+    // Open the regular session modal and pre-fill it
+    if(typeof openMobileSessionModal === 'function') openMobileSessionModal();
+
+    setTimeout(()=>{
+      const set = (id,v)=>{ const el=document.getElementById(id); if(el && v!==undefined && v!=='') el.value=v; };
+      const setSel = (id,v)=>{
+        if(!v) return;
+        const el=document.getElementById(id); if(!el) return;
+        for(const o of el.options){ if(o.value.toLowerCase()===v.toLowerCase()){ el.value=o.value; return; } }
+      };
+      set('mobileSessionDate', date);
+      setSel('mobileSessionAthlete', athlete);
+      set('mobileSessionKm', km);
+      // Split total minutes into hh:mm:ss
+      const totSec = Math.round(Number(minutes||0)*60);
+      const hh = Math.floor(totSec/3600);
+      const mm = Math.floor((totSec%3600)/60);
+      const ss = totSec%60;
+      set('mobileSessionHh', hh ? String(hh) : '');
+      set('mobileSessionMm', mm ? String(mm) : '');
+      set('mobileSessionSs', ss ? String(ss) : '');
+      set('mobileSessionRpe', rpe);
+      set('mobileSessionHr', hr);
+      setSel('mobileSessionSport', sport);
+      setSel('mobileSessionActivityType', aType);
+      set('mobileSessionNote', note);
+      // Recompute score preview
+      try{
+        const scoreEl = document.getElementById('mobileSessionScore');
+        if(scoreEl && km && (minutes || 0)){
+          const s = Number(km||0) * Number(rpe||5);
+          scoreEl.value = isNaN(s) ? '' : s.toFixed(0);
+        }
+      }catch(e){}
+    }, 80);
+  };
 })();
 </script>
 </body>
