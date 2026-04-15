@@ -3941,8 +3941,8 @@ document.addEventListener('click', function(e){
             <input id="mobileSessionSs" type="number" min="0" max="59" step="1" placeholder="ss" style="width:32%;text-align:center;">
           </div>
         </label>
-        <label>Min/km
-          <input id="mobileSessionPace" type="number" min="0" step="0.01" placeholder="min/km" style="width:100%;">
+        <label>Min/km — usa il punto (es. 3.25)
+          <input id="mobileSessionPace" type="number" min="0" step="0.01" placeholder="es. 3.25" style="width:100%;" title="Inserisci il passo in formato mm.ss con il punto (es. 3.25 = 3 min 25 sec/km)">
         </label>
         <label>FC
           <input id="mobileSessionHr" type="number" min="0" step="1" placeholder="0" style="width:100%;">
@@ -4039,8 +4039,8 @@ document.addEventListener('click', function(e){
               <input id="mobileRipTimeS" type="number" min="0" max="59" step="1" value="30" placeholder="ss" style="width:33%;">
             </div>
           </label>
-          <label>Pace (min/km)
-            <input id="mobileRipPace" type="text" placeholder="es: 3:45" style="width:100%;">
+          <label>Pace (min/km) — usa il punto (es. 3.25)
+            <input id="mobileRipPace" type="text" placeholder="es. 3.25" style="width:100%;" title="Inserisci il passo in formato mm.ss con il punto (es. 3.25 = 3 min 25 sec/km)">
           </label>
           <label>Recupero (min)
             <input id="mobileRipRest" type="number" min="0" step="0.01" value="1.00" style="width:100%;">
@@ -7019,7 +7019,7 @@ function addRipRow(data = {}){
       </select>
     </td>
     <td style="padding:6px;"><input class="rip-distance-km" placeholder="0.200" type="number" step="0.001" min="0" style="width:110px" value="${normalizeKmValue(distKm)}"></td>
-    <td style="padding:6px;"><input class="rip-time-s" placeholder="min/km" type="number" min="0" step="0.01" style="width:100px" value="${(data.time_s && (Number(data.distance_km)||distKm)) ? formatMinutesToPaceDisplay((Number(data.time_s)/60) / (Number(data.distance_km)||distKm)) : (data.time||'')}"></td>
+    <td style="padding:6px;"><input class="rip-time-s" placeholder="es. 3.25" type="number" min="0" step="0.01" style="width:100px" title="Inserisci il passo in formato mm.ss (es. 3.25 = 3 min 25 sec/km)" value="${(data.time_s && (Number(data.distance_km)||distKm)) ? formatMinutesToPaceDisplay((Number(data.time_s)/60) / (Number(data.distance_km)||distKm)) : (data.time||'')}"><div style="font-size:0.68em;color:#94a3b8;line-height:1.1;margin-top:2px;">usa il punto<br>(es. 3.25)</div></td>
     <td style="padding:6px;"><input class="rip-rest-s" placeholder="recupero min" type="number" min="0" step="0.01" style="width:110px" value="${data.rest_s ? (Number(data.rest_s)/60).toFixed(2) : (data.rest||'')}"></td>
     <td style="padding:6px;"><input class="rip-rpe" placeholder="RPE" type="number" min="0" max="10" style="width:70px" value="${data.rpe||''}"></td>
     <td style="padding:6px;"><input class="rip-hr" placeholder="FC" type="number" min="0" style="width:80px" value="${data.hr||''}"></td>
@@ -7038,7 +7038,7 @@ function readRipSessionFromForm(){
     const distanceKm = Number(r.querySelector('.rip-distance-km')?.value || 0);
     // inputs show pace (min/km) and recupero in minutes -> compute total seconds
     const paceMinPerKm = parsePaceDisplayToMinutes(r.querySelector('.rip-time-s')?.value || 0);
-    const timeS = Math.round(paceMinPerKm * distanceKm * 60);
+    const timeS = paceMinPerKm * distanceKm * 60;
     const restS = Math.round(Number(r.querySelector('.rip-rest-s')?.value || 0) * 60);
     const rpe = Number(r.querySelector('.rip-rpe')?.value || 0);
     const hr = Number(r.querySelector('.rip-hr')?.value || 0);
@@ -7291,16 +7291,8 @@ try {
 function saveRipSession(){
   const session = readRipSessionFromForm();
   if(!session.date || !session.athlete){ alert('Compila data e atleta.'); return; }
-  const sig = JSON.stringify({
-    date: session.date,
-    athlete: session.athlete,
-    type: session.type || 'Ripetute',
-    warmup_min: +(session.warmup_min||0),
-    cooldown_min: +(session.cooldown_min||0),
-    reps: (session.reps||[]).map(r=>({
-      label: r.label||'', distance:+(r.distance||0), time_s:+(r.time_s||0), rest_s:+(r.rest_s||0), rpe:+(r.rpe||0), hr:+(r.hr||0), lactate:(r.lactate===null||r.lactate===undefined?'':+r.lactate)
-    }))
-  });
+  const repTypes = [...new Set((session.reps||[]).filter(r=>r&&r.repType).map(r=>r.repType))].sort().join('+');
+  const sig = [session.date, session.athlete, repTypes].join('|');
   const nowMs = Date.now();
   if(window.__lastRipSaveSig === sig && (nowMs - (window.__lastRipSaveAt||0)) < 1800){
     return;
@@ -7354,8 +7346,19 @@ function _getRipSessionGroupKey(sessionLike){
   if(!sessionLike || typeof sessionLike !== 'object') return '';
   const date = String(sessionLike.date || sessionLike.day || '').trim();
   const athlete = String(sessionLike.athlete || '').trim();
-  const type = _normalizeRipSessionType(sessionLike.type || sessionLike.activityType || '').toLowerCase();
-  return [date, athlete, type].join('|');
+  let distType;
+  if(Array.isArray(sessionLike.reps) && sessionLike.reps.length) {
+    const types = [...new Set(
+      sessionLike.reps
+        .filter(r => r && (r.repType || r.label))
+        .map(r => String(r.repType || r.label || '').trim().toLowerCase())
+    )].sort();
+    distType = types.join('+') || _normalizeRipSessionType(sessionLike.type || sessionLike.activityType || '').toLowerCase();
+  } else {
+    const repLabel = _extractRepLabelFromNote(sessionLike.note || '');
+    distType = repLabel.toLowerCase() || String(sessionLike.type || sessionLike.activityType || '').trim().toLowerCase();
+  }
+  return [date, athlete, distType].join('|');
 }
 
 function _buildRipTableNote(rep){
@@ -7462,8 +7465,20 @@ function _removeTableRowsForRipSession(session){
 function _removeTableRowsForRipSessionGroup(session){
   const tbody = document.querySelector('#dataTable tbody');
   if(!tbody) return 0;
+  const targetDate = String(session.date || session.day || '').trim();
+  const targetAthlete = String(session.athlete || '').trim();
+  if(!targetDate || !targetAthlete) return 0;
   const targetKey = _getRipSessionGroupKey(session);
   if(!targetKey) return 0;
+  // Build set of repTypes for mixed-session matching
+  let targetRepTypes = null;
+  if(Array.isArray(session.reps) && session.reps.length) {
+    targetRepTypes = new Set(
+      session.reps
+        .filter(r => r && (r.repType || r.label))
+        .map(r => String(r.repType || r.label || '').trim().toLowerCase())
+    );
+  }
   let removed = 0;
   Array.from(tbody.querySelectorAll('tr')).forEach(tr => {
     const cells = tr.children || [];
@@ -7475,15 +7490,22 @@ function _removeTableRowsForRipSessionGroup(session){
       note: cells[8]?.querySelector('input')?.value || ''
     };
     if(!_isRipetuteRowFromTable(row)) return;
-    if(_getRipSessionGroupKey(row) !== targetKey) return;
-    tr.remove();
-    removed++;
+    const rowKey = _getRipSessionGroupKey(row);
+    let matches = rowKey === targetKey;
+    // For mixed sessions: check if row's repType belongs to target's repType set
+    if(!matches && targetRepTypes) {
+      const rowRepLabel = _extractRepLabelFromNote(row.note || '').toLowerCase();
+      matches = String(row.date||'').trim() === targetDate &&
+                String(row.athlete||'').trim() === targetAthlete &&
+                rowRepLabel && targetRepTypes.has(rowRepLabel);
+    }
+    if(matches) { tr.remove(); removed++; }
   });
   return removed;
 }
 
 function _buildTableRowFromRipRep(session, rep){
-  const totalSeconds = Math.max(0, Math.round(Number(rep.time_s || 0)));
+  const totalSeconds = Math.max(0, Number(rep.time_s || 0));
   const minutes = totalSeconds / 60;
   const km = Number((Number(rep.distance_km || 0) || ((Number(rep.distance || 0)) / 1000) || 0).toFixed(3));
   return {
@@ -11364,7 +11386,7 @@ function parsePaceDisplayToMinutes(val){
 
 // Helper: formatta minuti (float) in mm.ss dove ss sono secondi base60, restituisce numero tipo 4.59
 function formatMinutesToPaceDisplay(minFloat){
-  const mins = Math.floor(Number(minFloat) || 0);
+  let mins = Math.floor(Number(minFloat) || 0);
   let secs = Math.round(((Number(minFloat) || 0) - mins) * 60);
   if(secs >= 60){ secs = 0; mins += 1; }
   const secStr = String(secs).padStart(2,'0');
