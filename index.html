@@ -881,9 +881,9 @@
   #mobileTopCenterIcon {
     display: block;
     position: fixed;
-    top: 14px;
-    left: calc(50% - 28px);
-    transform: translateX(-50%);
+    top: 29px;
+    left: calc(50% - 58px);
+    transform: none;
     z-index: 10005;
     width: 56px;
     height: 56px;
@@ -905,11 +905,11 @@
     align-items: flex-start;
     flex-direction: column;
     gap: 4px;
-    max-width: 94px;
+    max-width: 134px;
   }
   #mobileQuickActions .quick-btn {
     height: 26px;
-    width: 92px;
+    width: 132px;
     padding: 0 8px;
     border: none;
     border-radius: 0 12px 12px 0;
@@ -919,7 +919,7 @@
     font-weight: 700;
     box-shadow: 0 2px 8px #0003;
     white-space: nowrap;
-    max-width: 92px;
+    max-width: 132px;
     overflow: hidden;
     text-overflow: ellipsis;
     line-height: 1;
@@ -933,7 +933,7 @@
     border-bottom-left-radius: 22px;
   }
   #mobileMenuBtn {
-    top: 14px !important;
+    top: 29px !important;
     left: calc(50% - 92px) !important;
     width: 34px !important;
     height: 56px !important;
@@ -2759,11 +2759,11 @@ function addRowFromImportedData(row) {
 </div>
 <div id="mobileQuickActions">
   <div style="display:flex;gap:3px;">
-    <button type="button" class="quick-btn quick-top" style="width:62px;max-width:62px;border-top-right-radius:0;border-bottom-right-radius:0;" onclick="openMobileSessionModal()">Add sessione</button>
+    <button type="button" class="quick-btn quick-top" style="width:102px;max-width:102px;border-top-right-radius:0;border-bottom-right-radius:0;" onclick="openMobileSessionModal()">Add sessione</button>
     <button type="button" class="quick-btn" style="width:26px;max-width:26px;padding:0;text-align:center;flex-shrink:0;border-radius:0 22px 12px 0;background:linear-gradient(135deg,#7c3aed 0%,#a21caf 100%);" onclick="openVoiceSessionModal()">🎙️</button>
   </div>
-  <button type="button" class="quick-btn" style="width:92px;max-width:92px;border-radius:0;border-bottom-right-radius:0;border-top-right-radius:0;" onclick="openQuickRipSession()">Add ripetute</button>
-  <button type="button" class="quick-btn quick-bottom" style="width:92px;max-width:92px;border-radius:0 0 22px 22px;background:linear-gradient(135deg,#6366f1 0%,#3b82f6 100%);text-align:center;padding:0;" onclick="openTrend()">📈 Trend</button>
+  <button type="button" class="quick-btn" style="width:132px;max-width:132px;border-radius:0;border-bottom-right-radius:0;border-top-right-radius:0;" onclick="openQuickRipSession()">Add ripetute</button>
+  <button type="button" class="quick-btn quick-bottom" style="width:132px;max-width:132px;border-radius:0 0 22px 22px;background:linear-gradient(135deg,#6366f1 0%,#3b82f6 100%);text-align:center;padding:0;" onclick="openTrend()">📈 Trend</button>
 </div>
 <img id="mobileTopCenterIcon" src="./icona.svg" alt="Icona app mobile" onclick="openMobileIconPreview()">
 <div id="mobileIconPreview" onclick="closeMobileIconPreview()">
