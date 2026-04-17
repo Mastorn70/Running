@@ -4018,6 +4018,8 @@ document.addEventListener('click', function(e){
       <h3 style="margin:0 0 14px 0;color:#a5b4fc;text-align:center;">🎙️ Sessione vocale</h3>
       <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:12px;">
         <button id="voiceMicBtn" type="button" onclick="toggleVoiceListening()" style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#7c3aed 0%,#a21caf 100%);border:none;font-size:2.2em;cursor:pointer;color:#fff;box-shadow:0 4px 20px #7c3aed66;transition:box-shadow 0.2s;">🎙️</button>
+        <button id="voiceStopBtn" type="button" onclick="toggleVoiceListening()" style="display:none;margin-top:8px;padding:5px 18px;border-radius:20px;background:#ef4444;border:none;color:#fff;font-weight:700;font-size:0.9em;cursor:pointer;box-shadow:0 2px 8px #ef444466;">⏹️ Stop</button>
+        <div id="voiceCountdown" style="display:none;font-size:0.78em;color:#f87171;margin-top:4px;"></div>
         <div id="voiceStatus" style="text-align:center;font-size:0.82em;color:#94a3b8;margin-top:8px;">Premi il microfono e parla</div>
       </div>
       <div id="voiceTranscript" style="min-height:44px;background:#0f172a;border-radius:10px;padding:10px 12px;font-size:0.88em;color:#cbd5e1;margin-bottom:14px;border:1px solid #334155;word-break:break-word;font-style:italic;">— trascrizione —</div>
@@ -12992,6 +12994,9 @@ window.addEventListener('DOMContentLoaded', function(){
     if(_voiceActive) _stopListening(); else _startListening();
   };
 
+  let _voiceTimer = null;
+  let _voiceCountdownInterval = null;
+
   function _startListening(){
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if(!SR){
@@ -13002,16 +13007,30 @@ window.addEventListener('DOMContentLoaded', function(){
     _voiceRec.lang = 'it-IT';
     _voiceRec.interimResults = true;
     _voiceRec.maxAlternatives = 1;
-    _voiceRec.continuous = false;
+    _voiceRec.continuous = true;
 
     const tr = document.getElementById('voiceTranscript');
     const st = document.getElementById('voiceStatus');
     const mb = document.getElementById('voiceMicBtn');
+    const sb = document.getElementById('voiceStopBtn');
+    const cd = document.getElementById('voiceCountdown');
 
     _voiceRec.onstart = () => {
       _voiceActive = true;
       if(st) st.textContent = '🔴 In ascolto…';
-      if(mb){ mb.textContent = '⏹️'; mb.style.boxShadow = '0 0 0 8px #ef444455, 0 4px 24px #ef444488'; }
+      if(mb){ mb.textContent = '⏺️'; mb.style.boxShadow = '0 0 0 8px #ef444455, 0 4px 24px #ef444488'; }
+      if(sb) sb.style.display = 'inline-block';
+      // Avvia timer e countdown solo la prima volta
+      if(_voiceTimer === null){
+        let remaining = 15;
+        if(cd){ cd.style.display = 'block'; cd.textContent = remaining + 's'; }
+        _voiceCountdownInterval = setInterval(()=>{
+          remaining--;
+          if(cd) cd.textContent = remaining + 's';
+          if(remaining <= 0) clearInterval(_voiceCountdownInterval);
+        }, 1000);
+        _voiceTimer = setTimeout(()=>{ _stopListening(); }, 15000);
+      }
     };
 
     _voiceRec.onresult = (e) => {
@@ -13024,28 +13043,45 @@ window.addEventListener('DOMContentLoaded', function(){
     };
 
     _voiceRec.onerror = (e) => {
+      if(e.error === 'no-speech') return; // ignora silenzio, riprende in onend
       _voiceActive = false;
+      clearTimeout(_voiceTimer); clearInterval(_voiceCountdownInterval); _voiceTimer = null;
       const msg = e.error === 'not-allowed'
         ? 'Permesso microfono negato. Controlla le impostazioni del browser.'
         : 'Errore: ' + e.error;
       if(st) st.textContent = msg;
       if(mb){ mb.textContent = '🎙️'; mb.style.boxShadow = '0 4px 20px #7c3aed66'; }
+      if(sb) sb.style.display = 'none';
+      if(cd) cd.style.display = 'none';
     };
 
     _voiceRec.onend = () => {
+      // Se il timer è ancora attivo, riavvia la registrazione automaticamente
+      if(_voiceTimer !== null && _voiceActive){
+        try{ _voiceRec.start(); }catch(e){}
+        return;
+      }
       _voiceActive = false;
       if(st) st.textContent = 'Ascoltato ✔ — verifica i dati e premi Conferma';
       if(mb){ mb.textContent = '🎙️'; mb.style.boxShadow = '0 4px 20px #7c3aed66'; }
+      if(sb) sb.style.display = 'none';
+      if(cd) cd.style.display = 'none';
     };
 
     _voiceRec.start();
   }
 
   function _stopListening(){
+    clearTimeout(_voiceTimer); clearInterval(_voiceCountdownInterval);
+    _voiceTimer = null; // azzera così onend non riavvia
     if(_voiceRec){ try{ _voiceRec.stop(); }catch(e){} _voiceRec = null; }
     _voiceActive = false;
     const mb = document.getElementById('voiceMicBtn');
     if(mb){ mb.textContent = '🎙️'; mb.style.boxShadow = '0 4px 20px #7c3aed66'; }
+    const sb = document.getElementById('voiceStopBtn');
+    if(sb) sb.style.display = 'none';
+    const cd = document.getElementById('voiceCountdown');
+    if(cd) cd.style.display = 'none';
   }
 
   function _parseText(text){
@@ -13237,6 +13273,8 @@ window.addEventListener('DOMContentLoaded', function(){
 (function(){
   let _vRipRec = null;
   let _vRipActive = false;
+  let _vRipTimer = null;
+  let _vRipCountdownInterval = null;
 
   // Opens the wizard and auto-starts voice listening after a short delay
   window.openVoiceRipModal = function(){
@@ -13276,6 +13314,35 @@ window.addEventListener('DOMContentLoaded', function(){
       if(st) st.textContent = '🔴 In ascolto…';
       if(tr) tr.textContent = '';
       if(mb){ mb.textContent = '⏹️'; mb.style.boxShadow = '0 0 0 6px #ef444455,0 4px 16px #ef444488'; }
+      // Mostra stop e countdown solo al primo avvio
+      if(_vRipTimer === null){
+        let remaining = 15;
+        // Aggiungi elemento countdown inline se non esiste
+        let cdEl = document.getElementById('ripWizVoiceCountdown');
+        if(!cdEl && bar){
+          cdEl = document.createElement('span');
+          cdEl.id = 'ripWizVoiceCountdown';
+          cdEl.style.cssText = 'font-size:0.78rem;color:#f87171;margin-left:8px;';
+          st.parentNode.insertBefore(cdEl, st.nextSibling);
+        }
+        let stopBtn = document.getElementById('ripWizStopBtn');
+        if(!stopBtn && bar){
+          stopBtn = document.createElement('button');
+          stopBtn.id = 'ripWizStopBtn';
+          stopBtn.type = 'button';
+          stopBtn.textContent = '⏹️ Stop';
+          stopBtn.style.cssText = 'margin-top:4px;padding:3px 12px;border-radius:14px;background:#ef4444;border:none;color:#fff;font-weight:700;font-size:0.8em;cursor:pointer;';
+          stopBtn.onclick = ()=>{ _vRipStop(); };
+          bar.appendChild(stopBtn);
+        } else if(stopBtn) stopBtn.style.display = 'inline-block';
+        if(cdEl){ cdEl.style.display = 'inline'; cdEl.textContent = remaining + 's'; }
+        _vRipCountdownInterval = setInterval(()=>{
+          remaining--;
+          if(cdEl) cdEl.textContent = remaining + 's';
+          if(remaining <= 0) clearInterval(_vRipCountdownInterval);
+        }, 1000);
+        _vRipTimer = setTimeout(()=>{ _vRipStop(); }, 15000);
+      }
     };
     _vRipRec.onresult = (e) => {
       const text = Array.from(e.results).map(r=>r[0].transcript).join(' ');
@@ -13285,26 +13352,43 @@ window.addEventListener('DOMContentLoaded', function(){
       }
     };
     _vRipRec.onerror = (e) => {
+      if(e.error === 'no-speech') return; // ignora silenzio, riprende onend
       _vRipActive = false;
+      clearTimeout(_vRipTimer); clearInterval(_vRipCountdownInterval); _vRipTimer = null;
       const msg = e.error === 'not-allowed'
         ? '⚠️ Permesso microfono negato.'
         : '⚠️ Errore: ' + e.error;
       if(st) st.textContent = msg;
       if(mb){ mb.textContent = '🎙️'; mb.style.boxShadow = '0 2px 10px #0891b244'; }
+      const sb2 = document.getElementById('ripWizStopBtn'); if(sb2) sb2.style.display='none';
+      const cd2 = document.getElementById('ripWizVoiceCountdown'); if(cd2) cd2.style.display='none';
     };
     _vRipRec.onend = () => {
+      // Riavvia se il timer è ancora attivo
+      if(_vRipTimer !== null && _vRipActive){
+        try{ _vRipRec.start(); }catch(e){}
+        return;
+      }
       _vRipActive = false;
       if(st) st.textContent = '✔ Ascoltato — verifica i campi';
       if(mb){ mb.textContent = '🎙️'; mb.style.boxShadow = '0 2px 10px #0891b244'; }
+      const sb2 = document.getElementById('ripWizStopBtn'); if(sb2) sb2.style.display='none';
+      const cd2 = document.getElementById('ripWizVoiceCountdown'); if(cd2) cd2.style.display='none';
     };
+    _vRipRec.continuous = true;
     _vRipRec.start();
   }
 
   function _vRipStop(){
+    clearTimeout(_vRipTimer); clearInterval(_vRipCountdownInterval); _vRipTimer = null;
     if(_vRipRec){ try{ _vRipRec.stop(); }catch(e){} _vRipRec = null; }
     _vRipActive = false;
     const mb = document.getElementById('ripWizMicBtn');
     if(mb){ mb.textContent = '🎙️'; mb.style.boxShadow = '0 2px 10px #0891b244'; }
+    const sb = document.getElementById('ripWizStopBtn'); if(sb) sb.style.display='none';
+    const cd = document.getElementById('ripWizVoiceCountdown'); if(cd) cd.style.display='none';
+    const st = document.getElementById('ripWizVoiceStatus');
+    if(st && _vRipActive === false) st.textContent = '✔ Ascoltato — verifica i campi';
   }
 
   function _vRipParse(text){
