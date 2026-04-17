@@ -2667,7 +2667,7 @@ body.dark-mode #pianoAthletePicker { background: #0f172a; border-color: #334155;
 function exportAllData() {
   let dati = [];
   try {
-    dati = getDataRaw().map(x=>({ date:x.date, athlete:x.athlete, km:x.km, minutes:x.minutes, time:x.time, rpe:x.rpe, hr:x.hr, type:x.type, activityType:x.activityType, raceDistance:x.raceDistance||'', note:x.note }));
+    dati = getDataRaw().map(x=>({ date:x.date, athlete:x.athlete, km:x.km, minutes:x.minutes, time:x.time, rpe:x.rpe, hr:x.hr, type:x.type, activityType:x.activityType, raceDistance:x.raceDistance||'', note:x.note, elevation:x.elevation||0 }));
   } catch(e) {}
   const ripPayload = Array.isArray(ripetuteSessions)
     ? ripetuteSessions.map(s => ({ id:s.id, date:s.date, athlete:s.athlete, type:s.type||'Ripetute', warmup_min:+(s.warmup_min||0), warmup_km:+(s.warmup_km||0), cooldown_min:+(s.cooldown_min||0), cooldown_km:+(s.cooldown_km||0), reps:Array.isArray(s.reps)?s.reps:[] }))
@@ -3126,6 +3126,7 @@ function addRowFromImportedData(row) {
     <div class="mobile-kpi-chip"><div class="chip-v" id="mobileKpiTrimp">0</div><div class="chip-l" id="mobileKpiTrimpLabel">TRIMP</div><div class="chip-bar"><div class="chip-fill" id="mobileKpiTrimpBar" style="width:0%"></div></div><div class="chip-target" id="mobileKpiTrimpTarget">/ 300</div></div>
     <div class="mobile-kpi-chip"><div class="chip-v" id="mobileKpiRisk">0%</div><div class="chip-l">% a rischio</div><div class="chip-bar"><div class="chip-fill" id="mobileKpiRiskBar" style="width:0%"></div></div><div class="chip-target">soglia 0%</div></div>
     <div class="mobile-kpi-chip"><div class="chip-v" id="mobileKpiTopLoad">-</div><div class="chip-l">Top dettaglio</div></div>
+    <div class="mobile-kpi-chip"><div class="chip-v" id="mobileKpiHiking">-</div><div class="chip-l">⛰️ % Dislivello</div></div>
   </div>
 </div>
 <script>
@@ -3863,11 +3864,13 @@ document.addEventListener('click', function(e){
           <div id="kpiInjuryAthlete3" style="font-size:0.85em;opacity:0.8"></div>
         </div>
       </div>
+      <div class="kpi-card" id="kpiHikingCard"><div class="kpi-title">⛰️ % Dislivello (7gg)</div><div class="kpi-value" id="kpiHiking">-</div><div class="kpi-delta" id="kpiHikingInfo"></div></div>
     </div>
 
     <div class="grid">
       <div class="card" id="kmRunnerCard" style="position:relative;"><h3>🏃‍♂️ Classifica 3D atleti (avanzamento=score top atleta, dimensione=km)</h3><button id="allTimeBtn" onclick="applyAllTimeDateFilter()" style="position:absolute;top:12px;left:12px;padding:6px 10px;background:#111827;color:#fff;border:none;border-radius:8px;font-size:0.86rem;font-weight:700;z-index:9;box-shadow:0 2px 8px #0003;">All time</button><button id="fastestBtn" onclick="cycleFastestRaceDistance()" style="position:absolute;top:12px;left:94px;padding:6px 10px;background:#111827;color:#fff;border:none;border-radius:8px;font-size:0.86rem;font-weight:700;z-index:9;box-shadow:0 2px 8px #0003;">Fastest</button><span id="fastestDistanceLabel" style="position:absolute;top:18px;left:180px;color:#fff;font-size:0.83rem;font-weight:800;z-index:9;text-shadow:0 1px 2px rgba(0,0,0,.45);"></span><canvas id="kmChart"></canvas><div id="kmTopRankingOverlay" style="position:absolute;left:12px;bottom:12px;max-width:min(44%,380px);min-width:240px;max-height:42%;overflow:auto;margin-top:10px;padding:10px;border:1px solid rgba(203,213,225,.55);border-radius:10px;background:rgba(255,255,255,0.22);font-size:0.78rem;line-height:1.4;color:#0f172a;z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.12);"></div><div id="chatGhostFeed"></div><div id="chatInlinePanel"><div id="chatInlinePanelHeader" onclick="toggleInlineChatPanel('desktop')" style="cursor:pointer;"><span>💬 Chat Team</span><div style="display:flex;align-items:center;gap:4px;"><select id="chatInlineSender" class="ci-sender-select" onchange="syncInlineSender('desktop')" onclick="event.stopPropagation()"></select><button class="ci-toggle-btn" onclick="event.stopPropagation();toggleInlineChatPanel('desktop')" title="Nascondi/Mostra">▼</button></div></div><div id="chatInlineMsgs"></div><div id="chatInlineSendArea"><input id="chatInlineInput" type="text" placeholder="Scrivi..." maxlength="200" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendInlineChatMessage();}"><button id="chatInlineSendBtn" onclick="sendInlineChatMessage()">➤</button></div></div></div>
       <div class="card" id="speedRunnerCard" style="position:relative;"><h3>Atleta più veloce (ripetute last 10)</h3><canvas id="speedChart"></canvas><div id="speedTopRankingOverlay" style="position:absolute;right:12px;bottom:12px;max-width:min(54%,460px);min-width:280px;max-height:42%;overflow:auto;margin-top:10px;padding:10px;border:1px solid rgba(203,213,225,.55);border-radius:10px;background:rgba(255,255,255,0.22);font-size:0.78rem;line-height:1.4;color:#0f172a;z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.12);"></div></div>
+      <div class="card"><h3>⛰️ Pendenza media per atleta (ultimi 15 gg)</h3><canvas id="elevationChart"></canvas></div>
       <div class="card"><h3>📊 Km/settimana</h3><canvas id="weeklyChart"></canvas></div>
       <div class="card"><h3>⚡ Sensazione Stanchezza</h3><canvas id="loadChart"></canvas></div>
       <div class="card"><h3>💓 Carico Cardiaco</h3><canvas id="trimpChart"></canvas></div>
@@ -3944,7 +3947,7 @@ document.addEventListener('click', function(e){
 
     <table id="dataTable">
       <thead>
-        <tr><th>Data</th><th>Atleta</th><th>Km</th><th>Min</th><th>RPE</th><th>FC</th><th>Sport</th><th>Tipo / Gara km</th><th>Note</th><th>Azioni</th><th>Score</th><th>Min/km</th></tr>
+        <tr><th>Data</th><th>Atleta</th><th>Km</th><th>Min</th><th>RPE</th><th>FC</th><th>Sport</th><th>Tipo / Gara km</th><th>Note</th><th>Azioni</th><th>Score</th><th>Min/km</th><th>⛰️ Disl. (m)</th></tr>
       </thead>
       <tbody>
       </tbody>
@@ -3999,6 +4002,9 @@ document.addEventListener('click', function(e){
         </label>
         <label style="grid-column:1 / -1;">Note
           <input id="mobileSessionNote" type="text" placeholder="Note" style="width:100%;">
+        </label>
+        <label style="grid-column:1 / -1;">⛰️ Dislivello positivo (m)
+          <input id="mobileSessionElevation" type="number" min="0" step="1" placeholder="" style="width:100%;">
         </label>
         <label style="grid-column:1 / -1;">Score
           <input id="mobileSessionScore" type="text" readonly placeholder="-" style="width:100%;font-weight:700;background:#f8fafc;">
@@ -4257,6 +4263,9 @@ document.addEventListener('click', function(e){
             </label>
             <label style="font-size:0.83rem;font-weight:600;color:#94a3b8;">Cool-down (km)
               <input id="ripWizCooldownKm" type="number" min="0" step="0.01" value="0" style="display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:9px 10px;border-radius:9px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:0.95rem;">
+            </label>
+            <label style="grid-column:1/-1;font-size:0.83rem;font-weight:600;color:#94a3b8;">⛰️ Dislivello positivo sessione (m)
+              <input id="ripWizElevation" type="number" min="0" step="1" placeholder="" style="display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:9px 10px;border-radius:9px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:0.95rem;">
             </label>
           </div>
           <button onclick="ripWizGoStep2()" style="width:100%;margin-top:18px;padding:13px;background:linear-gradient(135deg,#6366f1,#7c3aed);color:#fff;font-weight:800;font-size:1rem;border:none;border-radius:10px;cursor:pointer;letter-spacing:0.3px;">Avanti →</button>
@@ -5271,7 +5280,7 @@ window.importFromFirebase = function() {
 function saveToFirebase() {
   let dati = [];
   try {
-    dati = getDataRaw().map(x=>({ date:x.date, athlete:x.athlete, km:x.km, minutes:x.minutes, time:x.time, rpe:x.rpe, hr:x.hr, type:x.type, activityType:x.activityType, raceDistance:x.raceDistance || '', note:x.note }));
+    dati = getDataRaw().map(x=>({ date:x.date, athlete:x.athlete, km:x.km, minutes:x.minutes, time:x.time, rpe:x.rpe, hr:x.hr, type:x.type, activityType:x.activityType, raceDistance:x.raceDistance || '', note:x.note, elevation:x.elevation||0 }));
   } catch(e) {}
   const ripPayload = Array.isArray(ripetuteSessions)
     ? ripetuteSessions.map(s => ({
@@ -7039,6 +7048,7 @@ function appendTableRowsFromObjects(arr){
       <td><input type="text" value="${x.note || x.notes || ''}"></td>
       <td><button onclick="deleteRow(this)" style="padding:4px 8px;font-size:0.75rem;background:#ef4444;">🗑️</button></td>
       <td><input type="number" value="${paceVal}"></td>
+      <td><input type="number" class="elev-input" min="0" step="1" placeholder="" title="Dislivello positivo (m)" value="${x.elevation > 0 ? x.elevation : ''}"></td>
     `;
     // append at top to keep most recent visible
     tb.insertBefore(tr, tb.firstChild);
@@ -7289,7 +7299,8 @@ function ripWizGoStep2() {
     warmup_min: +(document.getElementById('ripWizWarmup')?.value || 20),
     warmup_km: +(document.getElementById('ripWizWarmupKm')?.value || 0),
     cooldown_min: +(document.getElementById('ripWizCooldown')?.value || 15),
-    cooldown_km: +(document.getElementById('ripWizCooldownKm')?.value || 0)
+    cooldown_km: +(document.getElementById('ripWizCooldownKm')?.value || 0),
+    elevation: +(document.getElementById('ripWizElevation')?.value || 0) || 0
   };
   ripWizState.editingIdx = -1;
   ripWizState.draft = null;
@@ -7315,6 +7326,7 @@ function ripWizGoStep1() {
     const warmKmEl = document.getElementById('ripWizWarmupKm'); if(warmKmEl) warmKmEl.value = s.warmup_km || 0;
     const coolEl = document.getElementById('ripWizCooldown'); if(coolEl) coolEl.value = s.cooldown_min;
     const coolKmEl = document.getElementById('ripWizCooldownKm'); if(coolKmEl) coolKmEl.value = s.cooldown_km || 0;
+    const elevEl = document.getElementById('ripWizElevation'); if(elevEl) elevEl.value = s.elevation > 0 ? s.elevation : '';
   }
 }
 
@@ -7570,6 +7582,7 @@ function ripWizSave() {
     }
   });
   const ripSession = readRipSessionFromForm();
+  ripSession.elevation = ripWizState.session?.elevation || 0;
   const reps = Array.isArray(ripSession.reps) ? ripSession.reps.filter(r => _isMeaningfulRep(r)) : [];
   if(!reps.length) { alert('Dati non validi, controlla i valori inseriti.'); return; }
   ripSession.reps = reps;
@@ -8193,7 +8206,8 @@ function upsertRipSessionIntoMainTable(session, options = {}){
       pace_min_per_km: cooldownKm > 0 && cooldownMin > 0 ? formatMinutesToPaceDisplay(cooldownMin / cooldownKm) : '',
       rpe: MOBILE_KPI_TARGETS.cooldown_rpe ?? 2, hr: MOBILE_KPI_TARGETS.cooldown_hr ?? 120, type: 'Ripetute',
       activityType: _normalizeRipSessionType(normalizedSession.type),
-      note: 'Cool-down'
+      note: 'Cool-down',
+      elevation: 0
     });
   }
 
@@ -8211,7 +8225,8 @@ function upsertRipSessionIntoMainTable(session, options = {}){
       pace_min_per_km: warmupKm > 0 && warmupMin > 0 ? formatMinutesToPaceDisplay(warmupMin / warmupKm) : '',
       rpe: MOBILE_KPI_TARGETS.warmup_rpe ?? 2, hr: MOBILE_KPI_TARGETS.warmup_hr ?? 120, type: 'Ripetute',
       activityType: _normalizeRipSessionType(normalizedSession.type),
-      note: 'Warm-up'
+      note: 'Warm-up',
+      elevation: normalizedSession.elevation || 0
     });
   }
 
@@ -8453,6 +8468,8 @@ function getDataRaw(){
     const timeH = minutes / 60;
     const speed = timeH > 0 ? (km / timeH) : 0;
     const computedScore = (km > 0 && timeH > 0 && isFinite(speed)) ? (km * speed * multiplier) : 0;
+    const rawElev = r.querySelector('.elev-input')?.value;
+    const elevation = (rawElev !== undefined && rawElev !== null && rawElev !== '' && Number(rawElev) > 0) ? Number(rawElev) : 0;
     return {
       date,
       athlete,
@@ -8466,7 +8483,8 @@ function getDataRaw(){
       type,
       activityType,
       raceDistance,
-      note
+      note,
+      elevation
     };
   }).filter(d=>d.date && d.athlete);
 }
@@ -8655,6 +8673,7 @@ function popolaTabellaDaJSON(d){
         <td><input type="text" value="${x.note || x.notes || ''}"></td>
         <td><button onclick="deleteRow(this)" style="padding:4px 8px;font-size:0.75rem;background:#ef4444;">🗑️</button></td>
         <td><input type="number" value="${paceVal}"></td>
+        <td><input type="number" class="elev-input" min="0" step="1" placeholder="" title="Dislivello positivo (m)" value="${x.elevation > 0 ? x.elevation : ''}"></td>
       `;
       tb.appendChild(tr);
       bindRaceDistanceRowBehavior(tr);
@@ -8703,6 +8722,7 @@ function popolaTabellaDaJSON(d){
         <td><input type="text" value="${x.note || x.notes || ''}"></td>
         <td><button onclick="deleteRow(this)" style="padding:4px 8px;font-size:0.75rem;background:#ef4444;">🗑️</button></td>
         <td><input type="number" value="${paceVal}"></td>
+        <td><input type="number" class="elev-input" min="0" step="1" placeholder="" title="Dislivello positivo (m)" value="${x.elevation > 0 ? x.elevation : ''}"></td>
       `;
       tb.appendChild(tr);
       bindRaceDistanceRowBehavior(tr);
@@ -10146,7 +10166,99 @@ function updateKPI(data, acwr){
       const injCard = $id('kpiInjuryCard'); if(injCard){ injCard.style.border = '3px solid #10b981'; injCard.style.backgroundColor = '#064e3b'; }
     }
   } catch(e) { console.warn('kpi injury update failed', e); }
+
+  // Hiking KPI: media % dislivello ultimi 7 giorni (solo righe con elevation>0 e km>0)
+  try {
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000);
+    const hikingRows = (data||[]).filter(d => d.elevation > 0 && d.km > 0 && new Date(d.date) >= sevenDaysAgo);
+    const hikingPcts = hikingRows.map(d => (d.elevation / (d.km * 1000)) * 100);
+    const avgHikingPct = hikingPcts.length > 0 ? hikingPcts.reduce((s,v)=>s+v,0)/hikingPcts.length : null;
+    if($id('kpiHiking')) $id('kpiHiking').textContent = avgHikingPct !== null ? avgHikingPct.toFixed(1)+'%' : '-';
+    if($id('kpiHikingInfo')) $id('kpiHikingInfo').textContent = hikingPcts.length > 0 ? hikingPcts.length+' sess.' : 'Nessun dato';
+    if($id('mobileKpiHiking')) $id('mobileKpiHiking').textContent = avgHikingPct !== null ? avgHikingPct.toFixed(1)+'%' : '-';
+  } catch(e) { console.warn('kpi hiking update failed', e); }
 }
+function renderElevationChart(allData) {
+  const canvas = $id('elevationChart');
+  if (!canvas) return;
+  if (charts['elevationChart']) { try { charts['elevationChart'].destroy(); } catch(e){} delete charts['elevationChart']; }
+
+  // Build last-15-days date labels (YYYY-MM-DD)
+  const now = new Date();
+  const labels = [];
+  for (let i = 14; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+    labels.push(d.toISOString().slice(0, 10));
+  }
+
+  // Accumulate pendenza% per athlete per day (only elevation>0 and km>0)
+  const byAthlete = {};
+  (allData || []).forEach(d => {
+    if (!d.elevation || d.elevation <= 0 || !d.km || d.km <= 0) return;
+    const dateStr = d.date ? String(d.date).slice(0, 10) : '';
+    if (!labels.includes(dateStr)) return;
+    if (!byAthlete[d.athlete]) byAthlete[d.athlete] = {};
+    if (!byAthlete[d.athlete][dateStr]) byAthlete[d.athlete][dateStr] = { sum: 0, count: 0 };
+    byAthlete[d.athlete][dateStr].sum += (d.elevation / (d.km * 1000)) * 100;
+    byAthlete[d.athlete][dateStr].count += 1;
+  });
+
+  const athletes = Object.keys(byAthlete);
+  const isDark = document.body.classList.contains('dark-mode');
+  const displayLabels = labels.map(l => l.slice(5)); // MM-DD
+
+  const datasets = athletes.map((ath, i) => {
+    const color = colors[i % colors.length];
+    const dayData = labels.map(day => {
+      const entry = byAthlete[ath][day];
+      if (!entry) return null;
+      return Math.round((entry.sum / entry.count) * 10) / 10;
+    });
+    return {
+      label: ath,
+      data: dayData,
+      borderColor: color,
+      backgroundColor: color + '33',
+      borderWidth: 2,
+      pointRadius: 4,
+      pointHoverRadius: 6,
+      tension: 0,
+      spanGaps: false,
+      fill: false
+    };
+  });
+
+  try {
+    const ctx = canvas.getContext('2d', { willReadFrequently: true, preserveDrawingBuffer: true });
+    charts['elevationChart'] = new Chart(ctx, {
+      type: 'line',
+      data: { labels: displayLabels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        spanGaps: false,
+        plugins: {
+          legend: { labels: { color: isDark ? '#cbd5e1' : '#1e3c72', font: { size: 10, weight: 'bold' } } },
+          tooltip: {
+            callbacks: {
+              label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y !== null ? ctx.parsed.y.toFixed(1) + '%' : '-'}`
+            }
+          }
+        },
+        scales: {
+          x: { ticks: { color: isDark ? '#cbd5e1' : '#334155' } },
+          y: {
+            beginAtZero: true,
+            ticks: { color: isDark ? '#cbd5e1' : '#334155', callback: v => v.toFixed(1) + '%' },
+            title: { display: true, text: '% pendenza', color: isDark ? '#94a3b8' : '#64748b', font: { size: 11 } }
+          }
+        }
+      }
+    });
+  } catch(e) { console.warn('renderElevationChart error', e); }
+}
+
 function updateCharts(){
   const topRankingTarget = (window.innerWidth <= 900 && $id('mobileKmTopRankingOverlay'))
     ? $id('mobileKmTopRankingOverlay')
@@ -10392,6 +10504,9 @@ function updateCharts(){
   const _acwrCrit = _acwrWarn * 1.15;
   createChart('acwrChart','bar', Object.keys(acwr), [{ label: 'ACWR', data: Object.values(acwr), backgroundColor: Object.values(acwr).map(v => v>_acwrCrit ? '#ef4444' : v>_acwrWarn ? '#f59e0b' : '#10b981') }]);
 
+  // Pendenza media per atleta (ultimi 15 gg)
+  renderElevationChart(combinedData);
+
   if(topRankingTarget){
     // Show all athletes for the first 3D chart overlay
     const rows = kmRanking.map((r, idx) => {
@@ -10476,6 +10591,7 @@ function addRow(){
     <td><input type="text" value="${noteVal}"></td>
     <td style="white-space:nowrap;"><button onclick="openMobileSessionModal(this.closest('tr'))" style="padding:4px 8px;font-size:0.75rem;background:#6366f1;">✏️</button> <button onclick="deleteRow(this)" style="padding:4px 8px;font-size:0.75rem;background:#ef4444;">🗑️</button></td>
     <td><input type="number" placeholder="min/km" value="${preset.pace_min_per_km ?? ''}"></td>
+    <td><input type="number" class="elev-input" min="0" step="1" placeholder="" title="Dislivello positivo (m)" value="${preset.elevation > 0 ? preset.elevation : ''}"></td>
   `;
   tb.insertBefore(tr, tb.firstChild);
   bindRaceDistanceRowBehavior(tr);
@@ -10599,6 +10715,7 @@ function openMobileSessionModal(row = null){
     const rowRaceDistance = normalizeRaceDistance(cells[7]?.querySelector('.race-distance-select')?.value || '');
     const rowNote = cells[8]?.querySelector('input')?.value || '';
     const rowPace = cells[10]?.querySelector('input')?.value || '';
+    const rowElev = cells[12]?.querySelector('.elev-input')?.value || '';
     const dateInput = document.getElementById('mobileSessionDate');
     if(dateInput) dateInput.value = rowDate;
     setMobileModalSelectValue(athleteSel, rowAthlete);
@@ -10616,13 +10733,15 @@ function openMobileSessionModal(row = null){
     setMobileModalSelectValue(raceDistanceSel, rowRaceDistance);
     const noteInput = document.getElementById('mobileSessionNote');
     if(noteInput) noteInput.value = rowNote;
+    const elevInput = document.getElementById('mobileSessionElevation');
+    if(elevInput) elevInput.value = rowElev;
     if(titleEl) titleEl.textContent = 'Modifica sessione';
     if(saveBtn) saveBtn.textContent = 'Salva modifiche';
     if(deleteBtn) deleteBtn.style.display = 'block';
   } else {
     const dateInput = document.getElementById('mobileSessionDate');
     if(dateInput) dateInput.value = new Date().toISOString().slice(0,10);
-    ['mobileSessionKm','mobileSessionPace','mobileSessionRpe','mobileSessionHr','mobileSessionNote'].forEach(id=>{
+    ['mobileSessionKm','mobileSessionPace','mobileSessionRpe','mobileSessionHr','mobileSessionNote','mobileSessionElevation'].forEach(id=>{
       const el = document.getElementById(id);
       if(el) el.value = '';
     });
@@ -10734,7 +10853,8 @@ function saveMobileSession(){
     type: document.getElementById('mobileSessionSport')?.value || (sports[0] || 'Corsa'),
     activityType: document.getElementById('mobileSessionActivityType')?.value || '',
     raceDistance: normalizeRaceDistance(document.getElementById('mobileSessionRaceDistance')?.value || ''),
-    note: document.getElementById('mobileSessionNote')?.value || ''
+    note: document.getElementById('mobileSessionNote')?.value || '',
+    elevation: +(document.getElementById('mobileSessionElevation')?.value || 0) || 0
   };
   if(!isGaraActivityType(data.activityType)) data.raceDistance = '';
   if(isGaraActivityType(data.activityType) && !data.raceDistance){
@@ -10775,6 +10895,8 @@ function saveMobileSession(){
     syncRaceDistanceForRow(mobileSessionEditRow);
     try{ updateRowScore(mobileSessionEditRow); }catch(e){}
     if(cells[8]?.querySelector('input')) cells[8].querySelector('input').value = data.note;
+    const editElevInput = mobileSessionEditRow.querySelector('.elev-input');
+    if(editElevInput) editElevInput.value = data.elevation > 0 ? data.elevation : '';
     if(cells[10]?.querySelector('input')) cells[10].querySelector('input').value = data.pace_min_per_km || (data.km && data.minutes ? formatMinutesToPaceDisplay(Number(data.minutes)/Number(data.km)) : '');
   } else {
     addRow(data);
