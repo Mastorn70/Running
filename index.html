@@ -5207,6 +5207,12 @@ function applyImportedPayload(data) {
         try { localStorage.setItem('trainingPlans', JSON.stringify(data.trainingPlans)); } catch(e){}
         try { if(typeof loadTrainingPlans === 'function') loadTrainingPlans(); } catch(e){}
       }
+      // Lista sport
+      if (Array.isArray(data.sports) && data.sports.length > 0) {
+        sports = data.sports;
+        try { localStorage.setItem('sports', JSON.stringify(sports)); } catch(e){}
+        if (typeof updateSportsUI === 'function') updateSportsUI();
+      }
     }
 
     if (topScoreRulesPayload && typeof applyTopScoreRulesPayload === 'function') applyTopScoreRulesPayload(topScoreRulesPayload);
@@ -5296,6 +5302,7 @@ function saveToFirebase() {
       otherPct: Number(topScoreRules.otherPct || 0)
     },
     sportEquivalence: sportEquivalence || {},
+    sports: Array.isArray(sports) ? sports : [],
     kpiTargets: { km: MOBILE_KPI_TARGETS.km, carico: MOBILE_KPI_TARGETS.carico, trimp: MOBILE_KPI_TARGETS.trimp, risk: MOBILE_KPI_TARGETS.risk, warmup_hr: MOBILE_KPI_TARGETS.warmup_hr, warmup_rpe: MOBILE_KPI_TARGETS.warmup_rpe, cooldown_hr: MOBILE_KPI_TARGETS.cooldown_hr, cooldown_rpe: MOBILE_KPI_TARGETS.cooldown_rpe },
     kpiParams: KPI_PARAMS || {},
     athletesToRemove: Array.isArray(athletesToRemove) ? athletesToRemove : [],
@@ -13654,13 +13661,22 @@ Sii diretto e pratico. Rispondi in italiano.`;
     if(res)  { res.style.display='none'; res.textContent=''; }
 
     try{
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
       const body = { contents: [{ parts: [{ text: prompt }] }] };
-      const response = await fetch(endpoint, {
+
+      const doRequest = async () => fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
+
+      let response = await doRequest();
+      // Se 429, attendi 6s e riprova una volta
+      if(response.status === 429){
+        if(spin) spin.textContent = '⏳ Limite richieste raggiunto, riprovo tra 6 secondi…';
+        await new Promise(r => setTimeout(r, 6000));
+        response = await doRequest();
+      }
       if(!response.ok){
         const err = await response.json().catch(()=>({error:{message:response.statusText}}));
         throw new Error(err?.error?.message || `HTTP ${response.status}`);
