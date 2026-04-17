@@ -3077,7 +3077,7 @@ function addRowFromImportedData(row) {
   <!-- ELEVATION INLINE PANEL MOBILE -->
   <div id="elevationInlinePanelMobile" class="pi-collapsed">
     <div class="pi-header">
-      <span style="flex:1;cursor:pointer;" onclick="toggleElevationInlinePanelMobile()">⛰️ Dislivello per atleta</span>
+      <span style="flex:1;cursor:pointer;" onclick="toggleElevationInlinePanelMobile()">⛰️ Climb</span>
       <div style="display:flex;align-items:center;gap:5px;">
         <select id="elevChartAthleteMobile" class="pi-athlete-select" onchange="renderElevationChartMobile()"><option value="all">Tutti</option></select>
         <select id="elevChartGranularityMobile" class="pi-athlete-select" onchange="renderElevationChartMobile()">
@@ -3939,7 +3939,7 @@ document.addEventListener('click', function(e){
       <div class="card" style="grid-column:1/-1;padding:0;overflow:hidden;background:transparent;box-shadow:none;border:none;">
         <div id="pianoInlinePanel" class="pi-collapsed">
           <div class="pi-header">
-            <span style="flex:1;cursor:pointer;" onclick="togglePianoInlinePanel('desktop')">📅 Piano vs Effettivo</span>
+            <span style="flex:1;cursor:pointer;" onclick="togglePianoInlinePanel('desktop')">📅 PlanVsEffect</span>
             <div style="display:flex;align-items:center;gap:5px;">
               <button id="pianoInlineGranBtn" class="pi-ctrl-btn" onclick="togglePianoInlineGranularity()" title="Cambia granularità">7d</button>
               <button class="pi-ctrl-btn pi-add-btn" onclick="openPianoAdd('desktop')" title="Aggiungi sessione">➕</button>
@@ -3967,14 +3967,14 @@ document.addEventListener('click', function(e){
             <div style="display:flex;align-items:center;gap:5px;">
               <select id="elevChartAthlete" class="pi-athlete-select" onchange="renderElevationChart(window._elevChartData)"><option value="all">Tutti</option></select>
               <select id="elevChartGranularity" class="pi-athlete-select" onchange="renderElevationChart(window._elevChartData)">
-                <option value="athlete">Per atleta</option>
-                <option value="day">Giornaliero</option>
-                <option value="week">Settimanale</option>
+                <option value="athlete">Athlete</option>
+                <option value="day">Daily</option>
+                <option value="week">Weekly</option>
               </select>
               <select id="elevChartPeriod" class="pi-athlete-select" onchange="renderElevationChart(window._elevChartData)">
+                <option value="7">7 gg</option>
                 <option value="15">15 gg</option>
                 <option value="30">30 gg</option>
-                <option value="90">90 gg</option>
                 <option value="365">Anno</option>
               </select>
               <button class="pi-toggle-btn" onclick="toggleElevationInlinePanel()" title="Nascondi/Mostra">▼</button>
