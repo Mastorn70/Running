@@ -882,7 +882,7 @@
     display: block;
     position: fixed;
     top: 29px;
-    left: calc(50% - 58px);
+    left: calc(38% - 58px);
     transform: none;
     z-index: 10005;
     width: 56px;
@@ -899,7 +899,7 @@
     display: flex;
     position: fixed;
     top: 14px;
-    left: calc(50% - 2px);
+    left: calc(38% - 2px);
     transform: none;
     z-index: 10005;
     align-items: flex-start;
@@ -934,7 +934,7 @@
   }
   #mobileMenuBtn {
     top: 29px !important;
-    left: calc(50% - 92px) !important;
+    left: calc(38% - 92px) !important;
     width: 34px !important;
     height: 56px !important;
     border-radius: 28px 0 0 28px !important;
@@ -10924,7 +10924,15 @@ function openComparison() {
         return s + (rpe * minutes);
       }, 0);
       const trimp = dat.reduce((s, v) => s + ((Number(v.hr) || 0) * (Number(v.time) || 0) * 0.1), 0);
-      const velMedia = tempo ? (km / tempo) : 0;
+      const velMediaDat = dat.filter(d => (d.type||'').toLowerCase() === 'corsa' && (d.activityType||'').toLowerCase() === 'allenamento');
+      const velMediaKm = velMediaDat.reduce((s, v) => s + (Number(v.km) || 0), 0);
+      const velMediaTempoH = velMediaDat.reduce((s, v) => {
+        const m = Number(v.minutes);
+        if (Number.isFinite(m) && m > 0) return s + m / 60;
+        const h = Number(v.time);
+        return s + (Number.isFinite(h) && h > 0 ? h : 0);
+      }, 0);
+      const velMedia = velMediaTempoH > 0 ? (velMediaKm / velMediaTempoH) : 0;
       const rpe_med = dat.length ? (dat.reduce((s, v) => s + (Number(v.rpe) || 0), 0) / dat.length) : 0;
       const hr_med = dat.length ? (dat.reduce((s, v) => s + (Number(v.hr) || 0), 0) / dat.length) : 0;
       const acwr = (typeof computeACWR === 'function') ? (computeACWR(data)[nome] || 0) : 0;
@@ -11027,12 +11035,17 @@ function generateTrendChart(){
         if(period === 'daily') key = r.date;
         else if(period === 'weekly') key = getWeekStartKey(r.date);
         else key = r.date.slice(0,7);
-        if(!map[key]) map[key] = { kmSum:0, timeSum:0, loadSum:0, trimpSum:0, count:0 };
+        if(!map[key]) map[key] = { kmSum:0, timeSum:0, loadSum:0, trimpSum:0, count:0, speedKmSum:0, speedTimeSum:0 };
         map[key].kmSum += (r.km||0);
         map[key].timeSum += (r.time||0);
         map[key].loadSum += (r.rpe||0) * (r.time||0);
         map[key].trimpSum += (r.hr||0) * (r.time||0) * 0.1;
         map[key].count += 1;
+        // Velocità: solo corsa + allenamento
+        if((r.type||'').toLowerCase() === 'corsa' && (r.activityType||'').toLowerCase() === 'allenamento'){
+          map[key].speedKmSum += (r.km||0);
+          map[key].speedTimeSum += (r.time||0);
+        }
       });
       return map;
     }
@@ -11064,7 +11077,7 @@ function generateTrendChart(){
       if(metric === 'km') return bucket.kmSum;
       if(metric === 'carico') return bucket.loadSum;
       if(metric === 'trimp') return bucket.trimpSum;
-      if(metric === 'velocita') return bucket.timeSum ? (bucket.kmSum / bucket.timeSum) : 0;
+      if(metric === 'velocita') return bucket.speedTimeSum ? (bucket.speedKmSum / bucket.speedTimeSum) : 0;
       return 0;
     }
     const vals1 = allKeys.map(k => computeMetricForKey(agg1, k, metric));
@@ -11134,10 +11147,15 @@ function renderTrendInlinePanelMobile() {
       rows.forEach(r => {
         const key = (period === 'daily') ? r.date
           : (typeof getWeekStartKey === 'function' ? getWeekStartKey(r.date) : r.date.slice(0,10));
-        if (!map[key]) map[key] = { kmSum: 0, timeSum: 0, count: 0 };
+        if (!map[key]) map[key] = { kmSum: 0, timeSum: 0, count: 0, paceKmSum: 0, paceTimeSum: 0 };
         map[key].kmSum  += (r.km   || 0);
         map[key].timeSum += (r.time || 0);
         map[key].count  += 1;
+        // Pace: solo corsa + allenamento
+        if((r.type||'').toLowerCase() === 'corsa' && (r.activityType||'').toLowerCase() === 'allenamento'){
+          map[key].paceKmSum  += (r.km   || 0);
+          map[key].paceTimeSum += (r.time || 0);
+        }
       });
       return map;
     }
@@ -11150,7 +11168,7 @@ function renderTrendInlinePanelMobile() {
       const b = aggMap[key];
       if (!b) return null;
       if (metric === 'km') return b.kmSum;
-      if (metric === 'pace') return (b.kmSum > 0) ? (b.timeSum * 60 / b.kmSum) : null;
+      if (metric === 'pace') return (b.paceKmSum > 0 && b.paceTimeSum > 0) ? (b.paceTimeSum * 60 / b.paceKmSum) : null;
       return null;
     }
 
