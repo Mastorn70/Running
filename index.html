@@ -10184,65 +10184,50 @@ function renderElevationChart(allData) {
   if (!canvas) return;
   if (charts['elevationChart']) { try { charts['elevationChart'].destroy(); } catch(e){} delete charts['elevationChart']; }
 
-  // Build last-15-days date labels (YYYY-MM-DD)
+  // Last 15 days window
   const now = new Date();
-  const labels = [];
-  for (let i = 14; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
-    labels.push(d.toISOString().slice(0, 10));
-  }
+  const cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 14).toISOString().slice(0, 10);
 
-  // Accumulate pendenza% per athlete per day (only elevation>0 and km>0)
-  const byAthlete = {};
+  // Compute max pendenza% per athlete over the last 15 days (elevation>0 and km>0)
+  const maxByAthlete = {};
   (allData || []).forEach(d => {
     if (!d.elevation || d.elevation <= 0 || !d.km || d.km <= 0) return;
     const dateStr = d.date ? String(d.date).slice(0, 10) : '';
-    if (!labels.includes(dateStr)) return;
-    if (!byAthlete[d.athlete]) byAthlete[d.athlete] = {};
-    if (!byAthlete[d.athlete][dateStr]) byAthlete[d.athlete][dateStr] = { sum: 0, count: 0 };
-    byAthlete[d.athlete][dateStr].sum += (d.elevation / (d.km * 1000)) * 100;
-    byAthlete[d.athlete][dateStr].count += 1;
+    if (dateStr < cutoff) return;
+    const pct = (d.elevation / (d.km * 1000)) * 100;
+    if (!maxByAthlete[d.athlete] || pct > maxByAthlete[d.athlete]) {
+      maxByAthlete[d.athlete] = pct;
+    }
   });
 
-  const athletes = Object.keys(byAthlete);
+  const athletes = Object.keys(maxByAthlete);
   const isDark = document.body.classList.contains('dark-mode');
-  const displayLabels = labels.map(l => l.slice(5)); // MM-DD
-
-  const datasets = athletes.map((ath, i) => {
-    const color = colors[i % colors.length];
-    const dayData = labels.map(day => {
-      const entry = byAthlete[ath][day];
-      if (!entry) return null;
-      return Math.round((entry.sum / entry.count) * 10) / 10;
-    });
-    return {
-      label: ath,
-      data: dayData,
-      borderColor: color,
-      backgroundColor: color + '33',
-      borderWidth: 2,
-      pointRadius: 4,
-      pointHoverRadius: 6,
-      tension: 0,
-      spanGaps: false,
-      fill: false
-    };
-  });
+  const data = athletes.map(a => Math.round(maxByAthlete[a] * 10) / 10);
+  const bgColors = athletes.map((_, i) => colors[i % colors.length]);
 
   try {
     const ctx = canvas.getContext('2d', { willReadFrequently: true, preserveDrawingBuffer: true });
     charts['elevationChart'] = new Chart(ctx, {
-      type: 'line',
-      data: { labels: displayLabels, datasets },
+      type: 'bar',
+      data: {
+        labels: athletes,
+        datasets: [{
+          label: '% pendenza max (15 gg)',
+          data,
+          backgroundColor: bgColors,
+          borderColor: bgColors,
+          borderWidth: 1,
+          borderRadius: 6
+        }]
+      },
       options: {
         responsive: true,
         maintainAspectRatio: true,
-        spanGaps: false,
         plugins: {
           legend: { labels: { color: isDark ? '#cbd5e1' : '#1e3c72', font: { size: 10, weight: 'bold' } } },
           tooltip: {
             callbacks: {
-              label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y !== null ? ctx.parsed.y.toFixed(1) + '%' : '-'}`
+              label: ctx => `Max pendenza: ${ctx.parsed.y.toFixed(1)}%`
             }
           }
         },
