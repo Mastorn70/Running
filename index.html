@@ -10301,45 +10301,34 @@ function _buildElevationChartData(opts) {
     return true;
   });
 
-  let labels, sumData, maxData, bgColorsFn;
+  let labels, sumData, bgColorsFn;
   if (granularity === 'athlete') {
-    const sumMap = {}, maxMap = {};
-    rows.forEach(d => {
-      sumMap[d.athlete] = (sumMap[d.athlete] || 0) + d.elevation;
-      if (!maxMap[d.athlete] || d.elevation > maxMap[d.athlete]) maxMap[d.athlete] = d.elevation;
-    });
-    const sorted = Object.keys(sumMap).map(a => ({ a, s: sumMap[a], m: maxMap[a] })).sort((x, y) => x.s - y.s);
+    const sumMap = {};
+    rows.forEach(d => { sumMap[d.athlete] = (sumMap[d.athlete] || 0) + d.elevation; });
+    const sorted = Object.keys(sumMap).map(a => ({ a, s: sumMap[a] })).sort((x, y) => y.s - x.s);
     labels = sorted.map(o => o.a);
     sumData = sorted.map(o => o.s);
-    maxData = sorted.map(o => o.m);
     bgColorsFn = (_, i) => colors[i % colors.length];
   } else if (granularity === 'day') {
-    const sumMap = {}, maxMap = {};
-    rows.forEach(d => {
-      const day = String(d.date).slice(0, 10);
-      sumMap[day] = (sumMap[day] || 0) + d.elevation;
-      if (!maxMap[day] || d.elevation > maxMap[day]) maxMap[day] = d.elevation;
-    });
+    const sumMap = {};
+    rows.forEach(d => { const day = String(d.date).slice(0, 10); sumMap[day] = (sumMap[day] || 0) + d.elevation; });
     labels = Object.keys(sumMap).sort();
     sumData = labels.map(k => sumMap[k]);
-    maxData = labels.map(k => maxMap[k]);
     bgColorsFn = () => colors[0];
   } else {
-    const sumMap = {}, maxMap = {};
+    const sumMap = {};
     rows.forEach(d => {
       const date = new Date(String(d.date).slice(0, 10));
       const jan4 = new Date(date.getFullYear(), 0, 4);
       const weekNum = Math.ceil(((date - jan4) / 86400000 + jan4.getDay() + 1) / 7);
       const key = `${date.getFullYear()}-S${String(weekNum).padStart(2,'0')}`;
       sumMap[key] = (sumMap[key] || 0) + d.elevation;
-      if (!maxMap[key] || d.elevation > maxMap[key]) maxMap[key] = d.elevation;
     });
     labels = Object.keys(sumMap).sort();
     sumData = labels.map(k => sumMap[k]);
-    maxData = labels.map(k => maxMap[k]);
     bgColorsFn = () => colors[2];
   }
-  return { labels, sumData, maxData, bgColorsFn, granularity };
+  return { labels, sumData, bgColorsFn, granularity };
 }
 
 function _renderElevationChartCore(canvasId, chartKey, opts) {
@@ -10347,9 +10336,8 @@ function _renderElevationChartCore(canvasId, chartKey, opts) {
   if (!canvas) return;
   if (charts[chartKey]) { try { charts[chartKey].destroy(); } catch(e){} delete charts[chartKey]; }
 
-  const isMobilePeak = opts.mountainPeaks === true;
   const isDark = document.body.classList.contains('dark-mode');
-  const { labels, sumData, maxData, bgColorsFn, granularity } = _buildElevationChartData(opts);
+  const { labels, sumData, bgColorsFn, granularity } = _buildElevationChartData(opts);
 
   if (!labels.length) {
     const ctx2 = canvas.getContext('2d');
@@ -10362,9 +10350,9 @@ function _renderElevationChartCore(canvasId, chartKey, opts) {
   }
 
   const bgColors = labels.map((l, i) => bgColorsFn(l, i));
-  const bgColorsMax = bgColors.map(c => c + '66');
+  const bgColorsAlpha = bgColors.map(c => c + 'bf'); // ~75% opacity like piano chart
 
-  // Preload avatars
+  // Avatar plugin (draws circular avatar/initials above each bar in athlete mode)
   const avatarImgs = {};
   if (granularity === 'athlete') {
     labels.forEach(name => {
@@ -10373,234 +10361,81 @@ function _renderElevationChartCore(canvasId, chartKey, opts) {
     });
   }
 
-  // Hiking SVG background
-  const hikingSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 160" width="200" height="160"><g stroke="#94a3b8" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.18"><polyline points="0,155 55,60 85,95 120,30 160,80 200,55 200,155"/><circle cx="102" cy="24" r="5"/><line x1="102" y1="29" x2="102" y2="45"/><line x1="102" y1="33" x2="95" y2="40"/><line x1="102" y1="33" x2="112" y2="37"/><line x1="102" y1="45" x2="96" y2="55"/><line x1="102" y1="45" x2="108" y2="55"/><line x1="95" y1="40" x2="88" y2="55"/><line x1="112" y1="37" x2="118" y2="52"/></g></svg>`;
-  const bgImg = new Image();
-  bgImg.src = 'data:image/svg+xml;base64,' + btoa(hikingSvg);
-
-  // Mountain-peak plugin: replaces bars with triangular mountain silhouettes
-  const mountainPlugin = {
-    id: 'mountainPeakPlugin',
-    beforeDraw(chart) {
-      const { ctx, chartArea: { left, top, right, bottom } } = chart;
-      const w = right - left, h = bottom - top;
-      if (bgImg.complete) {
-        ctx.save(); ctx.globalAlpha = 0.13;
-        const scale = Math.max(w / bgImg.width, h / bgImg.height) * 0.7;
-        const bw = bgImg.width * scale, bh = bgImg.height * scale;
-        ctx.drawImage(bgImg, left + w / 2 - bw / 2, top + h / 2 - bh / 2, bw, bh);
-        ctx.restore();
-      }
-    },
+  const avatarPlugin = {
+    id: 'elevAvatarPlugin',
     afterDraw(chart) {
-      const { ctx, scales: { x, ySum }, chartArea } = chart;
-      if (!x || !ySum) return;
-
-      // Draw mountain peaks for dataset 0 (sum)
+      if (granularity !== 'athlete') return;
+      const { ctx, chartArea } = chart;
       const meta0 = chart.getDatasetMeta(0);
       if (!meta0 || !meta0.data) return;
-
-      if (isMobilePeak) {
-        // Hide real bars by overdrawing with background
-        meta0.data.forEach(bar => {
-          const meta1 = chart.getDatasetMeta(1);
-          if (meta1 && meta1.data[meta0.data.indexOf(bar)]) {
-            // will be redrawn as peaks below
-          }
-        });
-      }
-
+      const avatarSize = 22;
       meta0.data.forEach((bar, i) => {
-        if (!isMobilePeak) return; // peaks only on mobile
-        const barW = bar.width || 30;
-        const peakX = bar.x;
-        const peakY = bar.y;
-        const baseY = chartArea.bottom;
-        const halfW = Math.max(barW * 0.9, 18);
-
-        // Gradient fill
-        const grad = ctx.createLinearGradient(peakX, peakY, peakX, baseY);
-        grad.addColorStop(0, bgColors[i] || '#60a5fa');
-        grad.addColorStop(0.55, (bgColors[i] || '#60a5fa') + 'aa');
-        grad.addColorStop(1, (bgColors[i] || '#60a5fa') + '22');
-
-        // Main peak triangle
-        ctx.save();
-        ctx.beginPath();
-        ctx.moveTo(peakX - halfW, baseY);
-        ctx.lineTo(peakX, peakY);
-        ctx.lineTo(peakX + halfW, baseY);
-        ctx.closePath();
-        ctx.fillStyle = grad;
-        ctx.fill();
-
-        // Snow cap
-        const snowH = Math.min((baseY - peakY) * 0.18, 18);
-        if (snowH > 3) {
-          const snowY = peakY + snowH;
-          const snowW = halfW * (snowH / (baseY - peakY));
-          ctx.beginPath();
-          ctx.moveTo(peakX - snowW, snowY);
-          ctx.lineTo(peakX, peakY);
-          ctx.lineTo(peakX + snowW, snowY);
-          ctx.closePath();
-          ctx.fillStyle = 'rgba(255,255,255,0.82)';
-          ctx.fill();
-        }
-
-        // Peak outline
-        ctx.beginPath();
-        ctx.moveTo(peakX - halfW, baseY);
-        ctx.lineTo(peakX, peakY);
-        ctx.lineTo(peakX + halfW, baseY);
-        ctx.strokeStyle = bgColors[i] || '#93c5fd';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-        ctx.restore();
-
-        // Avatar or initials above peak
-        const avatarSize = 24;
         const name = chart.data.labels[i];
         const img = avatarImgs[name];
-        const ax = peakX - avatarSize / 2;
-        const ay = Math.max(peakY - avatarSize - 3, 2);
-        if (ay < 0) return;
+        const cx = bar.x;
+        const cy = Math.max(bar.y - avatarSize / 2 - 3, avatarSize / 2 + 2);
         if (img && img.complete && img.naturalWidth > 0) {
           ctx.save();
           ctx.beginPath();
-          ctx.arc(peakX, ay + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
+          ctx.arc(cx, cy, avatarSize / 2, 0, Math.PI * 2);
           ctx.clip();
-          ctx.drawImage(img, ax, ay, avatarSize, avatarSize);
+          ctx.drawImage(img, cx - avatarSize / 2, cy - avatarSize / 2, avatarSize, avatarSize);
           ctx.restore();
           ctx.save();
           ctx.beginPath();
-          ctx.arc(peakX, ay + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
-          ctx.strokeStyle = bgColors[i] || '#fff';
-          ctx.lineWidth = 1.5; ctx.stroke();
+          ctx.arc(cx, cy, avatarSize / 2, 0, Math.PI * 2);
+          ctx.strokeStyle = bgColors[i] || '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
           ctx.restore();
         } else {
           const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
           ctx.save();
           ctx.beginPath();
-          ctx.arc(peakX, ay + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
+          ctx.arc(cx, cy, avatarSize / 2, 0, Math.PI * 2);
           ctx.fillStyle = bgColors[i] || '#64748b'; ctx.fill();
-          ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 1.5; ctx.stroke();
+          ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 1.5; ctx.stroke();
           ctx.fillStyle = '#fff';
           ctx.font = `bold ${Math.round(avatarSize * 0.38)}px sans-serif`;
           ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-          ctx.fillText(initials, peakX, ay + avatarSize / 2);
+          ctx.fillText(initials, cx, cy);
           ctx.restore();
         }
       });
-
-      // Avatar-only pass for desktop (no peak replacement)
-      if (!isMobilePeak && granularity === 'athlete') {
-        meta0.data.forEach((bar, i) => {
-          const name = chart.data.labels[i];
-          const img = avatarImgs[name];
-          const avatarSize = 28;
-          const ay = Math.max(bar.y - avatarSize - 4, 2);
-          if (ay < 0) return;
-          if (img && img.complete && img.naturalWidth > 0) {
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(bar.x, ay + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
-            ctx.clip();
-            ctx.drawImage(img, bar.x - avatarSize / 2, ay, avatarSize, avatarSize);
-            ctx.restore();
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(bar.x, ay + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
-            ctx.strokeStyle = bgColors[i] || '#fff'; ctx.lineWidth = 2; ctx.stroke();
-            ctx.restore();
-          } else {
-            const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(bar.x, ay + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
-            ctx.fillStyle = bgColors[i] || '#64748b'; ctx.fill();
-            ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 1.5; ctx.stroke();
-            ctx.fillStyle = '#fff';
-            ctx.font = `bold ${Math.round(avatarSize * 0.38)}px sans-serif`;
-            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.fillText(initials, bar.x, ay + avatarSize / 2);
-            ctx.restore();
-          }
-        });
-      }
     }
   };
 
-  const barAlpha = isMobilePeak ? '00' : ''; // transparent bars on mobile (peaks drawn by plugin)
-  const ds0BgColors = isMobilePeak ? bgColors.map(c => c + '00') : bgColors;
-  const ds0BorderColors = isMobilePeak ? bgColors.map(c => c + '00') : bgColors;
-
   try {
-    const ctx = canvas.getContext('2d', { willReadFrequently: true, preserveDrawingBuffer: true });
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     charts[chartKey] = new Chart(ctx, {
       type: 'bar',
-      plugins: [mountainPlugin],
+      plugins: [avatarPlugin],
       data: {
         labels,
-        datasets: [
-          {
-            label: '\u03a3 Dislivello (m)',
-            data: sumData,
-            backgroundColor: ds0BgColors,
-            borderColor: ds0BorderColors,
-            borderWidth: isMobilePeak ? 0 : 1,
-            borderRadius: isMobilePeak ? 0 : 6,
-            yAxisID: 'ySum'
-          },
-          {
-            label: 'Dislivello max (m)',
-            data: maxData,
-            backgroundColor: isMobilePeak ? bgColorsMax.map(c => c.slice(0,-2) + '00') : bgColorsMax,
-            borderColor: isMobilePeak ? bgColors.map(c => c + '00') : bgColors,
-            borderWidth: isMobilePeak ? 0 : 1,
-            borderRadius: isMobilePeak ? 0 : 6,
-            yAxisID: 'yMax'
-          }
-        ]
+        datasets: [{
+          label: '\u03a3 Dislivello (m)',
+          data: sumData,
+          backgroundColor: bgColorsAlpha,
+          borderColor: bgColors,
+          borderWidth: 1.5,
+          borderRadius: 3
+        }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        layout: { padding: { top: granularity === 'athlete' ? 44 : 10, bottom: 4, left: 4, right: 4 } },
+        layout: { padding: { top: granularity === 'athlete' ? 34 : 6, bottom: 2 } },
         plugins: {
-          legend: {
-            position: 'bottom',
-            display: !isMobilePeak,
-            labels: { color: isDark ? '#cbd5e1' : '#1e3c72', font: { size: 10, weight: 'bold' }, boxWidth: 12, padding: 8 }
-          },
-          tooltip: {
-            callbacks: {
-              label: c => c.dataset.yAxisID === 'ySum'
-                ? `\u03a3 Dislivello: ${c.parsed.y} m`
-                : `Max dislivello: ${c.parsed.y} m`
-            }
-          }
+          legend: { display: false },
+          tooltip: { callbacks: { label: c => `\u03a3 Dislivello: ${c.parsed.y} m` } }
         },
         scales: {
-          x: { ticks: { color: isDark ? '#cbd5e1' : '#334155', maxRotation: 45 } },
-          ySum: {
-            type: 'linear', position: 'left', beginAtZero: true,
-            ticks: { color: isDark ? '#cbd5e1' : '#334155', callback: v => v + ' m' },
-            title: { display: !isMobilePeak, text: '\u03a3 Dislivello (m)', color: isDark ? '#94a3b8' : '#64748b', font: { size: 11 } }
-          },
-          yMax: {
-            type: 'linear', position: 'right', beginAtZero: true,
-            grid: { drawOnChartArea: false },
-            ticks: { color: isDark ? '#94a3b8' : '#64748b', callback: v => v + ' m' },
-            title: { display: !isMobilePeak, text: 'Max (m)', color: isDark ? '#94a3b8' : '#64748b', font: { size: 11 } }
-          }
+          x: { ticks: { color: '#94a3b8', maxRotation: 45, font: { size: 9 } }, grid: { color: 'rgba(148,163,184,0.1)' } },
+          y: { beginAtZero: true, ticks: { color: '#94a3b8', font: { size: 9 }, callback: v => v + ' m' }, grid: { color: 'rgba(148,163,184,0.1)' } }
         }
       }
     });
-    // Redraw after images load
+    // Redraw after avatars load
     const redraw = () => { try { charts[chartKey]?.update(); } catch(e){} };
     Object.values(avatarImgs).forEach(img => { if (!img.complete) img.onload = redraw; });
-    if (!bgImg.complete) bgImg.onload = redraw;
   } catch(e) { console.warn('renderElevationChart error', e); }
 }
 
