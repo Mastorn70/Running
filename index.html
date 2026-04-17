@@ -442,6 +442,19 @@
 #pianoInlinePanel.pi-collapsed { max-height: 36px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
 #pianoInlinePanel.pi-collapsed .pi-body { display: none; }
 #pianoInlinePanel.pi-collapsed .pi-toggle-btn { transform: rotate(180deg); }
+#elevationInlinePanel {
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(160deg, #0f172a 0%, #1e293b 60%, #1a2744 100%);
+  border: 1px solid rgba(59,130,246,0.45);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.5);
+  transition: max-height 0.35s cubic-bezier(0.4,0,0.2,1), box-shadow 0.25s;
+}
+#elevationInlinePanel.pi-collapsed { max-height: 36px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+#elevationInlinePanel.pi-collapsed .pi-body { display: none; }
+#elevationInlinePanel.pi-collapsed .pi-toggle-btn { transform: rotate(180deg); }
 .pi-header {
   padding: 6px 10px;
   background: linear-gradient(90deg, #1d4ed8 0%, #3b82f6 100%);
@@ -522,6 +535,24 @@
 #pianoInlinePanelMobile.pi-collapsed .pi-toggle-btn { transform: rotate(180deg); }
 @media (min-width: 901px) { #pianoInlinePanelMobile { display: none; } }
 @media (max-width: 900px) { #pianoInlinePanel { display: none; } }
+#elevationInlinePanelMobile {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(160deg, #0f172a 0%, #1e293b 60%, #1a2744 100%);
+  border: 1px solid rgba(59,130,246,0.45);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.5);
+  max-height: 500px;
+  margin-top: 6px;
+  transition: max-height 0.35s cubic-bezier(0.4,0,0.2,1), box-shadow 0.25s;
+}
+#elevationInlinePanelMobile.pi-collapsed { max-height: 38px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+#elevationInlinePanelMobile.pi-collapsed .pi-body { display: none; }
+#elevationInlinePanelMobile.pi-collapsed .pi-toggle-btn { transform: rotate(180deg); }
+@media (min-width: 901px) { #elevationInlinePanelMobile { display: none; } }
+@media (max-width: 900px) { #elevationInlinePanel { display: none; } }
 
 /* ---- Trend Inline Panel Mobile ---- */
 #trendInlinePanelMobile {
@@ -3043,6 +3074,37 @@ function addRowFromImportedData(row) {
       <div style="padding:0 10px 10px;height:180px;position:relative;"><canvas id="pianoInlineChartMobile"></canvas></div>
     </div>
   </div>
+  <!-- ELEVATION INLINE PANEL MOBILE -->
+  <div id="elevationInlinePanelMobile" class="pi-collapsed">
+    <div class="pi-header">
+      <span style="flex:1;cursor:pointer;" onclick="toggleElevationInlinePanelMobile()">⛰️ Dislivello per atleta</span>
+      <div style="display:flex;align-items:center;gap:5px;">
+        <select id="elevChartAthleteMobile" class="pi-athlete-select" onchange="renderElevationChartMobile()"><option value="all">Tutti</option></select>
+        <select id="elevChartGranularityMobile" class="pi-athlete-select" onchange="renderElevationChartMobile()">
+          <option value="athlete">Per atleta</option>
+          <option value="day">Giornaliero</option>
+          <option value="week">Settimanale</option>
+        </select>
+        <select id="elevChartPeriodMobile" class="pi-athlete-select" onchange="renderElevationChartMobile()">
+          <option value="15">15 gg</option>
+          <option value="30">30 gg</option>
+          <option value="90">90 gg</option>
+          <option value="365">Anno</option>
+        </select>
+        <button class="pi-toggle-btn" onclick="toggleElevationInlinePanelMobile()" title="Nascondi/Mostra">▼</button>
+      </div>
+    </div>
+    <div class="pi-body">
+      <div class="pi-filter-row">
+        <label class="pi-filter-label">Da</label>
+        <input type="date" id="elevChartFromMobile" class="pi-date-input" oninput="renderElevationChartMobile()">
+        <label class="pi-filter-label">A</label>
+        <input type="date" id="elevChartToMobile" class="pi-date-input" oninput="renderElevationChartMobile()">
+        <button class="pi-ctrl-btn" onclick="document.getElementById('elevChartFromMobile').value='';document.getElementById('elevChartToMobile').value='';renderElevationChartMobile()" title="Azzera filtri">✕</button>
+      </div>
+      <div style="padding:0 10px 10px;height:240px;position:relative;"><canvas id="elevationChartMobile"></canvas></div>
+    </div>
+  </div>
   <!-- TREND INLINE PANEL MOBILE -->
   <div id="trendInlinePanelMobile" class="ti-collapsed">
     <div class="ti-header">
@@ -3870,7 +3932,6 @@ document.addEventListener('click', function(e){
     <div class="grid">
       <div class="card" id="kmRunnerCard" style="position:relative;"><h3>🏃‍♂️ Classifica 3D atleti (avanzamento=score top atleta, dimensione=km)</h3><button id="allTimeBtn" onclick="applyAllTimeDateFilter()" style="position:absolute;top:12px;left:12px;padding:6px 10px;background:#111827;color:#fff;border:none;border-radius:8px;font-size:0.86rem;font-weight:700;z-index:9;box-shadow:0 2px 8px #0003;">All time</button><button id="fastestBtn" onclick="cycleFastestRaceDistance()" style="position:absolute;top:12px;left:94px;padding:6px 10px;background:#111827;color:#fff;border:none;border-radius:8px;font-size:0.86rem;font-weight:700;z-index:9;box-shadow:0 2px 8px #0003;">Fastest</button><span id="fastestDistanceLabel" style="position:absolute;top:18px;left:180px;color:#fff;font-size:0.83rem;font-weight:800;z-index:9;text-shadow:0 1px 2px rgba(0,0,0,.45);"></span><canvas id="kmChart"></canvas><div id="kmTopRankingOverlay" style="position:absolute;left:12px;bottom:12px;max-width:min(44%,380px);min-width:240px;max-height:42%;overflow:auto;margin-top:10px;padding:10px;border:1px solid rgba(203,213,225,.55);border-radius:10px;background:rgba(255,255,255,0.22);font-size:0.78rem;line-height:1.4;color:#0f172a;z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.12);"></div><div id="chatGhostFeed"></div><div id="chatInlinePanel"><div id="chatInlinePanelHeader" onclick="toggleInlineChatPanel('desktop')" style="cursor:pointer;"><span>💬 Chat Team</span><div style="display:flex;align-items:center;gap:4px;"><select id="chatInlineSender" class="ci-sender-select" onchange="syncInlineSender('desktop')" onclick="event.stopPropagation()"></select><button class="ci-toggle-btn" onclick="event.stopPropagation();toggleInlineChatPanel('desktop')" title="Nascondi/Mostra">▼</button></div></div><div id="chatInlineMsgs"></div><div id="chatInlineSendArea"><input id="chatInlineInput" type="text" placeholder="Scrivi..." maxlength="200" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendInlineChatMessage();}"><button id="chatInlineSendBtn" onclick="sendInlineChatMessage()">➤</button></div></div></div>
       <div class="card" id="speedRunnerCard" style="position:relative;"><h3>Atleta più veloce (ripetute last 10)</h3><canvas id="speedChart"></canvas><div id="speedTopRankingOverlay" style="position:absolute;right:12px;bottom:12px;max-width:min(54%,460px);min-width:280px;max-height:42%;overflow:auto;margin-top:10px;padding:10px;border:1px solid rgba(203,213,225,.55);border-radius:10px;background:rgba(255,255,255,0.22);font-size:0.78rem;line-height:1.4;color:#0f172a;z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.12);"></div></div>
-      <div class="card"><h3>⛰️ Pendenza media per atleta (ultimi 15 gg)</h3><canvas id="elevationChart"></canvas></div>
       <div class="card"><h3>📊 Km/settimana</h3><canvas id="weeklyChart"></canvas></div>
       <div class="card"><h3>⚡ Sensazione Stanchezza</h3><canvas id="loadChart"></canvas></div>
       <div class="card"><h3>💓 Carico Cardiaco</h3><canvas id="trimpChart"></canvas></div>
@@ -3896,6 +3957,38 @@ document.addEventListener('click', function(e){
             </div>
             <div class="pi-kpi-row" id="pianoInlineKpi"></div>
             <div style="padding:0 10px 10px;height:180px;position:relative;"><canvas id="pianoInlineChart"></canvas></div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="grid-column:1/-1;padding:0;overflow:hidden;background:transparent;box-shadow:none;border:none;">
+        <div id="elevationInlinePanel" class="pi-collapsed">
+          <div class="pi-header">
+            <span style="flex:1;cursor:pointer;" onclick="toggleElevationInlinePanel()">&#x26F0;&#xFE0F; Dislivello per atleta</span>
+            <div style="display:flex;align-items:center;gap:5px;">
+              <select id="elevChartAthlete" class="pi-athlete-select" onchange="renderElevationChart(window._elevChartData)"><option value="all">Tutti</option></select>
+              <select id="elevChartGranularity" class="pi-athlete-select" onchange="renderElevationChart(window._elevChartData)">
+                <option value="athlete">Per atleta</option>
+                <option value="day">Giornaliero</option>
+                <option value="week">Settimanale</option>
+              </select>
+              <select id="elevChartPeriod" class="pi-athlete-select" onchange="renderElevationChart(window._elevChartData)">
+                <option value="15">15 gg</option>
+                <option value="30">30 gg</option>
+                <option value="90">90 gg</option>
+                <option value="365">Anno</option>
+              </select>
+              <button class="pi-toggle-btn" onclick="toggleElevationInlinePanel()" title="Nascondi/Mostra">▼</button>
+            </div>
+          </div>
+          <div class="pi-body">
+            <div class="pi-filter-row">
+              <label class="pi-filter-label">Da</label>
+              <input type="date" id="elevChartFrom" class="pi-date-input" oninput="renderElevationChart(window._elevChartData)">
+              <label class="pi-filter-label">A</label>
+              <input type="date" id="elevChartTo" class="pi-date-input" oninput="renderElevationChart(window._elevChartData)">
+              <button class="pi-ctrl-btn" onclick="document.getElementById('elevChartFrom').value='';document.getElementById('elevChartTo').value='';renderElevationChart(window._elevChartData)" title="Azzera filtri">✕</button>
+            </div>
+            <div style="padding:0 10px 10px;height:220px;position:relative;"><canvas id="elevationChart"></canvas></div>
           </div>
         </div>
       </div>
@@ -10179,96 +10272,349 @@ function updateKPI(data, acwr){
     if($id('mobileKpiHiking')) $id('mobileKpiHiking').textContent = avgHikingPct !== null ? avgHikingPct.toFixed(1)+'%' : '-';
   } catch(e) { console.warn('kpi hiking update failed', e); }
 }
-function renderElevationChart(allData) {
-  const canvas = $id('elevationChart');
-  if (!canvas) return;
-  if (charts['elevationChart']) { try { charts['elevationChart'].destroy(); } catch(e){} delete charts['elevationChart']; }
-
-  // Last 15 days window
+function _buildElevationChartData(opts) {
+  // opts: { periodSel, granSel, athSel, fromSel, toSel }
+  const days = parseInt($id(opts.periodSel)?.value || '15', 10);
+  const granularity = $id(opts.granSel)?.value || 'athlete';
+  const athleteFilter = $id(opts.athSel)?.value || 'all';
+  const manualFrom = $id(opts.fromSel)?.value || '';
+  const manualTo = $id(opts.toSel)?.value || '';
   const now = new Date();
-  const cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 14).toISOString().slice(0, 10);
+  const cutoff = manualFrom || new Date(now.getFullYear(), now.getMonth(), now.getDate() - (days - 1)).toISOString().slice(0, 10);
+  const ceiling = manualTo || '';
 
-  // Compute max pendenza% and max elevation per athlete over the last 15 days (elevation>0 and km>0)
-  const maxPctByAthlete = {};
-  const maxElevByAthlete = {};
-  (allData || []).forEach(d => {
-    if (!d.elevation || d.elevation <= 0 || !d.km || d.km <= 0) return;
+  const athSelEl = $id(opts.athSel);
+  if (athSelEl) {
+    const allAthletes = [...new Set((window._elevChartData || []).filter(d => d.elevation > 0).map(d => d.athlete))].sort();
+    if (athSelEl.options.length !== allAthletes.length + 1) {
+      athSelEl.innerHTML = '<option value="all">Tutti</option>' +
+        allAthletes.map(a => `<option value="${a}"${a === athleteFilter ? ' selected' : ''}>${a}</option>`).join('');
+    }
+  }
+
+  const rows = (window._elevChartData || []).filter(d => {
+    if (!d.elevation || d.elevation <= 0 || !d.km || d.km <= 0) return false;
     const dateStr = d.date ? String(d.date).slice(0, 10) : '';
-    if (dateStr < cutoff) return;
-    const pct = (d.elevation / (d.km * 1000)) * 100;
-    if (!maxPctByAthlete[d.athlete] || pct > maxPctByAthlete[d.athlete]) maxPctByAthlete[d.athlete] = pct;
-    if (!maxElevByAthlete[d.athlete] || d.elevation > maxElevByAthlete[d.athlete]) maxElevByAthlete[d.athlete] = d.elevation;
+    if (dateStr < cutoff) return false;
+    if (ceiling && dateStr > ceiling) return false;
+    if (athleteFilter !== 'all' && d.athlete !== athleteFilter) return false;
+    return true;
   });
 
-  const athletes = Object.keys(maxPctByAthlete);
+  let labels, sumData, maxData, bgColorsFn;
+  if (granularity === 'athlete') {
+    const sumMap = {}, maxMap = {};
+    rows.forEach(d => {
+      sumMap[d.athlete] = (sumMap[d.athlete] || 0) + d.elevation;
+      if (!maxMap[d.athlete] || d.elevation > maxMap[d.athlete]) maxMap[d.athlete] = d.elevation;
+    });
+    const sorted = Object.keys(sumMap).map(a => ({ a, s: sumMap[a], m: maxMap[a] })).sort((x, y) => x.s - y.s);
+    labels = sorted.map(o => o.a);
+    sumData = sorted.map(o => o.s);
+    maxData = sorted.map(o => o.m);
+    bgColorsFn = (_, i) => colors[i % colors.length];
+  } else if (granularity === 'day') {
+    const sumMap = {}, maxMap = {};
+    rows.forEach(d => {
+      const day = String(d.date).slice(0, 10);
+      sumMap[day] = (sumMap[day] || 0) + d.elevation;
+      if (!maxMap[day] || d.elevation > maxMap[day]) maxMap[day] = d.elevation;
+    });
+    labels = Object.keys(sumMap).sort();
+    sumData = labels.map(k => sumMap[k]);
+    maxData = labels.map(k => maxMap[k]);
+    bgColorsFn = () => colors[0];
+  } else {
+    const sumMap = {}, maxMap = {};
+    rows.forEach(d => {
+      const date = new Date(String(d.date).slice(0, 10));
+      const jan4 = new Date(date.getFullYear(), 0, 4);
+      const weekNum = Math.ceil(((date - jan4) / 86400000 + jan4.getDay() + 1) / 7);
+      const key = `${date.getFullYear()}-S${String(weekNum).padStart(2,'0')}`;
+      sumMap[key] = (sumMap[key] || 0) + d.elevation;
+      if (!maxMap[key] || d.elevation > maxMap[key]) maxMap[key] = d.elevation;
+    });
+    labels = Object.keys(sumMap).sort();
+    sumData = labels.map(k => sumMap[k]);
+    maxData = labels.map(k => maxMap[k]);
+    bgColorsFn = () => colors[2];
+  }
+  return { labels, sumData, maxData, bgColorsFn, granularity };
+}
+
+function _renderElevationChartCore(canvasId, chartKey, opts) {
+  const canvas = $id(canvasId);
+  if (!canvas) return;
+  if (charts[chartKey]) { try { charts[chartKey].destroy(); } catch(e){} delete charts[chartKey]; }
+
+  const isMobilePeak = opts.mountainPeaks === true;
   const isDark = document.body.classList.contains('dark-mode');
-  const dataPct = athletes.map(a => Math.round(maxPctByAthlete[a] * 10) / 10);
-  const dataElev = athletes.map(a => maxElevByAthlete[a] || 0);
-  const bgColors = athletes.map((_, i) => colors[i % colors.length]);
-  const bgColorsElev = athletes.map((_, i) => colors[i % colors.length] + '66');
+  const { labels, sumData, maxData, bgColorsFn, granularity } = _buildElevationChartData(opts);
+
+  if (!labels.length) {
+    const ctx2 = canvas.getContext('2d');
+    ctx2.clearRect(0, 0, canvas.width, canvas.height);
+    ctx2.fillStyle = isDark ? '#64748b' : '#94a3b8';
+    ctx2.font = '14px sans-serif';
+    ctx2.textAlign = 'center';
+    ctx2.fillText('Nessun dato dislivello nel periodo', canvas.width / 2, 60);
+    return;
+  }
+
+  const bgColors = labels.map((l, i) => bgColorsFn(l, i));
+  const bgColorsMax = bgColors.map(c => c + '66');
+
+  // Preload avatars
+  const avatarImgs = {};
+  if (granularity === 'athlete') {
+    labels.forEach(name => {
+      const src = (typeof athleteDetails !== 'undefined' && athleteDetails[name]?.avatar) || '';
+      if (src) { const img = new Image(); img.src = src; avatarImgs[name] = img; }
+    });
+  }
+
+  // Hiking SVG background
+  const hikingSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 160" width="200" height="160"><g stroke="#94a3b8" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.18"><polyline points="0,155 55,60 85,95 120,30 160,80 200,55 200,155"/><circle cx="102" cy="24" r="5"/><line x1="102" y1="29" x2="102" y2="45"/><line x1="102" y1="33" x2="95" y2="40"/><line x1="102" y1="33" x2="112" y2="37"/><line x1="102" y1="45" x2="96" y2="55"/><line x1="102" y1="45" x2="108" y2="55"/><line x1="95" y1="40" x2="88" y2="55"/><line x1="112" y1="37" x2="118" y2="52"/></g></svg>`;
+  const bgImg = new Image();
+  bgImg.src = 'data:image/svg+xml;base64,' + btoa(hikingSvg);
+
+  // Mountain-peak plugin: replaces bars with triangular mountain silhouettes
+  const mountainPlugin = {
+    id: 'mountainPeakPlugin',
+    beforeDraw(chart) {
+      const { ctx, chartArea: { left, top, right, bottom } } = chart;
+      const w = right - left, h = bottom - top;
+      if (bgImg.complete) {
+        ctx.save(); ctx.globalAlpha = 0.13;
+        const scale = Math.max(w / bgImg.width, h / bgImg.height) * 0.7;
+        const bw = bgImg.width * scale, bh = bgImg.height * scale;
+        ctx.drawImage(bgImg, left + w / 2 - bw / 2, top + h / 2 - bh / 2, bw, bh);
+        ctx.restore();
+      }
+    },
+    afterDraw(chart) {
+      const { ctx, scales: { x, ySum }, chartArea } = chart;
+      if (!x || !ySum) return;
+
+      // Draw mountain peaks for dataset 0 (sum)
+      const meta0 = chart.getDatasetMeta(0);
+      if (!meta0 || !meta0.data) return;
+
+      if (isMobilePeak) {
+        // Hide real bars by overdrawing with background
+        meta0.data.forEach(bar => {
+          const meta1 = chart.getDatasetMeta(1);
+          if (meta1 && meta1.data[meta0.data.indexOf(bar)]) {
+            // will be redrawn as peaks below
+          }
+        });
+      }
+
+      meta0.data.forEach((bar, i) => {
+        if (!isMobilePeak) return; // peaks only on mobile
+        const barW = bar.width || 30;
+        const peakX = bar.x;
+        const peakY = bar.y;
+        const baseY = chartArea.bottom;
+        const halfW = Math.max(barW * 0.9, 18);
+
+        // Gradient fill
+        const grad = ctx.createLinearGradient(peakX, peakY, peakX, baseY);
+        grad.addColorStop(0, bgColors[i] || '#60a5fa');
+        grad.addColorStop(0.55, (bgColors[i] || '#60a5fa') + 'aa');
+        grad.addColorStop(1, (bgColors[i] || '#60a5fa') + '22');
+
+        // Main peak triangle
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(peakX - halfW, baseY);
+        ctx.lineTo(peakX, peakY);
+        ctx.lineTo(peakX + halfW, baseY);
+        ctx.closePath();
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        // Snow cap
+        const snowH = Math.min((baseY - peakY) * 0.18, 18);
+        if (snowH > 3) {
+          const snowY = peakY + snowH;
+          const snowW = halfW * (snowH / (baseY - peakY));
+          ctx.beginPath();
+          ctx.moveTo(peakX - snowW, snowY);
+          ctx.lineTo(peakX, peakY);
+          ctx.lineTo(peakX + snowW, snowY);
+          ctx.closePath();
+          ctx.fillStyle = 'rgba(255,255,255,0.82)';
+          ctx.fill();
+        }
+
+        // Peak outline
+        ctx.beginPath();
+        ctx.moveTo(peakX - halfW, baseY);
+        ctx.lineTo(peakX, peakY);
+        ctx.lineTo(peakX + halfW, baseY);
+        ctx.strokeStyle = bgColors[i] || '#93c5fd';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.restore();
+
+        // Avatar or initials above peak
+        const avatarSize = 24;
+        const name = chart.data.labels[i];
+        const img = avatarImgs[name];
+        const ax = peakX - avatarSize / 2;
+        const ay = peakY - avatarSize - 3;
+        if (ay < chartArea.top) return;
+        if (img && img.complete && img.naturalWidth > 0) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(peakX, ay + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
+          ctx.clip();
+          ctx.drawImage(img, ax, ay, avatarSize, avatarSize);
+          ctx.restore();
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(peakX, ay + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
+          ctx.strokeStyle = bgColors[i] || '#fff';
+          ctx.lineWidth = 1.5; ctx.stroke();
+          ctx.restore();
+        } else {
+          const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(peakX, ay + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
+          ctx.fillStyle = bgColors[i] || '#64748b'; ctx.fill();
+          ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 1.5; ctx.stroke();
+          ctx.fillStyle = '#fff';
+          ctx.font = `bold ${Math.round(avatarSize * 0.38)}px sans-serif`;
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(initials, peakX, ay + avatarSize / 2);
+          ctx.restore();
+        }
+      });
+
+      // Avatar-only pass for desktop (no peak replacement)
+      if (!isMobilePeak && granularity === 'athlete') {
+        meta0.data.forEach((bar, i) => {
+          const name = chart.data.labels[i];
+          const img = avatarImgs[name];
+          const avatarSize = 28;
+          const ay = bar.y - avatarSize - 4;
+          if (ay < chartArea.top) return;
+          if (img && img.complete && img.naturalWidth > 0) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(bar.x, ay + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
+            ctx.clip();
+            ctx.drawImage(img, bar.x - avatarSize / 2, ay, avatarSize, avatarSize);
+            ctx.restore();
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(bar.x, ay + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
+            ctx.strokeStyle = bgColors[i] || '#fff'; ctx.lineWidth = 2; ctx.stroke();
+            ctx.restore();
+          } else {
+            const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(bar.x, ay + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
+            ctx.fillStyle = bgColors[i] || '#64748b'; ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 1.5; ctx.stroke();
+            ctx.fillStyle = '#fff';
+            ctx.font = `bold ${Math.round(avatarSize * 0.38)}px sans-serif`;
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(initials, bar.x, ay + avatarSize / 2);
+            ctx.restore();
+          }
+        });
+      }
+    }
+  };
+
+  const barAlpha = isMobilePeak ? '00' : ''; // transparent bars on mobile (peaks drawn by plugin)
+  const ds0BgColors = isMobilePeak ? bgColors.map(c => c + '00') : bgColors;
+  const ds0BorderColors = isMobilePeak ? bgColors.map(c => c + '00') : bgColors;
 
   try {
     const ctx = canvas.getContext('2d', { willReadFrequently: true, preserveDrawingBuffer: true });
-    charts['elevationChart'] = new Chart(ctx, {
+    charts[chartKey] = new Chart(ctx, {
       type: 'bar',
+      plugins: [mountainPlugin],
       data: {
-        labels: athletes,
+        labels,
         datasets: [
           {
-            label: '% pendenza max',
-            data: dataPct,
-            backgroundColor: bgColors,
-            borderColor: bgColors,
-            borderWidth: 1,
-            borderRadius: 6,
-            yAxisID: 'yPct'
+            label: '\u03a3 Dislivello (m)',
+            data: sumData,
+            backgroundColor: ds0BgColors,
+            borderColor: ds0BorderColors,
+            borderWidth: isMobilePeak ? 0 : 1,
+            borderRadius: isMobilePeak ? 0 : 6,
+            yAxisID: 'ySum'
           },
           {
             label: 'Dislivello max (m)',
-            data: dataElev,
-            backgroundColor: bgColorsElev,
-            borderColor: bgColors,
-            borderWidth: 1,
-            borderRadius: 6,
-            borderDash: [],
-            yAxisID: 'yElev'
+            data: maxData,
+            backgroundColor: isMobilePeak ? bgColorsMax.map(c => c.slice(0,-2) + '00') : bgColorsMax,
+            borderColor: isMobilePeak ? bgColors.map(c => c + '00') : bgColors,
+            borderWidth: isMobilePeak ? 0 : 1,
+            borderRadius: isMobilePeak ? 0 : 6,
+            yAxisID: 'yMax'
           }
         ]
       },
       options: {
         responsive: true,
         maintainAspectRatio: true,
+        layout: { padding: { top: granularity === 'athlete' ? 40 : 10, bottom: isMobilePeak ? 8 : 4 } },
         plugins: {
           legend: { labels: { color: isDark ? '#cbd5e1' : '#1e3c72', font: { size: 10, weight: 'bold' } } },
           tooltip: {
             callbacks: {
-              label: ctx => ctx.dataset.yAxisID === 'yPct'
-                ? `Pendenza max: ${ctx.parsed.y.toFixed(1)}%`
-                : `Dislivello max: ${ctx.parsed.y} m`
+              label: c => c.dataset.yAxisID === 'ySum'
+                ? `\u03a3 Dislivello: ${c.parsed.y} m`
+                : `Max dislivello: ${c.parsed.y} m`
             }
           }
         },
         scales: {
-          x: { ticks: { color: isDark ? '#cbd5e1' : '#334155' } },
-          yPct: {
-            type: 'linear',
-            position: 'left',
-            beginAtZero: true,
-            ticks: { color: isDark ? '#cbd5e1' : '#334155', callback: v => v.toFixed(1) + '%' },
-            title: { display: true, text: '% pendenza', color: isDark ? '#94a3b8' : '#64748b', font: { size: 11 } }
+          x: { ticks: { color: isDark ? '#cbd5e1' : '#334155', maxRotation: 45 } },
+          ySum: {
+            type: 'linear', position: 'left', beginAtZero: true,
+            ticks: { color: isDark ? '#cbd5e1' : '#334155', callback: v => v + ' m' },
+            title: { display: !isMobilePeak, text: '\u03a3 Dislivello (m)', color: isDark ? '#94a3b8' : '#64748b', font: { size: 11 } }
           },
-          yElev: {
-            type: 'linear',
-            position: 'right',
-            beginAtZero: true,
+          yMax: {
+            type: 'linear', position: 'right', beginAtZero: true,
             grid: { drawOnChartArea: false },
             ticks: { color: isDark ? '#94a3b8' : '#64748b', callback: v => v + ' m' },
-            title: { display: true, text: 'Dislivello (m)', color: isDark ? '#94a3b8' : '#64748b', font: { size: 11 } }
+            title: { display: !isMobilePeak, text: 'Max (m)', color: isDark ? '#94a3b8' : '#64748b', font: { size: 11 } }
           }
         }
       }
     });
+    // Redraw after images load
+    const redraw = () => { try { charts[chartKey]?.update(); } catch(e){} };
+    Object.values(avatarImgs).forEach(img => { if (!img.complete) img.onload = redraw; });
+    if (!bgImg.complete) bgImg.onload = redraw;
   } catch(e) { console.warn('renderElevationChart error', e); }
+}
+
+function renderElevationChart(allData) {
+  window._elevChartData = allData || window._elevChartData || [];
+  _renderElevationChartCore('elevationChart', 'elevationChart', {
+    periodSel: 'elevChartPeriod', granSel: 'elevChartGranularity',
+    athSel: 'elevChartAthlete', fromSel: 'elevChartFrom', toSel: 'elevChartTo',
+    mountainPeaks: false
+  });
+}
+
+function renderElevationChartMobile() {
+  _renderElevationChartCore('elevationChartMobile', 'elevationChartMobile', {
+    periodSel: 'elevChartPeriodMobile', granSel: 'elevChartGranularityMobile',
+    athSel: 'elevChartAthleteMobile', fromSel: 'elevChartFromMobile', toSel: 'elevChartToMobile',
+    mountainPeaks: true
+  });
 }
 
 function updateCharts(){
@@ -10518,6 +10864,7 @@ function updateCharts(){
 
   // Pendenza media per atleta (ultimi 15 gg)
   renderElevationChart(combinedData);
+  renderElevationChartMobile();
 
   if(topRankingTarget){
     // Show all athletes for the first 3D chart overlay
@@ -12782,6 +13129,22 @@ function openPianoAdd(which) {
       if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
   }
+}
+
+function toggleElevationInlinePanel() {
+  const el = document.getElementById('elevationInlinePanel');
+  if (!el) return;
+  el.classList.toggle('pi-collapsed');
+  try { localStorage.setItem('elevationInlineCollapsed', el.classList.contains('pi-collapsed') ? '1' : '0'); } catch(e) {}
+  if (!el.classList.contains('pi-collapsed')) renderElevationChart(window._elevChartData);
+}
+
+function toggleElevationInlinePanelMobile() {
+  const el = document.getElementById('elevationInlinePanelMobile');
+  if (!el) return;
+  el.classList.toggle('pi-collapsed');
+  try { localStorage.setItem('elevationInlineCollapsedMobile', el.classList.contains('pi-collapsed') ? '1' : '0'); } catch(e) {}
+  if (!el.classList.contains('pi-collapsed')) renderElevationChartMobile();
 }
 
 function togglePianoInlinePanel(which) {
