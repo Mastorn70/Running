@@ -6539,6 +6539,7 @@ function loadAthletes(){
   if(d) {
     try { athleteDetails = JSON.parse(d) || {}; } catch(e) { athleteDetails = {}; }
   }
+  window.athletes = athletes;
   updateAthletesUI();
 }
 function saveAthletes(){
@@ -6728,6 +6729,9 @@ function updateAthletesUI(){
       `<img src="${src}" alt="avatar" title="Scegli" style="width:42px;height:42px;border-radius:50%;margin:2px;cursor:pointer;border:3px solid ${selectedAvatar===src?'#6366f1':'#e5e7eb'};box-shadow:0 1px 4px #0002;object-fit:cover;transition:box-shadow .2s,border .2s;flex:0 0 auto;" onclick="selectAthleteAvatar(${idx},'${src}')">`
     ).join('');
   });
+  window.athletes = athletes;
+  const voiceAthlSel = document.getElementById('voiceFieldAthlete');
+  if(voiceAthlSel){ const _vv=voiceAthlSel.value; voiceAthlSel.innerHTML='<option value="">-- Atleta --</option>'+athletes.map(a=>`<option value="${a}"${a===_vv?' selected':''}>${a}</option>`).join(''); }
   const ripSel = $id('ripAthlete');
   if(ripSel) ripSel.innerHTML = athletes.map(a=>`<option value="${a}">${a}</option>`).join('');
   const ta1=$id('trendAthlete1'), ta2=$id('trendAthlete2'), pa=$id('predictionAthlete');
@@ -13178,20 +13182,51 @@ window.addEventListener('DOMContentLoaded', function(){
       set('mobileSessionHh', _hh ? String(_hh) : '');
       set('mobileSessionMm', _mm ? String(_mm) : '');
       set('mobileSessionSs', _ss ? String(_ss) : '');
-      set('mobileSessionRpe', rpe);
-      set('mobileSessionHr', hr);
+      // RPE: usa valore vocale se presente, altrimenti minimo (3)
+      const effectiveRpe = rpe || '3';
+      set('mobileSessionRpe', effectiveRpe);
+      // HR: usa valore vocale se presente, altrimenti minimo (120)
+      const effectiveHr = hr || '120';
+      set('mobileSessionHr', effectiveHr);
       setSel('mobileSessionSport', sport);
       setSel('mobileSessionActivityType', aType);
       setSel('mobileSessionRaceDistance', raceDistance);
       set('mobileSessionNote', note);
-      // Recompute score preview
+      // Calcola passo automaticamente da km e minuti se non fornito
       try{
-        const scoreEl = document.getElementById('mobileSessionScore');
-        if(scoreEl && km && (minutes || 0)){
-          const s = Number(km||0) * Number(rpe||5);
-          scoreEl.value = isNaN(s) ? '' : s.toFixed(0);
+        const kmNum = Number(km||0);
+        const minNum = Number(minutes||0);
+        const paceEl = document.getElementById('mobileSessionPace');
+        if(paceEl && kmNum > 0 && minNum > 0){
+          if(typeof formatMinutesToPaceDisplay === 'function'){
+            paceEl.value = formatMinutesToPaceDisplay(minNum / kmNum);
+          } else {
+            const rawPace = minNum / kmNum;
+            const pMin = Math.floor(rawPace);
+            const pSec = Math.round((rawPace - pMin) * 60);
+            paceEl.value = pMin + '.' + String(pSec).padStart(2,'0');
+          }
         }
       }catch(e){}
+      // Calcola score con la funzione ufficiale del modale
+      try{
+        if(typeof computeMobileSessionModalScore === 'function'){
+          computeMobileSessionModalScore();
+        } else {
+          const scoreEl = document.getElementById('mobileSessionScore');
+          const kmNum = Number(km||0);
+          const minNum = Number(minutes||0);
+          if(scoreEl && kmNum > 0 && minNum > 0){
+            const speed = kmNum / (minNum / 60);
+            scoreEl.value = isFinite(speed) ? (kmNum * speed).toFixed(2) : '-';
+          }
+        }
+      }catch(e){}
+      // Triggera gli input listener del modale per aggiornare score e passo
+      ['mobileSessionKm','mobileSessionHh','mobileSessionMm','mobileSessionSs'].forEach(id=>{
+        const el = document.getElementById(id);
+        if(el) el.dispatchEvent(new Event('input', {bubbles:true}));
+      });
     }, 80);
   };
 })();
