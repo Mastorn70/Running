@@ -2935,6 +2935,9 @@ function addRowFromImportedData(row) {
         <label>A:
           <input type="date" id="mobileDateTo">
         </label>
+        <label>Attività grafico 3D:
+          <select id="km3DActivityFilterMobile" style="width:100%;margin-top:4px;padding:7px 10px;border-radius:8px;border:1px solid #e2e8f0;font-size:1em;"><option value="corsa">🏃 Corsa</option></select>
+        </label>
         <button onclick="applyMobileFilters()" style="margin-top:10px;background:#6366f1;color:#fff;padding:8px 0;border-radius:8px;font-weight:700;">Applica</button>
       </div>
     </div>
@@ -3068,6 +3071,8 @@ function addRowFromImportedData(row) {
         <input type="date" id="pianoInlineFromMobile" class="pi-date-input" oninput="renderInlinePianoPanel('mobile')">
         <label class="pi-filter-label">A</label>
         <input type="date" id="pianoInlineToMobile" class="pi-date-input" oninput="renderInlinePianoPanel('mobile')">
+        <label class="pi-filter-label">Sport</label>
+        <select id="pianoInlineSportMobile" class="pi-athlete-select" onchange="renderInlinePianoPanel('mobile')"></select>
         <button class="pi-ctrl-btn" onclick="document.getElementById('pianoInlineFromMobile').value='';document.getElementById('pianoInlineToMobile').value='';renderInlinePianoPanel('mobile')" title="Azzera filtri">✕</button>
       </div>
       <div class="pi-kpi-row" id="pianoInlineKpiMobile"></div>
@@ -3129,6 +3134,8 @@ function addRowFromImportedData(row) {
           <option value="weekly">Settimanale</option>
           <option value="daily">Giornaliero</option>
         </select>
+        <label class="pi-filter-label">Sport</label>
+        <select id="trendInlineSportMobile" class="pi-athlete-select" onchange="renderTrendInlinePanelMobile()"></select>
       </div>
       <div class="pi-filter-row">
         <label class="pi-filter-label">Da</label>
@@ -3440,6 +3447,14 @@ function openMobileFilterModal() {
   // Sincronizza date
   document.getElementById('mobileDateFrom').value = document.getElementById('dateFrom').value;
   document.getElementById('mobileDateTo').value = document.getElementById('dateTo').value;
+  // Sync attività 3D select with current value
+  const act3DSel = document.getElementById('km3DActivityFilterMobile');
+  if (act3DSel) {
+    const allSportTypes = [...new Set((getData()||[]).map(d=>String(d.type||'').trim().toLowerCase()).filter(Boolean))].sort();
+    const cur = window.__km3DActFilter || 'corsa';
+    act3DSel.innerHTML = allSportTypes.map(s=>`<option value="${s}">${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('') + '<option value="all">Tutti</option>';
+    act3DSel.value = allSportTypes.includes(cur) ? cur : (allSportTypes.includes('corsa') ? 'corsa' : (allSportTypes[0]||'all'));
+  }
 }
 function closeMobileFilterModal() {
   document.getElementById('mobileFilterModal').style.display = 'none';
@@ -3451,6 +3466,9 @@ function applyMobileFilters() {
   if(document.getElementById('athleteFilter')) document.getElementById('athleteFilter').value = 'all';
   document.getElementById('dateFrom').value = document.getElementById('mobileDateFrom').value;
   document.getElementById('dateTo').value = document.getElementById('mobileDateTo').value;
+  // Salva selezione attività 3D
+  const act3DSel = document.getElementById('km3DActivityFilterMobile');
+  if (act3DSel && act3DSel.value) window.__km3DActFilter = act3DSel.value;
   updateAllTimeButtonState();
   updateCharts();
   updateMobileCharts();
@@ -3930,7 +3948,7 @@ document.addEventListener('click', function(e){
     </div>
 
     <div class="grid">
-      <div class="card" id="kmRunnerCard" style="position:relative;"><h3>🏃‍♂️ Classifica 3D atleti (avanzamento=score top atleta, dimensione=km)</h3><button id="allTimeBtn" onclick="applyAllTimeDateFilter()" style="position:absolute;top:12px;left:12px;padding:6px 10px;background:#111827;color:#fff;border:none;border-radius:8px;font-size:0.86rem;font-weight:700;z-index:9;box-shadow:0 2px 8px #0003;">All time</button><button id="fastestBtn" onclick="cycleFastestRaceDistance()" style="position:absolute;top:12px;left:94px;padding:6px 10px;background:#111827;color:#fff;border:none;border-radius:8px;font-size:0.86rem;font-weight:700;z-index:9;box-shadow:0 2px 8px #0003;">Fastest</button><span id="fastestDistanceLabel" style="position:absolute;top:18px;left:180px;color:#fff;font-size:0.83rem;font-weight:800;z-index:9;text-shadow:0 1px 2px rgba(0,0,0,.45);"></span><canvas id="kmChart"></canvas><div id="kmTopRankingOverlay" style="position:absolute;left:12px;bottom:12px;max-width:min(44%,380px);min-width:240px;max-height:42%;overflow:auto;margin-top:10px;padding:10px;border:1px solid rgba(203,213,225,.55);border-radius:10px;background:rgba(255,255,255,0.22);font-size:0.78rem;line-height:1.4;color:#0f172a;z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.12);"></div><div id="chatGhostFeed"></div><div id="chatInlinePanel"><div id="chatInlinePanelHeader" onclick="toggleInlineChatPanel('desktop')" style="cursor:pointer;"><span>💬 Chat Team</span><div style="display:flex;align-items:center;gap:4px;"><select id="chatInlineSender" class="ci-sender-select" onchange="syncInlineSender('desktop')" onclick="event.stopPropagation()"></select><button class="ci-toggle-btn" onclick="event.stopPropagation();toggleInlineChatPanel('desktop')" title="Nascondi/Mostra">▼</button></div></div><div id="chatInlineMsgs"></div><div id="chatInlineSendArea"><input id="chatInlineInput" type="text" placeholder="Scrivi..." maxlength="200" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendInlineChatMessage();}"><button id="chatInlineSendBtn" onclick="sendInlineChatMessage()">➤</button></div></div></div>
+      <div class="card" id="kmRunnerCard" style="position:relative;"><h3>🏃‍♂️ Classifica 3D atleti (avanzamento=score top atleta, dimensione=km)</h3><button id="allTimeBtn" onclick="applyAllTimeDateFilter()" style="position:absolute;top:12px;left:12px;padding:6px 10px;background:#111827;color:#fff;border:none;border-radius:8px;font-size:0.86rem;font-weight:700;z-index:9;box-shadow:0 2px 8px #0003;">All time</button><button id="fastestBtn" onclick="cycleFastestRaceDistance()" style="position:absolute;top:12px;left:94px;padding:6px 10px;background:#111827;color:#fff;border:none;border-radius:8px;font-size:0.86rem;font-weight:700;z-index:9;box-shadow:0 2px 8px #0003;">Fastest</button><span id="fastestDistanceLabel" style="position:absolute;top:18px;left:180px;color:#fff;font-size:0.83rem;font-weight:800;z-index:9;text-shadow:0 1px 2px rgba(0,0,0,.45);"></span><select id="km3DActivityFilter" onchange="updateCharts()" style="position:absolute;top:12px;right:12px;padding:5px 8px;background:#1e293b;color:#e2e8f0;border:1px solid rgba(99,102,241,0.5);border-radius:8px;font-size:0.8rem;font-weight:600;z-index:9;cursor:pointer;"><option value="corsa">🏃 Corsa</option></select><canvas id="kmChart"></canvas><div id="kmTopRankingOverlay" style="position:absolute;left:12px;bottom:12px;max-width:min(44%,380px);min-width:240px;max-height:42%;overflow:auto;margin-top:10px;padding:10px;border:1px solid rgba(203,213,225,.55);border-radius:10px;background:rgba(255,255,255,0.22);font-size:0.78rem;line-height:1.4;color:#0f172a;z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.12);"></div><div id="chatGhostFeed"></div><div id="chatInlinePanel"><div id="chatInlinePanelHeader" onclick="toggleInlineChatPanel('desktop')" style="cursor:pointer;"><span>💬 Chat Team</span><div style="display:flex;align-items:center;gap:4px;"><select id="chatInlineSender" class="ci-sender-select" onchange="syncInlineSender('desktop')" onclick="event.stopPropagation()"></select><button class="ci-toggle-btn" onclick="event.stopPropagation();toggleInlineChatPanel('desktop')" title="Nascondi/Mostra">▼</button></div></div><div id="chatInlineMsgs"></div><div id="chatInlineSendArea"><input id="chatInlineInput" type="text" placeholder="Scrivi..." maxlength="200" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendInlineChatMessage();}"><button id="chatInlineSendBtn" onclick="sendInlineChatMessage()">➤</button></div></div></div>
       <div class="card" id="speedRunnerCard" style="position:relative;"><h3>Atleta più veloce (ripetute last 10)</h3><canvas id="speedChart"></canvas><div id="speedTopRankingOverlay" style="position:absolute;right:12px;bottom:12px;max-width:min(54%,460px);min-width:280px;max-height:42%;overflow:auto;margin-top:10px;padding:10px;border:1px solid rgba(203,213,225,.55);border-radius:10px;background:rgba(255,255,255,0.22);font-size:0.78rem;line-height:1.4;color:#0f172a;z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.12);"></div></div>
       <div class="card"><h3>📊 Km/settimana</h3><canvas id="weeklyChart"></canvas></div>
       <div class="card"><h3>⚡ Sensazione Stanchezza</h3><canvas id="loadChart"></canvas></div>
@@ -3953,6 +3971,8 @@ document.addEventListener('click', function(e){
               <input type="date" id="pianoInlineFrom" class="pi-date-input" oninput="renderInlinePianoPanel('desktop')">
               <label class="pi-filter-label">A</label>
               <input type="date" id="pianoInlineTo" class="pi-date-input" oninput="renderInlinePianoPanel('desktop')">
+              <label class="pi-filter-label">Sport</label>
+              <select id="pianoInlineSport" class="pi-athlete-select" onchange="renderInlinePianoPanel('desktop')"></select>
               <button class="pi-ctrl-btn" onclick="document.getElementById('pianoInlineFrom').value='';document.getElementById('pianoInlineTo').value='';renderInlinePianoPanel('desktop')" title="Azzera filtri">✕</button>
             </div>
             <div class="pi-kpi-row" id="pianoInlineKpi"></div>
@@ -10487,6 +10507,33 @@ function updateCharts(){
   const byA = {};
   (baseDataForAthleteGrouping || []).forEach(d => { if(!byA[d.athlete]) byA[d.athlete] = []; byA[d.athlete].push(d); });
 
+  // Activity filter for km/speed in 3D chart (score always uses all activities)
+  const km3DActEl = $id('km3DActivityFilter');
+  const km3DActElM = $id('km3DActivityFilterMobile');
+  // Populate both selects with unique type values from data
+  const allTypes = [...new Set((combinedData||[]).map(d => String(d.type||'').trim().toLowerCase()).filter(Boolean))].sort();
+  const sportIcons = { corsa:'🏃', bici:'🚴', nuoto:'🏊', palestra:'💪', sci:'⛷️', trail:'🏔️' };
+  const km3DOptionsHtml = allTypes.map(t => `<option value="${t}">${(sportIcons[t]||'▸')} ${t.charAt(0).toUpperCase()+t.slice(1)}</option>`).join('') +
+    '<option value="all">Tutti</option>';
+  const populateKm3DSelect = (sel, preserveVal) => {
+    if (!sel) return;
+    sel.innerHTML = km3DOptionsHtml;
+    sel.value = allTypes.includes(preserveVal) ? preserveVal : (allTypes.includes('corsa') ? 'corsa' : (allTypes[0] || 'all'));
+  };
+  // Use a persistent variable to remember the selection across updateCharts() calls
+  if (!window.__km3DActFilter) window.__km3DActFilter = 'corsa';
+  // If a select exists and has a value that differs from the stored one, the user changed it
+  if (km3DActEl && km3DActEl.options.length > 1 && km3DActEl.value && km3DActEl.value !== window.__km3DActFilter) window.__km3DActFilter = km3DActEl.value;
+  if (km3DActElM && km3DActElM.options.length > 1 && km3DActElM.value && km3DActElM.value !== window.__km3DActFilter) window.__km3DActFilter = km3DActElM.value;
+  populateKm3DSelect(km3DActEl, window.__km3DActFilter);
+  populateKm3DSelect(km3DActElM, window.__km3DActFilter);
+  const km3DActFilter = (km3DActEl||km3DActElM)?.value || window.__km3DActFilter || 'corsa';
+  window.__km3DActFilter = km3DActFilter;
+  const filterRowsByActivity = rows => km3DActFilter === 'all' ? rows : (rows || []).filter(r => {
+    const act = String(r.type || r.activityType || '').toLowerCase();
+    return act === km3DActFilter;
+  });
+
   const loadWeightedByKm = rows => {
     const weightedMinutes = rows.reduce((s,v)=>{
       const km = parseFloat(v.km) || 0;
@@ -10544,7 +10591,7 @@ function updateCharts(){
     return;
   }
 
-  let kmRankingTitle = 'Classifica Top atleta';
+  let kmRankingTitle = km3DActFilter === 'all' ? 'Classifica Top atleta' : `Classifica Top atleta — ${km3DActFilter.charAt(0).toUpperCase()+km3DActFilter.slice(1)}`;
   let kmRanking = [];
   if(activeFastestDistance){
     kmRankingTitle = `Classifica Fastest ${activeFastestDistance.label}`;
@@ -10580,10 +10627,11 @@ function updateCharts(){
   } else {
     kmRanking = Object.keys(byA).map((ath) => {
       const rows = byA[ath] || [];
-      const kmSum = rows.reduce((sum, s) => sum + (Number(s.km) || 0), 0);
-      const speedRef = speedWeightedByKm(rows || []);
-      const load = loadWeightedByKm(rows || []);
-      // compute topScore by summing per-row scores (km * speed * multiplier)
+      const filteredRows = filterRowsByActivity(rows);
+      const kmSum = filteredRows.reduce((sum, s) => sum + (Number(s.km) || 0), 0);
+      const speedRef = speedWeightedByKm(filteredRows);
+      const load = loadWeightedByKm(filteredRows);
+      // topScore uses ALL rows (all activities) — it's a total work metric
       const topScore = rows.reduce((acc, v) => {
         try{
           const km = Number(v.km || 0);
@@ -11449,12 +11497,22 @@ function renderTrendInlinePanelMobile() {
     const period = ($id('trendInlinePeriodMobile') || {}).value || 'weekly';
     const from = ($id('trendInlineFromMobile') || {}).value || '';
     const to = ($id('trendInlineToMobile') || {}).value || '';
+    // Populate + read sport filter
+    const sportSel = $id('trendInlineSportMobile');
+    if (sportSel) {
+      const allSportTypes = [...new Set((data||[]).map(d=>String(d.type||'').trim().toLowerCase()).filter(Boolean))].sort();
+      const prevSport = sportSel.value || 'all';
+      sportSel.innerHTML = '<option value="all">Tutti</option>' + allSportTypes.map(s=>`<option value="${s}">${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('');
+      sportSel.value = allSportTypes.includes(prevSport) ? prevSport : (allSportTypes.includes('corsa') ? 'corsa' : 'all');
+    }
+    const sport = sportSel?.value || 'all';
 
     function filterRows(athlete) {
       return data.filter(d => {
         if (d.athlete !== athlete) return false;
         if (from && d.date < from) return false;
         if (to && d.date > to) return false;
+        if (sport !== 'all' && (d.type||'').toLowerCase() !== sport) return false;
         return true;
       }).sort((a, b) => a.date.localeCompare(b.date));
     }
@@ -13033,11 +13091,22 @@ function renderInlinePianoPanel(which) {
   if (!athleteEl || !kpiEl) return;
   const athlete = athleteEl.value;
   if (!athlete) { kpiEl.innerHTML = ''; return; }
+  // Populate sport filter selects
+  const sportSelId = isMobile ? 'pianoInlineSportMobile' : 'pianoInlineSport';
+  const sportSel = document.getElementById(sportSelId);
+  if (sportSel) {
+    const allSportTypes = [...new Set((getDataRaw()||[]).map(d=>String(d.type||'').trim().toLowerCase()).filter(Boolean))].sort();
+    const prevSport = sportSel.value || 'all';
+    sportSel.innerHTML = '<option value="all">Tutti</option>' + allSportTypes.map(s=>`<option value="${s}">${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('');
+    sportSel.value = allSportTypes.includes(prevSport) ? prevSport : 'all';
+  }
+  const sportFilter = sportSel?.value || 'all';
   const agg = pianoBuildAggregated(
     athlete,
     _pianoInlineGranularity,
     (document.getElementById(isMobile ? 'pianoInlineFromMobile' : 'pianoInlineFrom') || {}).value || '',
-    (document.getElementById(isMobile ? 'pianoInlineToMobile' : 'pianoInlineTo') || {}).value || ''
+    (document.getElementById(isMobile ? 'pianoInlineToMobile' : 'pianoInlineTo') || {}).value || '',
+    sportFilter
   );
   const keys = agg.keys, buckets = agg.buckets;
   if (!keys || !keys.length) {
@@ -13159,13 +13228,17 @@ function pianoWeekKey(dateStr){
 }
 
 // ---- Aggregate planned & actual by period ----
-function pianoBuildAggregated(athlete, granularity, fromDate, toDate){
+function pianoBuildAggregated(athlete, granularity, fromDate, toDate, sportFilter){
   let plans = trainingPlans.filter(p => p.athlete === athlete);
   let actual = [];
   try { actual = getDataRaw().filter(r => r.athlete === athlete); } catch(e){}
 
   if(fromDate){ plans  = plans.filter(p => p.date >= fromDate);  actual = actual.filter(a => a.date >= fromDate); }
   if(toDate){   plans  = plans.filter(p => p.date <= toDate);    actual = actual.filter(a => a.date <= toDate); }
+  if(sportFilter && sportFilter !== 'all'){
+    plans  = plans.filter(p  => (p.type ||'').toLowerCase() === sportFilter);
+    actual = actual.filter(a => (a.type ||'').toLowerCase() === sportFilter);
+  }
 
   const keyFn = granularity === 'week' ? pianoWeekKey : (d => d);
   const buckets = {};
