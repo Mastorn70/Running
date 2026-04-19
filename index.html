@@ -2957,7 +2957,7 @@ function addRowFromImportedData(row) {
           <input type="date" id="mobileDateTo">
         </label>
         <label>Attività grafico 3D:
-          <select id="km3DActivityFilterMobile" style="width:100%;margin-top:4px;padding:7px 10px;border-radius:8px;border:1px solid #e2e8f0;font-size:1em;"><option value="Corsa">🏃 Corsa</option></select>
+          <div id="km3DActivityPillsMobile" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;"></div>
         </label>
         <button onclick="applyMobileFilters()" style="margin-top:10px;background:#6366f1;color:#fff;padding:8px 0;border-radius:8px;font-weight:700;">Applica</button>
       </div>
@@ -3492,27 +3492,64 @@ function openMobileFilterModal() {
   document.getElementById('mobileDateFrom').value = document.getElementById('dateFrom').value;
   document.getElementById('mobileDateTo').value = document.getElementById('dateTo').value;
   // Sync attività 3D select with current value
-  const act3DSel = document.getElementById('km3DActivityFilterMobile');
-  if (act3DSel) {
+  const act3DPills = document.getElementById('km3DActivityPillsMobile');
+  if (act3DPills) {
     const allSportTypes = [...new Set((getData()||[]).map(d=>String(d.type||'').trim().toLowerCase()).filter(Boolean))].sort();
-    const cur = (window.__km3DActFilterUserSet && window.__km3DActFilter) ? window.__km3DActFilter : 'corsa';
-    act3DSel.innerHTML = allSportTypes.map(s=>`<option value="${s}">${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('') + '<option value="all">Tutti</option>';
-    act3DSel.value = allSportTypes.includes(cur) ? cur : (allSportTypes.includes('corsa') ? 'corsa' : (allSportTypes[0]||'all'));
+    const curFilters = (window.__km3DActFilterUserSet && Array.isArray(window.__km3DActFilters) && window.__km3DActFilters.length) ? window.__km3DActFilters : ['corsa'];
+    const sportIcons3d = { corsa:'🏃', bici:'🚴', nuoto:'🏊', palestra:'💪', sci:'⛷️', trail:'🏔️' };
+    const allActive = curFilters.includes('all');
+    const pillStyle = (active) => `padding:5px 12px;border-radius:20px;font-size:0.82rem;font-weight:700;cursor:pointer;border:2px solid ${active?'#6366f1':'#e2e8f0'};background:${active?'#6366f1':'#f8fafc'};color:${active?'#fff':'#475569'};transition:all .15s;`;
+    act3DPills.innerHTML = allSportTypes.map(s => {
+      const active = allActive || curFilters.includes(s);
+      return `<button type="button" onclick="toggleKm3DPill(this,'${s}')" data-sport="${s}" style="${pillStyle(active)}">${(sportIcons3d[s]||'▸')} ${s.charAt(0).toUpperCase()+s.slice(1)}</button>`;
+    }).join('') + `<button type="button" onclick="toggleKm3DPill(this,'all')" data-sport="all" style="${pillStyle(allActive)}">Tutti</button>`;
   }
 }
 function closeMobileFilterModal() {
   document.getElementById('mobileFilterModal').style.display = 'none';
   updateMobileFilterButtonVisibility();
 }
+window.toggleKm3DPill = function(btn, sport) {
+  const container = document.getElementById('km3DActivityPillsMobile');
+  if (!container) return;
+  const allPills = container.querySelectorAll('button[data-sport]');
+  const active = (b) => b.style.background === 'rgb(99, 102, 241)' || b.style.background === '#6366f1';
+  const setActive = (b, on) => {
+    b.style.background = on ? '#6366f1' : '#f8fafc';
+    b.style.border = `2px solid ${on ? '#6366f1' : '#e2e8f0'}`;
+    b.style.color = on ? '#fff' : '#475569';
+  };
+  if (sport === 'all') {
+    allPills.forEach(p => setActive(p, p.dataset.sport === 'all'));
+  } else {
+    // Deactivate "Tutti"
+    const allBtn = container.querySelector('button[data-sport="all"]');
+    if (allBtn) setActive(allBtn, false);
+    // Toggle this pill
+    setActive(btn, !active(btn));
+    // If nothing selected, re-activate this pill
+    const anyActive = Array.from(allPills).filter(p => p.dataset.sport !== 'all').some(p => active(p));
+    if (!anyActive) setActive(btn, true);
+  }
+};
 function applyMobileFilters() {
   // Aggiorna i filtri principali e chiudi modale
   window.__mobileSelectedAthletes = getMobileSelectedAthletes();
   if(document.getElementById('athleteFilter')) document.getElementById('athleteFilter').value = 'all';
   document.getElementById('dateFrom').value = document.getElementById('mobileDateFrom').value;
   document.getElementById('dateTo').value = document.getElementById('mobileDateTo').value;
-  // Salva selezione attività 3D
-  const act3DSel = document.getElementById('km3DActivityFilterMobile');
-  if (act3DSel && act3DSel.value) { window.__km3DActFilter = act3DSel.value; window.__km3DActFilterUserSet = true; }
+  // Salva selezione attività 3D (multi-select pills)
+  const act3DPillsApply = document.getElementById('km3DActivityPillsMobile');
+  if (act3DPillsApply) {
+    const selected = Array.from(act3DPillsApply.querySelectorAll('button[data-sport]'))
+      .filter(p => p.style.background === 'rgb(99, 102, 241)' || p.style.background === '#6366f1')
+      .map(p => p.dataset.sport);
+    if (selected.length) {
+      window.__km3DActFilters = selected;
+      window.__km3DActFilter = selected.includes('all') ? 'all' : selected[0];
+      window.__km3DActFilterUserSet = true;
+    }
+  }
   updateAllTimeButtonState();
   updateCharts();
   updateMobileCharts();
@@ -10290,9 +10327,8 @@ function updateKPI(data, acwr){
     .map(([ath,rows])=>{
       const kmTot = (rows || []).reduce((s,v)=> s + (Number(v.km) || 0), 0);
       const speedRef = speedWeightedByKm(rows);
-      const primarySport = getPrimarySportForRows(rows);
-      const multiplier = getAthleteScoreMultiplier(ath, primarySport);
-      return { athlete: ath, kmTot, speedRef, score: kmTot * speedRef * multiplier, sport: primarySport };
+      const score = (rows || []).reduce((s,v) => s + (Number(v.score) || 0), 0);
+      return { athlete: ath, kmTot, speedRef, score };
     })
     .sort((a,b)=> (b.score - a.score) || (b.kmTot - a.kmTot) || (b.speedRef - a.speedRef))[0] || { athlete:'-', kmTot:0, speedRef:0 };
   if($id('kpiTopAthlete')) $id('kpiTopAthlete').textContent = top.athlete;
@@ -10569,13 +10605,18 @@ function updateCharts(){
   // Use a persistent variable to remember the selection across updateCharts() calls
   // Only updated by explicit user action (Apply button in mobile modal)
   if (!window.__km3DActFilter) window.__km3DActFilter = 'corsa';
+  if (!window.__km3DActFilters) window.__km3DActFilters = [window.__km3DActFilter];
   populateKm3DSelect(km3DActEl, window.__km3DActFilter);
   populateKm3DSelect(km3DActElM, window.__km3DActFilter);
   const km3DActFilter = window.__km3DActFilter || 'corsa';
-  const filterRowsByActivity = rows => km3DActFilter === 'all' ? rows : (rows || []).filter(r => {
-    const act = String(r.type || r.activityType || '').toLowerCase();
-    return act === km3DActFilter;
-  });
+  const km3DActFilters = window.__km3DActFilters || [km3DActFilter];
+  const filterRowsByActivity = rows => {
+    if (km3DActFilters.includes('all') || km3DActFilters.length === 0) return rows;
+    return (rows || []).filter(r => {
+      const act = String(r.type || r.activityType || '').toLowerCase();
+      return km3DActFilters.includes(act);
+    });
+  };
 
   const loadWeightedByKm = rows => {
     const weightedMinutes = rows.reduce((s,v)=>{
@@ -10634,7 +10675,8 @@ function updateCharts(){
     return;
   }
 
-  let kmRankingTitle = km3DActFilter === 'all' ? 'Classifica Top atleta' : `Classifica Top atleta — ${km3DActFilter.charAt(0).toUpperCase()+km3DActFilter.slice(1)}`;
+  const km3DFiltersLabel = km3DActFilters.includes('all') ? 'Tutti' : km3DActFilters.map(s => s.charAt(0).toUpperCase()+s.slice(1)).join(' + ');
+  let kmRankingTitle = (km3DActFilters.includes('all') || km3DActFilters.length === 0) ? 'Classifica Top atleta' : `Classifica Top atleta — ${km3DFiltersLabel}`;
   let kmRanking = [];
   if(activeFastestDistance){
     kmRankingTitle = `Classifica Fastest ${activeFastestDistance.label}`;
@@ -10674,21 +10716,9 @@ function updateCharts(){
       const kmSum = filteredRows.reduce((sum, s) => sum + (Number(s.km) || 0), 0);
       const speedRef = speedWeightedByKm(filteredRows);
       const load = loadWeightedByKm(filteredRows);
-      // topScore uses ALL rows (all activities) — it's a total work metric
-      const topScore = rows.reduce((acc, v) => {
-        try{
-          const km = Number(v.km || 0);
-          const minutes = Number(v.minutes) || ((Number(v.time) || 0) * 60);
-          const timeH = minutes / 60;
-          if(km > 0 && timeH > 0){
-            const sport = v.type || v.sport || '';
-            const multiplier = (typeof getAthleteScoreMultiplier === 'function') ? getAthleteScoreMultiplier(v.athlete || ath, sport) : 1;
-            const speed = km / timeH;
-            acc += km * speed * multiplier;
-          }
-        }catch(e){}
-        return acc;
-      }, 0);
+      // topScore = sum of pre-computed per-row score (km * speed * multiplier already stored on each row)
+      // Uses ALL rows for the athlete (independent of activity filter), only date-filtered
+      const topScore = rows.reduce((s, v) => s + (Number(v.score) || 0), 0);
       return {
         athlete: ath,
         km: kmSum,
