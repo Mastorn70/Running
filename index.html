@@ -12603,6 +12603,8 @@ window.addEventListener('load', ()=>{
 
   loadSports();
   loadAthletes();
+  loadSportEquivalence();
+  if (typeof loadSportEquivalenceFromFirebase === 'function') loadSportEquivalenceFromFirebase();
   initRaceCountdowns();
   // Ensure global window.athletes mirrors internal `athletes` array for older code/fallbacks
   try{ if(!Array.isArray(window.athletes) || window.athletes.length === 0) window.athletes = Array.isArray(athletes) ? athletes.slice() : []; }catch(e){}
