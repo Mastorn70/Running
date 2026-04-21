@@ -3063,6 +3063,19 @@ function addRowFromImportedData(row) {
   </div>
   <!-- /MODALE TARGET KPI MOBILE -->
 
+  <!-- MODALE TABELLA 3D SCORE -->
+  <div id="km3DTableModal" style="display:none;position:fixed;z-index:10030;left:0;top:0;width:100vw;height:100vh;background:rgba(15,23,42,0.82);backdrop-filter:blur(3px);justify-content:center;align-items:flex-end;">
+    <div style="background:#1e293b;color:#e2e8f0;width:100%;max-height:85vh;border-radius:20px 20px 0 0;padding:20px 16px 32px;overflow-y:auto;box-shadow:0 -8px 32px #0008;border-top:2px solid rgba(99,102,241,0.4);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <h3 id="km3DTableModalTitle" style="margin:0;font-size:1rem;color:#a5b4fc;">Attività</h3>
+        <button onclick="closeKm3DTableModal()" style="background:none;border:none;color:#94a3b8;font-size:1.6em;cursor:pointer;line-height:1;padding:0 4px;">&times;</button>
+      </div>
+      <div id="km3DAthleteFilterArea" style="margin-bottom:10px;"></div>
+      <div id="km3DTableBody"></div>
+    </div>
+  </div>
+  <!-- /MODALE TABELLA 3D SCORE -->
+
   <style>@media (max-width:900px){.mobile-dashboard{position:relative;}}</style>
   <div class="mobile-top-kpi" id="mobileTopAthleteKpi">
     <span class="label">Top atleta</span>
@@ -3073,6 +3086,7 @@ function addRowFromImportedData(row) {
     <button id="mobileFastestBtn" onclick="cycleFastestRaceDistance()" style="position:absolute;top:8px;left:96px;padding:6px 10px;background:#111827;color:#fff;border:none;border-radius:8px;font-size:0.95em;font-weight:600;z-index:951;box-shadow:0 2px 8px #0002;">Fastest</button>
     <span id="mobileFastestDistanceLabel" style="position:absolute;top:12px;left:185px;color:#fff;font-size:0.9em;font-weight:800;z-index:951;text-shadow:0 1px 2px rgba(0,0,0,.45);"></span>
     <button id="openMobileFilterBtn" style="position:absolute;top:8px;right:10px;padding:6px 10px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:0.95em;font-weight:600;z-index:950;box-shadow:0 2px 8px #0002;">🔍 Filtra</button>
+    <button onclick="openKm3DTableModal()" style="position:absolute;top:46px;right:10px;padding:5px 9px;background:rgba(15,23,42,0.75);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:8px;font-size:0.8em;font-weight:600;z-index:950;box-shadow:0 2px 8px #0002;">📊 Tabella</button>
     <div id="mobileKmTopRankingOverlay" style="position:absolute;right:8px;bottom:8px;left:8px;max-height:34%;overflow:auto;padding:8px 10px;border:1px solid rgba(203,213,225,.55);border-radius:10px;background:rgba(255,255,255,0.22);font-size:0.72rem;line-height:1.35;color:#0f172a;z-index:940;box-shadow:0 4px 12px rgba(0,0,0,.12);"></div>
     <div id="chatGhostFeedMobile"></div>
   </div>
@@ -3509,6 +3523,90 @@ function closeMobileFilterModal() {
   document.getElementById('mobileFilterModal').style.display = 'none';
   updateMobileFilterButtonVisibility();
 }
+
+function _km3DRenderActivityTable(rows) {
+  const body = document.getElementById('km3DTableBody');
+  if (!body) return;
+  if (!rows.length) {
+    body.innerHTML = '<div style="color:#64748b;text-align:center;padding:20px;">Nessun dato disponibile</div>';
+    return;
+  }
+  const rowsHtml = rows.map((r, i) => {
+    const date = r.date || r.data || '--';
+    const athlete = r.athlete || r.atleta || '--';
+    const sport = r.type || r.activityType || '--';
+    const km = Number(r.km || 0).toFixed(1);
+    const score = Number(r.score || 0).toFixed(1);
+    const kmNum = Number(r.km || 0);
+    const minNum = Number(r.minutes || 0);
+    const paceStr = (kmNum > 0 && minNum > 0) ? formatMinutesFloatToMMSS(minNum / kmNum) : '--';
+    const bg = i % 2 === 0 ? '#0f172a' : '#162032';
+    return `<tr style="background:${bg};border-bottom:1px solid rgba(100,116,139,0.25);">
+      <td style="padding:7px 5px;white-space:nowrap;color:#cbd5e1;font-size:0.78rem;">${date}</td>
+      <td style="padding:7px 5px;font-weight:700;white-space:nowrap;color:#f1f5f9;">${athlete}</td>
+      <td style="padding:7px 5px;color:#c4b5fd;white-space:nowrap;">${sport}</td>
+      <td style="padding:7px 5px;text-align:right;color:#7dd3fc;font-weight:600;">${km}</td>
+      <td style="padding:7px 5px;text-align:right;color:#fcd34d;font-weight:600;">${score}</td>
+      <td style="padding:7px 5px;text-align:right;color:#6ee7b7;font-weight:600;">${paceStr}</td>
+    </tr>`;
+  }).join('');
+  const totalScore = rows.reduce((s, r) => s + (Number(r.score) || 0), 0);
+  const totalKm = rows.reduce((s, r) => s + (Number(r.km) || 0), 0);
+  body.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:0.83rem;">
+    <thead><tr style="border-bottom:2px solid #6366f1;position:sticky;top:0;background:#1e293b;">
+      <th style="padding:8px 5px;text-align:left;color:#94a3b8;font-size:0.73rem;font-weight:700;letter-spacing:0.04em;">DATA</th>
+      <th style="padding:8px 5px;text-align:left;color:#94a3b8;font-size:0.73rem;font-weight:700;letter-spacing:0.04em;">ATLETA</th>
+      <th style="padding:8px 5px;text-align:left;color:#94a3b8;font-size:0.73rem;font-weight:700;letter-spacing:0.04em;">SPORT</th>
+      <th style="padding:8px 5px;text-align:right;color:#7dd3fc;font-size:0.73rem;font-weight:700;letter-spacing:0.04em;">KM</th>
+      <th style="padding:8px 5px;text-align:right;color:#fcd34d;font-size:0.73rem;font-weight:700;letter-spacing:0.04em;">SCORE</th>
+      <th style="padding:8px 5px;text-align:right;color:#6ee7b7;font-size:0.73rem;font-weight:700;letter-spacing:0.04em;">PASSO</th>
+    </tr></thead>
+    <tbody>${rowsHtml}</tbody>
+    <tfoot><tr style="border-top:2px solid #6366f1;background:#1e293b;">
+      <td colspan="3" style="padding:8px 5px;color:#94a3b8;font-size:0.78rem;font-weight:700;letter-spacing:0.04em;">TOTALE (${rows.length} attività)</td>
+      <td style="padding:8px 5px;text-align:right;color:#7dd3fc;font-weight:700;">${totalKm.toFixed(1)}</td>
+      <td style="padding:8px 5px;text-align:right;color:#fcd34d;font-weight:700;">${totalScore.toFixed(1)}</td>
+      <td></td>
+    </tr></tfoot>
+  </table>`;
+}
+
+window.openKm3DTableModal = function() {
+  const modal = document.getElementById('km3DTableModal');
+  if (!modal) return;
+  const actRows = window.__km3DActivityRows || [];
+  const title = window.__km3DRankingTitle || 'Attività';
+  document.getElementById('km3DTableModalTitle').textContent = title.replace('Classifica Top atleta', 'Attività').replace('Classifica', 'Attività');
+
+  // Sort by date descending (shared base)
+  const sorted = actRows.slice().sort((a, b) => {
+    const da = a.date || a.data || '';
+    const db = b.date || b.data || '';
+    return db.localeCompare(da);
+  });
+
+  // Build athlete filter
+  const athletes = ['Tutti', ...Array.from(new Set(sorted.map(r => r.athlete || r.atleta || ''))).filter(Boolean).sort()];
+  const filterArea = document.getElementById('km3DAthleteFilterArea');
+  if (filterArea) {
+    filterArea.innerHTML = `<select id="km3DAthleteSelect" style="width:100%;background:#0f172a;color:#e2e8f0;border:1px solid #334155;border-radius:8px;padding:7px 10px;font-size:0.88rem;">
+      ${athletes.map(a => `<option value="${a}">${a}</option>`).join('')}
+    </select>`;
+    document.getElementById('km3DAthleteSelect').addEventListener('change', function() {
+      const val = this.value;
+      const filtered = val === 'Tutti' ? sorted : sorted.filter(r => (r.athlete || r.atleta) === val);
+      _km3DRenderActivityTable(filtered);
+    });
+  }
+
+  _km3DRenderActivityTable(sorted);
+  modal.style.display = 'flex';
+};
+
+window.closeKm3DTableModal = function() {
+  const modal = document.getElementById('km3DTableModal');
+  if (modal) modal.style.display = 'none';
+};
 window.toggleKm3DPill = function(btn, sport) {
   const container = document.getElementById('km3DActivityPillsMobile');
   if (!container) return;
@@ -10733,6 +10831,10 @@ function updateCharts(){
   // Salva la classifica km completa per la cerimonia e gli annunci
   window.__kmTopAthlete = athletesForKm.length ? athletesForKm[0] : null;
   window.__kmRanking = athletesForKm; // indice 0=primo, 1=secondo, ecc.
+  window.__km3DRankingData = kmRanking.slice(); // full ranking data for ranking modal
+  window.__km3DActivityRows = (baseDataForAthleteGrouping || []).slice(); // raw activity rows for table modal
+  window.__km3DRankingTitle = kmRankingTitle;
+  window.__km3DActiveFastest = activeFastestDistance;
 
   if (charts['kmChart']) { charts['kmChart'].destroy(); charts['kmChart'] = null; }
   if (athletesForKm.length) {
